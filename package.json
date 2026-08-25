@@ -1,0 +1,15 @@
+{
+  "name": "paysi",
+  "private": true,
+  "workspaces": ["web-painel", "web-checkout"],
+  "scripts": {
+    "dev:painel": "npm run dev --workspace web-painel",
+    "dev:checkout": "npm run dev --workspace web-checkout",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
+

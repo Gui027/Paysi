@@ -1,0 +1,25 @@
+# Segredos e configuração local
+.env
+.env.*
+!.env.example
+
+# Java / Maven
+backend/target/
+*.log
+
+# Node
+node_modules/
+.next/
+dist/
+coverage/
+*.tsbuildinfo
+
+# IDE e sistema
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Infra local
+infra/.data/
+

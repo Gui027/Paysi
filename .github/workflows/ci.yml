@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: paysi
+          POSTGRES_USER: paysi
+          POSTGRES_PASSWORD: paysi
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U paysi -d paysi"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: paysi
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aplicar migrações em ordem
+        shell: bash
+        run: |
+          for migration in backend/src/main/resources/db/migration/*.sql; do
+            psql -h localhost -U paysi -d paysi -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Executar as 70 asserções do esquema
+        run: psql -h localhost -U paysi -d paysi -v ON_ERROR_STOP=1 -f docs/paysi-testes-v3.0.sql
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Testar backend
+        working-directory: backend
+        run: ./mvnw --batch-mode verify
+
+  frontends:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build

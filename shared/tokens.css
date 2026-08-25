@@ -1,0 +1,207 @@
+/* =========================================================================
+   Paysi — Design Tokens
+   Versão 1.0 · Base: "Paysi — Identidade Visual" (direção aprovada)
+
+   Os tokens marcados com [ARTE] vêm diretamente da arte aprovada.
+   Os tokens marcados com [EXT] são extensões derivadas, necessárias para
+   cobrir estados e componentes que a arte não especifica.
+   ========================================================================= */
+
+:root {
+  /* ---------------------------------------------------------------- MARCA */
+  --paysi-primaria: #1D6BD8;        /* [ARTE] Primária */
+  --paysi-pressionado: #1858B4;     /* [ARTE] Pressionado */
+  --paysi-secundaria: #7FAFEE;      /* [ARTE] Secundária */
+  --paysi-texto: #14181F;           /* [ARTE] Texto principal */
+  --paysi-texto-secundario: #5C6472;/* [ARTE] Texto secundário */
+  --paysi-linha: #E6E9EF;           /* [ARTE] Linha */
+  --paysi-fundo-suave: #F7F9FC;     /* [ARTE] Fundo suave */
+
+  /* ------------------------------------------------- RAMPA AZUL      [EXT] */
+  --blue-50:  #F0F5FD;
+  --blue-100: #DCE8FA;
+  --blue-200: #BBD2F6;
+  --blue-300: #7FAFEE;  /* = Secundária */
+  --blue-400: #4A8AE3;
+  --blue-500: #1D6BD8;  /* = Primária */
+  --blue-600: #1858B4;  /* = Pressionado */
+  --blue-700: #144890;
+  --blue-800: #12386C;
+  --blue-900: #0F2A4E;
+
+  /* ------------------------------------------------- RAMPA NEUTRA    [EXT] */
+  --gray-0:   #FFFFFF;
+  --gray-25:  #F7F9FC;  /* = Fundo suave */
+  --gray-50:  #F1F4F9;
+  --gray-100: #E6E9EF;  /* = Linha */
+  --gray-200: #D3D8E2;
+  --gray-300: #B4BCCA;
+  --gray-400: #8B94A5;
+  --gray-500: #5C6472;  /* = Texto secundário */
+  --gray-600: #474E5C;
+  --gray-700: #343A46;
+  --gray-800: #23282F;
+  --gray-900: #14181F;  /* = Texto principal */
+
+  /* ------------------------------------------------- ESTADOS         [EXT] */
+  --sucesso: #067A55;
+  --sucesso-superficie: #E8F6F0;
+  --atencao: #8A5A00;
+  --atencao-superficie: #FCF3E3;
+  --erro: #C0362E;
+  --erro-superficie: #FDEDEB;
+  --info: #1858B4;
+  --info-superficie: #EAF1FC;
+
+  /* ------------------------------------------------- SEMÂNTICOS      [EXT] */
+  --fundo-pagina: #FFFFFF;
+  --fundo-elevado: #FFFFFF;
+  --fundo-secao: var(--paysi-fundo-suave);
+  --fundo-inverso: var(--paysi-texto);
+
+  --texto-titulo: var(--paysi-texto);
+  --texto-corpo: var(--paysi-texto);
+  --texto-apoio: var(--paysi-texto-secundario);
+  --texto-desabilitado: var(--gray-400);
+  --texto-sobre-primaria: #FFFFFF;
+  --texto-link: var(--paysi-pressionado);
+
+  --borda: var(--paysi-linha);
+  --borda-forte: var(--gray-200);
+  --borda-foco: var(--paysi-primaria);
+
+  --acao-primaria: var(--paysi-primaria);
+  --acao-primaria-hover: #1A61C6;
+  --acao-primaria-ativa: var(--paysi-pressionado);
+  --acao-primaria-desabilitada: var(--gray-100);
+
+  /* ------------------------------------------------------------ TIPOGRAFIA */
+  --fonte-marca: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont,
+                 "SF Pro Display", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fonte-texto: var(--fonte-marca);
+  --fonte-numerica: "Inter", "SF Mono", ui-monospace, "JetBrains Mono",
+                    Menlo, Consolas, monospace;
+
+  --peso-forte: 600;   /* [ARTE] */
+  --peso-medio: 500;   /* [ARTE] */
+  --peso-normal: 400;  /* [ARTE] */
+
+  --texto-display: 700 3rem/1.1 var(--fonte-marca);      /* 48px */
+  --texto-h1: 600 2rem/1.2 var(--fonte-marca);           /* 32px */
+  --texto-h2: 600 1.5rem/1.3 var(--fonte-marca);         /* 24px */
+  --texto-h3: 600 1.25rem/1.4 var(--fonte-marca);        /* 20px */
+  --texto-corpo-g: 400 1.125rem/1.6 var(--fonte-texto);  /* 18px */
+  --texto-corpo-p: 400 1rem/1.5 var(--fonte-texto);      /* 16px */
+  --texto-apoio-p: 400 0.875rem/1.5 var(--fonte-texto);  /* 14px */
+  --texto-legenda: 500 0.75rem/1.4 var(--fonte-texto);   /* 12px */
+
+  --tracking-display: -0.02em;
+  --tracking-titulo: -0.015em;
+  --tracking-corpo: 0;
+  --tracking-rotulo: 0.08em;
+
+  /* ------------------------------------------------------------- ESPAÇAMENTO */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 20px;
+  --esp-6: 24px;
+  --esp-8: 32px;
+  --esp-10: 40px;
+  --esp-12: 48px;
+  --esp-16: 64px;
+  --esp-20: 80px;
+  --esp-24: 96px;
+
+  /* ------------------------------------------------------------------ RAIO */
+  --raio-xs: 4px;
+  --raio-sm: 8px;
+  --raio-md: 12px;
+  --raio-lg: 16px;
+  --raio-xl: 24px;
+  --raio-total: 999px;
+
+  /* -------------------------------------------------------------- ELEVAÇÃO */
+  --sombra-sm: 0 1px 2px rgba(20, 24, 31, 0.06);
+  --sombra-md: 0 2px 8px rgba(20, 24, 31, 0.08);
+  --sombra-lg: 0 8px 24px rgba(20, 24, 31, 0.10);
+  --sombra-xl: 0 16px 48px rgba(20, 24, 31, 0.12);
+  --anel-foco: 0 0 0 3px rgba(29, 107, 216, 0.32);
+
+  /* ---------------------------------------------------------------- MOVIMENTO */
+  --duracao-rapida: 120ms;
+  --duracao-padrao: 200ms;
+  --duracao-lenta: 320ms;
+  --curva-padrao: cubic-bezier(0.2, 0, 0.2, 1);
+  --curva-entrada: cubic-bezier(0, 0, 0.2, 1);
+  --curva-saida: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* ============================================================ TEMA ESCURO
+   [EXT] Derivado da "Versão negativa" da arte aprovada.
+   ========================================================================= */
+[data-tema="escuro"] {
+  --fundo-pagina: #14181F;
+  --fundo-elevado: #1C222C;
+  --fundo-secao: #10141A;
+  --fundo-inverso: #FFFFFF;
+
+  --texto-titulo: #FFFFFF;
+  --texto-corpo: #EDEFF3;
+  --texto-apoio: #A7AFBD;
+  --texto-desabilitado: #5C6472;
+  --texto-link: var(--paysi-secundaria);
+
+  --borda: #2A313C;
+  --borda-forte: #3A4350;
+
+  --acao-primaria: #3B82E8;
+  --acao-primaria-hover: #5595EE;
+  --acao-primaria-ativa: var(--paysi-primaria);
+  --acao-primaria-desabilitada: #2A313C;
+
+  --sucesso: #4ECFA1;
+  --sucesso-superficie: #0E2A22;
+  --atencao: #E8B75A;
+  --atencao-superficie: #2B2113;
+  --erro: #F08B84;
+  --erro-superficie: #2E1614;
+  --info: var(--paysi-secundaria);
+  --info-superficie: #14243A;
+
+  --anel-foco: 0 0 0 3px rgba(127, 175, 238, 0.40);
+}
+
+/* ============================================================ UTILITÁRIOS */
+
+/* Valores monetários: alinhamento em colunas e leitura estável */
+.paysi-valor {
+  font-family: var(--fonte-numerica);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  letter-spacing: 0;
+}
+
+/* Rótulo/eyebrow, como os títulos numerados da arte */
+.paysi-rotulo {
+  font: 600 0.75rem/1.2 var(--fonte-marca);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--paysi-primaria);
+}
+
+/* Foco visível padrão — obrigatório em todos os alvos interativos */
+.paysi-focavel:focus-visible {
+  outline: 2px solid var(--borda-foco);
+  outline-offset: 2px;
+  box-shadow: var(--anel-foco);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duracao-rapida: 0ms;
+    --duracao-padrao: 0ms;
+    --duracao-lenta: 0ms;
+  }
+}

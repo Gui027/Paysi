@@ -1,0 +1,138 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "$description": "Paysi — Design Tokens v1.0. Origem: arte 'Paysi — Identidade Visual' (direção aprovada). Tokens com origem 'arte' são normativos; 'extensao' são derivados.",
+  "cor": {
+    "marca": {
+      "primaria": { "$type": "color", "$value": "#1D6BD8", "$extensions": { "paysi.origem": "arte", "paysi.uso": "Ações primárias, símbolo, links e destaques." } },
+      "pressionado": { "$type": "color", "$value": "#1858B4", "$extensions": { "paysi.origem": "arte", "paysi.uso": "Estado :active de ações primárias e links sobre fundo claro." } },
+      "secundaria": { "$type": "color", "$value": "#7FAFEE", "$extensions": { "paysi.origem": "arte", "paysi.uso": "Preenchimentos, gráficos e apoio. Nunca para texto sobre fundo claro." } }
+    },
+    "texto": {
+      "principal": { "$type": "color", "$value": "#14181F", "$extensions": { "paysi.origem": "arte" } },
+      "secundario": { "$type": "color", "$value": "#5C6472", "$extensions": { "paysi.origem": "arte" } },
+      "sobre-primaria": { "$type": "color", "$value": "#FFFFFF", "$extensions": { "paysi.origem": "extensao" } },
+      "desabilitado": { "$type": "color", "$value": "#8B94A5", "$extensions": { "paysi.origem": "extensao" } },
+      "link": { "$type": "color", "$value": "#1858B4", "$extensions": { "paysi.origem": "extensao" } }
+    },
+    "superficie": {
+      "pagina": { "$type": "color", "$value": "#FFFFFF", "$extensions": { "paysi.origem": "extensao" } },
+      "suave": { "$type": "color", "$value": "#F7F9FC", "$extensions": { "paysi.origem": "arte" } },
+      "inversa": { "$type": "color", "$value": "#14181F", "$extensions": { "paysi.origem": "arte" } }
+    },
+    "borda": {
+      "linha": { "$type": "color", "$value": "#E6E9EF", "$extensions": { "paysi.origem": "arte" } },
+      "forte": { "$type": "color", "$value": "#D3D8E2", "$extensions": { "paysi.origem": "extensao" } },
+      "foco": { "$type": "color", "$value": "#1D6BD8", "$extensions": { "paysi.origem": "extensao" } }
+    },
+    "azul": {
+      "50": { "$type": "color", "$value": "#F0F5FD" },
+      "100": { "$type": "color", "$value": "#DCE8FA" },
+      "200": { "$type": "color", "$value": "#BBD2F6" },
+      "300": { "$type": "color", "$value": "#7FAFEE" },
+      "400": { "$type": "color", "$value": "#4A8AE3" },
+      "500": { "$type": "color", "$value": "#1D6BD8" },
+      "600": { "$type": "color", "$value": "#1858B4" },
+      "700": { "$type": "color", "$value": "#144890" },
+      "800": { "$type": "color", "$value": "#12386C" },
+      "900": { "$type": "color", "$value": "#0F2A4E" },
+      "$extensions": { "paysi.origem": "extensao", "paysi.ancoras": "300 = Secundária, 500 = Primária, 600 = Pressionado" }
+    },
+    "neutra": {
+      "0": { "$type": "color", "$value": "#FFFFFF" },
+      "25": { "$type": "color", "$value": "#F7F9FC" },
+      "50": { "$type": "color", "$value": "#F1F4F9" },
+      "100": { "$type": "color", "$value": "#E6E9EF" },
+      "200": { "$type": "color", "$value": "#D3D8E2" },
+      "300": { "$type": "color", "$value": "#B4BCCA" },
+      "400": { "$type": "color", "$value": "#8B94A5" },
+      "500": { "$type": "color", "$value": "#5C6472" },
+      "600": { "$type": "color", "$value": "#474E5C" },
+      "700": { "$type": "color", "$value": "#343A46" },
+      "800": { "$type": "color", "$value": "#23282F" },
+      "900": { "$type": "color", "$value": "#14181F" },
+      "$extensions": { "paysi.origem": "extensao", "paysi.ancoras": "25 = Fundo suave, 100 = Linha, 500 = Texto secundário, 900 = Texto principal" }
+    },
+    "estado": {
+      "sucesso": { "$type": "color", "$value": "#067A55", "$extensions": { "paysi.origem": "extensao", "paysi.uso": "Pagamento aprovado, transferência concluída." } },
+      "sucesso-superficie": { "$type": "color", "$value": "#E8F6F0", "$extensions": { "paysi.origem": "extensao" } },
+      "atencao": { "$type": "color", "$value": "#8A5A00", "$extensions": { "paysi.origem": "extensao", "paysi.uso": "Pendências, antecipação em análise, prazo próximo." } },
+      "atencao-superficie": { "$type": "color", "$value": "#FCF3E3", "$extensions": { "paysi.origem": "extensao" } },
+      "erro": { "$type": "color", "$value": "#C0362E", "$extensions": { "paysi.origem": "extensao", "paysi.uso": "Transação recusada, estorno, falha de conexão da maquininha." } },
+      "erro-superficie": { "$type": "color", "$value": "#FDEDEB", "$extensions": { "paysi.origem": "extensao" } },
+      "info": { "$type": "color", "$value": "#1858B4", "$extensions": { "paysi.origem": "extensao" } },
+      "info-superficie": { "$type": "color", "$value": "#EAF1FC", "$extensions": { "paysi.origem": "extensao" } }
+    }
+  },
+  "tipografia": {
+    "familia": {
+      "marca": { "$type": "fontFamily", "$value": ["Inter", "Segoe UI", "-apple-system", "BlinkMacSystemFont", "SF Pro Display", "Roboto", "Helvetica Neue", "Arial", "sans-serif"], "$extensions": { "paysi.origem": "arte" } },
+      "numerica": { "$type": "fontFamily", "$value": ["Inter", "SF Mono", "ui-monospace", "JetBrains Mono", "Menlo", "Consolas", "monospace"], "$extensions": { "paysi.origem": "extensao", "paysi.uso": "Valores em reais, IDs de transação, NSU. Sempre com tabular-nums." } }
+    },
+    "peso": {
+      "forte": { "$type": "fontWeight", "$value": 600, "$extensions": { "paysi.origem": "arte" } },
+      "medio": { "$type": "fontWeight", "$value": 500, "$extensions": { "paysi.origem": "arte" } },
+      "normal": { "$type": "fontWeight", "$value": 400, "$extensions": { "paysi.origem": "arte" } },
+      "logotipo": { "$type": "fontWeight", "$value": 700, "$extensions": { "paysi.origem": "extensao", "paysi.uso": "Exclusivo do logotipo, já vetorizado. Não usar em interface." } }
+    },
+    "escala": {
+      "display": { "$type": "typography", "$value": { "fontFamily": "{tipografia.familia.marca}", "fontSize": "48px", "fontWeight": 700, "lineHeight": "1.1", "letterSpacing": "-0.02em" } },
+      "h1": { "$type": "typography", "$value": { "fontFamily": "{tipografia.familia.marca}", "fontSize": "32px", "fontWeight": 600, "lineHeight": "1.2", "letterSpacing": "-0.015em" } },
+      "h2": { "$type": "typography", "$value": { "fontFamily": "{tipografia.familia.marca}", "fontSize": "24px", "fontWeight": 600, "lineHeight": "1.3", "letterSpacing": "-0.01em" } },
+      "h3": { "$type": "typography", "$value": { "fontFamily": "{tipografia.familia.marca}", "fontSize": "20px", "fontWeight": 600, "lineHeight": "1.4", "letterSpacing": "0" } },
+      "corpo-grande": { "$type": "typography", "$value": { "fontFamily": "{tipografia.familia.marca}", "fontSize": "18px", "fontWeight": 400, "lineHeight": "1.6", "letterSpacing": "0" } },
+      "corpo": { "$type": "typography", "$value": { "fontFamily": "{tipografia.familia.marca}", "fontSize": "16px", "fontWeight": 400, "lineHeight": "1.5", "letterSpacing": "0" } },
+      "apoio": { "$type": "typography", "$value": { "fontFamily": "{tipografia.familia.marca}", "fontSize": "14px", "fontWeight": 400, "lineHeight": "1.5", "letterSpacing": "0" } },
+      "legenda": { "$type": "typography", "$value": { "fontFamily": "{tipografia.familia.marca}", "fontSize": "12px", "fontWeight": 500, "lineHeight": "1.4", "letterSpacing": "0" } },
+      "rotulo": { "$type": "typography", "$value": { "fontFamily": "{tipografia.familia.marca}", "fontSize": "12px", "fontWeight": 600, "lineHeight": "1.2", "letterSpacing": "0.08em", "textCase": "uppercase" } }
+    }
+  },
+  "espacamento": {
+    "1": { "$type": "dimension", "$value": "4px" },
+    "2": { "$type": "dimension", "$value": "8px" },
+    "3": { "$type": "dimension", "$value": "12px" },
+    "4": { "$type": "dimension", "$value": "16px" },
+    "5": { "$type": "dimension", "$value": "20px" },
+    "6": { "$type": "dimension", "$value": "24px" },
+    "8": { "$type": "dimension", "$value": "32px" },
+    "10": { "$type": "dimension", "$value": "40px" },
+    "12": { "$type": "dimension", "$value": "48px" },
+    "16": { "$type": "dimension", "$value": "64px" },
+    "20": { "$type": "dimension", "$value": "80px" },
+    "24": { "$type": "dimension", "$value": "96px" }
+  },
+  "raio": {
+    "xs": { "$type": "dimension", "$value": "4px" },
+    "sm": { "$type": "dimension", "$value": "8px" },
+    "md": { "$type": "dimension", "$value": "12px" },
+    "lg": { "$type": "dimension", "$value": "16px" },
+    "xl": { "$type": "dimension", "$value": "24px" },
+    "total": { "$type": "dimension", "$value": "999px" }
+  },
+  "elevacao": {
+    "sm": { "$type": "shadow", "$value": { "color": "rgba(20,24,31,0.06)", "offsetX": "0", "offsetY": "1px", "blur": "2px", "spread": "0" } },
+    "md": { "$type": "shadow", "$value": { "color": "rgba(20,24,31,0.08)", "offsetX": "0", "offsetY": "2px", "blur": "8px", "spread": "0" } },
+    "lg": { "$type": "shadow", "$value": { "color": "rgba(20,24,31,0.10)", "offsetX": "0", "offsetY": "8px", "blur": "24px", "spread": "0" } },
+    "xl": { "$type": "shadow", "$value": { "color": "rgba(20,24,31,0.12)", "offsetX": "0", "offsetY": "16px", "blur": "48px", "spread": "0" } },
+    "foco": { "$type": "shadow", "$value": { "color": "rgba(29,107,216,0.32)", "offsetX": "0", "offsetY": "0", "blur": "0", "spread": "3px" } }
+  },
+  "movimento": {
+    "duracao": {
+      "rapida": { "$type": "duration", "$value": "120ms" },
+      "padrao": { "$type": "duration", "$value": "200ms" },
+      "lenta": { "$type": "duration", "$value": "320ms" }
+    },
+    "curva": {
+      "padrao": { "$type": "cubicBezier", "$value": [0.2, 0, 0.2, 1] },
+      "entrada": { "$type": "cubicBezier", "$value": [0, 0, 0.2, 1] },
+      "saida": { "$type": "cubicBezier", "$value": [0.4, 0, 1, 1] }
+    }
+  },
+  "logo": {
+    "proporcao-simbolo": { "$type": "number", "$value": 0.72, "$extensions": { "paysi.nota": "largura ÷ altura do símbolo (72 : 100)" } },
+    "simbolo-vs-capitular": { "$type": "number", "$value": 1.58, "$extensions": { "paysi.nota": "altura do símbolo ÷ altura de capitular do logotipo" } },
+    "respiro-horizontal": { "$type": "number", "$value": 0.43, "$extensions": { "paysi.nota": "espaço símbolo↔logotipo, em múltiplos da altura de capitular" } },
+    "area-protecao": { "$type": "number", "$value": 0.25, "$extensions": { "paysi.nota": "X = altura do símbolo ÷ 4, em todos os lados" } },
+    "tamanho-minimo-digital": { "$type": "dimension", "$value": "96px", "$extensions": { "paysi.nota": "largura mínima da assinatura horizontal; símbolo isolado: 24px" } },
+    "tamanho-minimo-impresso": { "$type": "dimension", "$value": "24mm", "$extensions": { "paysi.nota": "largura mínima da assinatura horizontal; símbolo isolado: 8mm" } }
+  }
+}

@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: paysi-backend
+  profiles:
+    default: local
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/paysi}
+    username: ${DATABASE_USER:paysi_app}
+    password: ${DATABASE_PASSWORD:paysi_app}
+    hikari:
+      maximum-pool-size: 10
+      auto-commit: false
+  flyway:
+    enabled: true
+    user: ${DATABASE_MIGRATION_USER:paysi}
+    password: ${DATABASE_MIGRATION_PASSWORD:paysi}
+    validate-migration-naming: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: ${RABBIT_PORT:5672}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+
+server:
+  shutdown: graceful
+  error:
+    include-message: never
+

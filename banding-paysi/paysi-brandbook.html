@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paysi — Manual de Identidade Visual</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22none%22%20role%3D%22img%22%20aria-label%3D%22Paysi%22%3E%3Ctitle%3EPaysi%20%26%238212%3B%20favicon%3C%2Ftitle%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231D6BD8%22%2F%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20fill-rule%3D%22evenodd%22%20transform%3D%22translate%287.36%204.00%29%20scale%280.24000%29%22%20d%3D%22M14%200H58A14%2014%200%200%201%2072%2014V69A14%2014%200%200%201%2058%2083H31A5%205%200%200%200%2026%2088V91A9%209%200%200%201%2017%20100H9A9%209%200%200%201%200%2091V14A14%2014%200%200%201%2014%200ZM16.5%2012H55.5A5.5%205.5%200%200%201%2061%2017.5V25.5A5.5%205.5%200%200%201%2055.5%2031H16.5A5.5%205.5%200%200%201%2011%2025.5V17.5A5.5%205.5%200%200%201%2016.5%2012ZM13.5%2039H20.5A2.5%202.5%200%200%201%2023%2041.5V45.5A2.5%202.5%200%200%201%2020.5%2048H13.5A2.5%202.5%200%200%201%2011%2045.5V41.5A2.5%202.5%200%200%201%2013.5%2039ZM32.5%2039H39.5A2.5%202.5%200%200%201%2042%2041.5V45.5A2.5%202.5%200%200%201%2039.5%2048H32.5A2.5%202.5%200%200%201%2030%2045.5V41.5A2.5%202.5%200%200%201%2032.5%2039ZM51.5%2039H58.5A2.5%202.5%200%200%201%2061%2041.5V45.5A2.5%202.5%200%200%201%2058.5%2048H51.5A2.5%202.5%200%200%201%2049%2045.5V41.5A2.5%202.5%200%200%201%2051.5%2039ZM13.5%2052H20.5A2.5%202.5%200%200%201%2023%2054.5V58.5A2.5%202.5%200%200%201%2020.5%2061H13.5A2.5%202.5%200%200%201%2011%2058.5V54.5A2.5%202.5%200%200%201%2013.5%2052ZM32.5%2052H39.5A2.5%202.5%200%200%201%2042%2054.5V58.5A2.5%202.5%200%200%201%2039.5%2061H32.5A2.5%202.5%200%200%201%2030%2058.5V54.5A2.5%202.5%200%200%201%2032.5%2052ZM51.5%2052H58.5A2.5%202.5%200%200%201%2061%2054.5V58.5A2.5%202.5%200%200%201%2058.5%2061H51.5A2.5%202.5%200%200%201%2049%2058.5V54.5A2.5%202.5%200%200%201%2051.5%2052ZM13.5%2065H20.5A2.5%202.5%200%200%201%2023%2067.5V71.5A2.5%202.5%200%200%201%2020.5%2074H13.5A2.5%202.5%200%200%201%2011%2071.5V67.5A2.5%202.5%200%200%201%2013.5%2065ZM32.5%2065H39.5A2.5%202.5%200%200%201%2042%2067.5V71.5A2.5%202.5%200%200%201%2039.5%2074H32.5A2.5%202.5%200%200%201%2030%2071.5V67.5A2.5%202.5%200%200%201%2032.5%2065ZM51.5%2065H58.5A2.5%202.5%200%200%201%2061%2067.5V71.5A2.5%202.5%200%200%201%2058.5%2074H51.5A2.5%202.5%200%200%201%2049%2071.5V67.5A2.5%202.5%200%200%201%2051.5%2065Z%22%2F%3E%3C%2Fsvg%3E">
+<style>
+/* ===== TOKENS ===== */
+/* =========================================================================
+   Paysi — Design Tokens
+   Versão 1.0 · Base: "Paysi — Identidade Visual" (direção aprovada)
+
+   Os tokens marcados com [ARTE] vêm diretamente da arte aprovada.
+   Os tokens marcados com [EXT] são extensões derivadas, necessárias para
+   cobrir estados e componentes que a arte não especifica.
+   ========================================================================= */
+
+:root {
+  color-scheme: light;
+  /* ---------------------------------------------------------------- MARCA */
+  --paysi-primaria: #1D6BD8;        /* [ARTE] Primária */
+  --paysi-pressionado: #1858B4;     /* [ARTE] Pressionado */
+  --paysi-secundaria: #7FAFEE;      /* [ARTE] Secundária */
+  --paysi-texto: #14181F;           /* [ARTE] Texto principal */
+  --paysi-texto-secundario: #5C6472;/* [ARTE] Texto secundário */
+  --paysi-linha: #E6E9EF;           /* [ARTE] Linha */
+  --paysi-fundo-suave: #F7F9FC;     /* [ARTE] Fundo suave */
+
+  /* ------------------------------------------------- RAMPA AZUL      [EXT] */
+  --blue-50:  #F0F5FD;
+  --blue-100: #DCE8FA;
+  --blue-200: #BBD2F6;
+  --blue-300: #7FAFEE;  /* = Secundária */
+  --blue-400: #4A8AE3;
+  --blue-500: #1D6BD8;  /* = Primária */
+  --blue-600: #1858B4;  /* = Pressionado */
+  --blue-700: #144890;
+  --blue-800: #12386C;
+  --blue-900: #0F2A4E;
+
+  /* ------------------------------------------------- RAMPA NEUTRA    [EXT] */
+  --gray-0:   #FFFFFF;
+  --gray-25:  #F7F9FC;  /* = Fundo suave */
+  --gray-50:  #F1F4F9;
+  --gray-100: #E6E9EF;  /* = Linha */
+  --gray-200: #D3D8E2;
+  --gray-300: #B4BCCA;
+  --gray-400: #8B94A5;
+  --gray-500: #5C6472;  /* = Texto secundário */
+  --gray-600: #474E5C;
+  --gray-700: #343A46;
+  --gray-800: #23282F;
+  --gray-900: #14181F;  /* = Texto principal */
+
+  /* ------------------------------------------------- ESTADOS         [EXT] */
+  --sucesso: #067A55;
+  --sucesso-superficie: #E8F6F0;
+  --atencao: #8A5A00;
+  --atencao-superficie: #FCF3E3;
+  --erro: #C0362E;
+  --erro-superficie: #FDEDEB;
+  --info: #1858B4;
+  --info-superficie: #EAF1FC;
+
+  /* ------------------------------------------------- SEMÂNTICOS      [EXT] */
+  --fundo-pagina: #FFFFFF;
+  --fundo-elevado: #FFFFFF;
+  --fundo-secao: var(--paysi-fundo-suave);
+  --fundo-inverso: var(--paysi-texto);
+
+  --texto-titulo: var(--paysi-texto);
+  --texto-corpo: var(--paysi-texto);
+  --texto-apoio: var(--paysi-texto-secundario);
+  --texto-desabilitado: var(--gray-400);
+  --texto-sobre-primaria: #FFFFFF;
+  --texto-link: var(--paysi-pressionado);
+
+  --borda: var(--paysi-linha);
+  --borda-forte: var(--gray-200);
+  --borda-foco: var(--paysi-primaria);
+
+  --acao-primaria: var(--paysi-primaria);
+  --acao-primaria-hover: #1A61C6;
+  --acao-primaria-ativa: var(--paysi-pressionado);
+  --acao-primaria-desabilitada: var(--gray-100);
+
+  /* ------------------------------------------------------------ TIPOGRAFIA */
+  --fonte-marca: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont,
+                 "SF Pro Display", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fonte-texto: var(--fonte-marca);
+  --fonte-numerica: "Inter", "SF Mono", ui-monospace, "JetBrains Mono",
+                    Menlo, Consolas, monospace;
+
+  --peso-forte: 600;   /* [ARTE] */
+  --peso-medio: 500;   /* [ARTE] */
+  --peso-normal: 400;  /* [ARTE] */
+
+  --texto-display: 700 3rem/1.1 var(--fonte-marca);      /* 48px */
+  --texto-h1: 600 2rem/1.2 var(--fonte-marca);           /* 32px */
+  --texto-h2: 600 1.5rem/1.3 var(--fonte-marca);         /* 24px */
+  --texto-h3: 600 1.25rem/1.4 var(--fonte-marca);        /* 20px */
+  --texto-corpo-g: 400 1.125rem/1.6 var(--fonte-texto);  /* 18px */
+  --texto-corpo-p: 400 1rem/1.5 var(--fonte-texto);      /* 16px */
+  --texto-apoio-p: 400 0.875rem/1.5 var(--fonte-texto);  /* 14px */
+  --texto-legenda: 500 0.75rem/1.4 var(--fonte-texto);   /* 12px */
+
+  --tracking-display: -0.02em;
+  --tracking-titulo: -0.015em;
+  --tracking-corpo: 0;
+  --tracking-rotulo: 0.08em;
+
+  /* ------------------------------------------------------------- ESPAÇAMENTO */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 20px;
+  --esp-6: 24px;
+  --esp-8: 32px;
+  --esp-10: 40px;
+  --esp-12: 48px;
+  --esp-16: 64px;
+  --esp-20: 80px;
+  --esp-24: 96px;
+
+  /* ------------------------------------------------------------------ RAIO */
+  --raio-xs: 4px;
+  --raio-sm: 8px;
+  --raio-md: 12px;
+  --raio-lg: 16px;
+  --raio-xl: 24px;
+  --raio-total: 999px;
+
+  /* -------------------------------------------------------------- ELEVAÇÃO */
+  --sombra-sm: 0 1px 2px rgba(20, 24, 31, 0.06);
+  --sombra-md: 0 2px 8px rgba(20, 24, 31, 0.08);
+  --sombra-lg: 0 8px 24px rgba(20, 24, 31, 0.10);
+  --sombra-xl: 0 16px 48px rgba(20, 24, 31, 0.12);
+  --anel-foco: 0 0 0 3px rgba(29, 107, 216, 0.32);
+
+  /* ---------------------------------------------------------------- MOVIMENTO */
+  --duracao-rapida: 120ms;
+  --duracao-padrao: 200ms;
+  --duracao-lenta: 320ms;
+  --curva-padrao: cubic-bezier(0.2, 0, 0.2, 1);
+  --curva-entrada: cubic-bezier(0, 0, 0.2, 1);
+  --curva-saida: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* ============================================================ TEMA ESCURO
+   [EXT] Derivado da "Versão negativa" da arte aprovada.
+   ========================================================================= */
+[data-tema="escuro"] {
+  color-scheme: dark;
+  --fundo-pagina: #14181F;
+  --fundo-elevado: #1C222C;
+  --fundo-secao: #10141A;
+  --fundo-inverso: #FFFFFF;
+
+  --texto-titulo: #FFFFFF;
+  --texto-corpo: #EDEFF3;
+  --texto-apoio: #A7AFBD;
+  --texto-desabilitado: #5C6472;
+  --texto-link: var(--paysi-secundaria);
+
+  --borda: #2A313C;
+  --borda-forte: #3A4350;
+
+  --acao-primaria: #3B82E8;
+  --acao-primaria-hover: #5595EE;
+  --acao-primaria-ativa: var(--paysi-primaria);
+  --acao-primaria-desabilitada: #2A313C;
+
+  --sucesso: #4ECFA1;
+  --sucesso-superficie: #0E2A22;
+  --atencao: #E8B75A;
+  --atencao-superficie: #2B2113;
+  --erro: #F08B84;
+  --erro-superficie: #2E1614;
+  --info: var(--paysi-secundaria);
+  --info-superficie: #14243A;
+
+  --anel-foco: 0 0 0 3px rgba(127, 175, 238, 0.40);
+}
+
+/* ============================================================ UTILITÁRIOS */
+
+/* Valores monetários: alinhamento em colunas e leitura estável */
+.paysi-valor {
+  font-family: var(--fonte-numerica);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  letter-spacing: 0;
+}
+
+/* Rótulo/eyebrow, como os títulos numerados da arte */
+.paysi-rotulo {
+  font: 600 0.75rem/1.2 var(--fonte-marca);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--paysi-primaria);
+}
+
+/* Foco visível padrão — obrigatório em todos os alvos interativos */
+.paysi-focavel:focus-visible {
+  outline: 2px solid var(--borda-foco);
+  outline-offset: 2px;
+  box-shadow: var(--anel-foco);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duracao-rapida: 0ms;
+    --duracao-padrao: 0ms;
+    --duracao-lenta: 0ms;
+  }
+}
+
+
+/* ===== BASE ===== */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:88px}
+body{
+  margin:0;background:var(--fundo-pagina);color:var(--texto-corpo);
+  font:var(--texto-corpo-p);letter-spacing:var(--tracking-corpo);
+  -webkit-font-smoothing:antialiased;
+  transition:background var(--duracao-padrao) var(--curva-padrao),color var(--duracao-padrao) var(--curva-padrao);
+}
+:focus-visible{outline:2px solid var(--borda-foco);outline-offset:3px;border-radius:var(--raio-xs)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 var(--esp-6)}
+
+/* ===== TOPO ===== */
+.topo{
+  position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--fundo-pagina) 88%,transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--borda);
+}
+.topo-in{display:flex;align-items:center;gap:var(--esp-4);height:64px}
+.topo .marca{height:26px;width:auto;flex:none}
+[data-tema="claro"] .marca-neg{display:none}
+[data-tema="escuro"] .marca-pos{display:none}
+.topo .versao{font:var(--texto-legenda);color:var(--texto-apoio);white-space:nowrap}
+.topo nav{margin-left:auto;display:flex;gap:var(--esp-1);overflow-x:auto;scrollbar-width:none}
+.topo nav::-webkit-scrollbar{display:none}
+.topo nav a{
+  font:600 .8125rem/1 var(--fonte-marca);color:var(--texto-apoio);text-decoration:none;
+  padding:8px 10px;border-radius:var(--raio-sm);white-space:nowrap;
+  transition:color var(--duracao-rapida) var(--curva-padrao),background var(--duracao-rapida) var(--curva-padrao);
+}
+.topo nav a:hover{color:var(--paysi-primaria);background:var(--fundo-secao)}
+.tema-btn{
+  flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--borda);
+  background:var(--fundo-elevado);color:var(--texto-apoio);border-radius:var(--raio-total);
+  padding:7px 13px;font:600 .75rem/1 var(--fonte-marca);cursor:pointer;
+  transition:border-color var(--duracao-rapida) var(--curva-padrao),color var(--duracao-rapida) var(--curva-padrao);
+}
+.tema-btn:hover{border-color:var(--paysi-primaria);color:var(--paysi-primaria)}
+
+/* ===== CAPA ===== */
+.capa{padding:var(--esp-24) 0 var(--esp-16);border-bottom:1px solid var(--borda)}
+.selo{
+  display:inline-flex;align-items:center;gap:7px;border:1px solid var(--paysi-primaria);
+  color:var(--paysi-primaria);border-radius:var(--raio-total);padding:6px 14px;
+  font:600 .75rem/1 var(--fonte-marca);letter-spacing:var(--tracking-rotulo);text-transform:uppercase;
+}
+.capa h1{
+  font:var(--texto-display);letter-spacing:var(--tracking-display);color:var(--texto-titulo);
+  margin:var(--esp-6) 0 var(--esp-4);max-width:16ch;
+}
+.capa p{font:var(--texto-corpo-g);color:var(--texto-apoio);max-width:56ch;margin:0}
+.capa-meta{display:flex;flex-wrap:wrap;gap:var(--esp-8);margin-top:var(--esp-10)}
+.capa-meta div{min-width:132px}
+.capa-meta dt{font:var(--texto-legenda);color:var(--texto-apoio);margin-bottom:5px}
+.capa-meta dd{margin:0;font:600 .9375rem/1.3 var(--fonte-marca);color:var(--texto-titulo)}
+
+/* ===== SEÇÕES ===== */
+section{padding:var(--esp-20) 0;border-bottom:1px solid var(--borda)}
+.cabeca{margin-bottom:var(--esp-10)}
+.cabeca .num{
+  display:inline-block;font:600 .8125rem/1 var(--fonte-marca);color:var(--paysi-primaria);
+  letter-spacing:var(--tracking-rotulo);border-bottom:2px solid var(--paysi-primaria);
+  padding-bottom:7px;margin-bottom:var(--esp-5);
+}
+.cabeca h2{font:var(--texto-h1);letter-spacing:var(--tracking-titulo);color:var(--texto-titulo);margin:0 0 var(--esp-3)}
+.cabeca p{margin:0;color:var(--texto-apoio);max-width:64ch;font:var(--texto-corpo-p)}
+h3{font:var(--texto-h3);color:var(--texto-titulo);margin:var(--esp-12) 0 var(--esp-4)}
+h3:first-of-type{margin-top:0}
+.nota{font:var(--texto-apoio-p);color:var(--texto-apoio);max-width:66ch}
+.tag{
+  display:inline-block;font:600 .625rem/1 var(--fonte-marca);letter-spacing:.06em;
+  text-transform:uppercase;padding:4px 7px;border-radius:var(--raio-xs);vertical-align:2px;margin-left:8px;
+}
+.tag-arte{background:var(--info-superficie);color:var(--info)}
+.tag-ext{background:var(--fundo-secao);color:var(--texto-apoio);border:1px solid var(--borda)}
+
+/* ===== PALCOS DE LOGO ===== */
+.palco{
+  border:1px solid #E6E9EF;border-radius:var(--raio-lg);background:#FFFFFF;color:#14181F;
+  display:grid;place-items:center;padding:var(--esp-12) var(--esp-6);position:relative;overflow:hidden;
+}
+.palco--escuro{background:#14181F;border-color:#14181F;color:#FFFFFF}
+.palco--suave{background:#F7F9FC}
+.palco svg{max-width:100%;height:auto;display:block}
+.legenda{font:var(--texto-legenda);color:var(--texto-apoio);margin-top:var(--esp-3);display:flex;justify-content:space-between;gap:var(--esp-3)}
+.legenda code{font:500 .6875rem/1 var(--fonte-numerica);color:var(--texto-apoio)}
+.grade{display:grid;gap:var(--esp-6)}
+.grade-2{grid-template-columns:repeat(2,1fr)}
+.grade-3{grid-template-columns:repeat(3,1fr)}
+.grade-4{grid-template-columns:repeat(4,1fr)}
+.logo-principal{width:min(420px,80%)}
+.logo-md{width:min(230px,88%)}
+.simbolo-md{height:104px;width:auto}
+
+/* ===== CONSTRUÇÃO / ÁREA DE PROTEÇÃO ===== */
+.construcao{position:relative;display:inline-block;padding:0}
+.construcao .marcas{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity var(--duracao-padrao) var(--curva-padrao)}
+.construcao.ativo .marcas{opacity:1}
+.construcao .marcas span{position:absolute;background:var(--paysi-secundaria)}
+.construcao .marcas .protecao{
+  position:absolute;border:1.5px dashed var(--paysi-primaria);border-radius:var(--raio-xs);background:rgba(29,107,216,.05);
+}
+.construcao .marcas .x{
+  position:absolute;font:600 .625rem/1 var(--fonte-marca);color:var(--paysi-primaria);
+  background:#F7F9FC;padding:3px 6px;border-radius:3px;
+}
+.construcao .marcas .protecao{top:-24.4%;bottom:-24.4%;left:-8.19%;right:-8.19%}
+.construcao .marcas .x-esq{left:-4.1%;top:50%;transform:translate(-50%,-50%)}
+.construcao .marcas .x-topo{top:-12.2%;left:50%;transform:translate(-50%,-50%)}
+.interruptor{
+  display:inline-flex;align-items:center;gap:9px;cursor:pointer;font:var(--texto-apoio-p);
+  color:var(--texto-apoio);user-select:none;margin-top:var(--esp-5);
+}
+.interruptor input{position:absolute;opacity:0;width:0;height:0}
+.pista{
+  width:38px;height:22px;border-radius:var(--raio-total);background:var(--gray-200);position:relative;flex:none;
+  transition:background var(--duracao-padrao) var(--curva-padrao);
+}
+.pista::after{
+  content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;
+  box-shadow:var(--sombra-sm);transition:transform var(--duracao-padrao) var(--curva-padrao);
+}
+.interruptor input:checked + .pista{background:var(--paysi-primaria)}
+.interruptor input:checked + .pista::after{transform:translateX(16px)}
+.interruptor input:focus-visible + .pista{box-shadow:var(--anel-foco)}
+
+/* ===== TAMANHOS MÍNIMOS ===== */
+.escadinha{display:flex;align-items:flex-end;gap:var(--esp-8);flex-wrap:wrap}
+.escadinha figure{margin:0;text-align:center}
+.escadinha svg{display:block;height:auto}
+
+/* ===== NÃO FAÇA ===== */
+.proibido{list-style:none;padding:0;margin:0;display:grid;gap:var(--esp-2);grid-template-columns:repeat(2,1fr)}
+.proibido li{
+  display:flex;gap:10px;align-items:flex-start;padding:var(--esp-3) var(--esp-4);
+  background:var(--erro-superficie);border-radius:var(--raio-sm);font:var(--texto-apoio-p);color:var(--texto-corpo);
+}
+.proibido li::before{content:"×";color:var(--erro);font-weight:700;font-size:1.05rem;line-height:1.2;flex:none}
+
+/* ===== CORES ===== */
+.amostras{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--esp-4)}
+.amostra{
+  border:1px solid var(--borda);border-radius:var(--raio-md);overflow:hidden;background:var(--fundo-elevado);
+  text-align:left;padding:0;font:inherit;cursor:pointer;width:100%;
+  transition:transform var(--duracao-rapida) var(--curva-padrao),box-shadow var(--duracao-rapida) var(--curva-padrao);
+}
+.amostra:hover{transform:translateY(-2px);box-shadow:var(--sombra-md)}
+.amostra .chapa{height:88px;display:block}
+.amostra .info{padding:var(--esp-3) var(--esp-4) var(--esp-4)}
+.amostra .nome{font:600 .875rem/1.3 var(--fonte-marca);color:var(--texto-titulo);display:block}
+.amostra .hex{font:500 .75rem/1.5 var(--fonte-numerica);color:var(--texto-apoio);display:block;margin-top:3px}
+.amostra .papel{font:var(--texto-legenda);color:var(--texto-apoio);display:block;margin-top:6px}
+.rampa{display:flex;border-radius:var(--raio-md);overflow:hidden;border:1px solid var(--borda)}
+.rampa div{flex:1;height:76px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;
+  font:600 .625rem/1 var(--fonte-numerica)}
+.estados{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--esp-4)}
+.estado{border-radius:var(--raio-md);padding:var(--esp-4);border:1px solid transparent}
+.estado strong{display:flex;align-items:center;gap:7px;font:600 .875rem/1.3 var(--fonte-marca)}
+.estado span{display:block;font:500 .75rem/1.5 var(--fonte-numerica);margin-top:6px;opacity:.85}
+.estado p{margin:8px 0 0;font:var(--texto-legenda);opacity:.9}
+
+/* ===== TABELAS ===== */
+table{width:100%;border-collapse:collapse;font:var(--texto-apoio-p)}
+th{
+  text-align:left;font:600 .75rem/1.2 var(--fonte-marca);letter-spacing:var(--tracking-rotulo);
+  text-transform:uppercase;color:var(--texto-apoio);padding:0 var(--esp-3) var(--esp-3);border-bottom:1px solid var(--borda);
+}
+td{padding:var(--esp-3);border-bottom:1px solid var(--borda);color:var(--texto-corpo);vertical-align:middle}
+td:first-child,th:first-child{padding-left:0}
+td code{font:500 .8125rem/1 var(--fonte-numerica);color:var(--texto-titulo)}
+.pontos{font-variant-numeric:tabular-nums;font-weight:600}
+.selo-aa,.selo-aaa,.selo-nao{
+  display:inline-block;font:600 .6875rem/1 var(--fonte-marca);padding:4px 8px;border-radius:var(--raio-xs);
+}
+.selo-aaa{background:var(--sucesso-superficie);color:var(--sucesso)}
+.selo-aa{background:var(--info-superficie);color:var(--info)}
+.selo-nao{background:var(--erro-superficie);color:var(--erro)}
+
+/* ===== TIPOGRAFIA ===== */
+.espec{border-bottom:1px solid var(--borda);padding:var(--esp-5) 0;display:flex;align-items:baseline;gap:var(--esp-6);flex-wrap:wrap}
+.espec:last-child{border-bottom:0}
+.espec .amostra-txt{color:var(--texto-titulo);flex:1;min-width:260px}
+.espec .dados{font:500 .75rem/1.5 var(--fonte-numerica);color:var(--texto-apoio);white-space:nowrap}
+.pesos{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--esp-4)}
+.peso{border:1px solid var(--borda);border-radius:var(--raio-md);padding:var(--esp-5);background:var(--fundo-elevado)}
+.peso .glifo{font-size:2.75rem;line-height:1.1;color:var(--texto-titulo);letter-spacing:-0.02em}
+.peso .rot{font:var(--texto-legenda);color:var(--texto-apoio);margin-top:var(--esp-3)}
+.extrato{border:1px solid var(--borda);border-radius:var(--raio-md);overflow:hidden;background:var(--fundo-elevado)}
+.extrato table{font:var(--texto-apoio-p)}
+.extrato th{padding:var(--esp-3) var(--esp-4)}
+.extrato td{padding:var(--esp-3) var(--esp-4)}
+.extrato td:last-child,.extrato th:last-child{text-align:right;padding-right:var(--esp-4)}
+.extrato td:first-child{padding-left:var(--esp-4)}
+
+/* ===== INTERFACE ===== */
+.btn{
+  font:600 .9375rem/1 var(--fonte-marca);border:1px solid transparent;border-radius:var(--raio-md);
+  padding:13px 20px;cursor:pointer;min-height:44px;
+  transition:background var(--duracao-rapida) var(--curva-padrao),color var(--duracao-rapida) var(--curva-padrao),border-color var(--duracao-rapida) var(--curva-padrao);
+}
+.btn-primario{background:var(--acao-primaria);color:var(--texto-sobre-primaria)}
+.btn-primario:hover{background:var(--acao-primaria-hover)}
+.btn-primario:active{background:var(--acao-primaria-ativa)}
+.btn-secundario{background:transparent;color:var(--acao-primaria);border-color:var(--borda-forte)}
+.btn-secundario:hover{border-color:var(--acao-primaria);background:var(--info-superficie)}
+.btn-texto{background:transparent;color:var(--acao-primaria);padding:13px 8px}
+.btn-texto:hover{text-decoration:underline}
+.btn:disabled{background:var(--acao-primaria-desabilitada);color:var(--texto-desabilitado);cursor:not-allowed;border-color:transparent}
+.linha-btn{display:flex;gap:var(--esp-3);flex-wrap:wrap;align-items:center}
+.chips{display:flex;gap:var(--esp-2);flex-wrap:wrap}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;border-radius:var(--raio-total);padding:6px 13px;
+  font:600 .75rem/1.3 var(--fonte-marca);
+}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.raios,.elevacoes{display:grid;grid-template-columns:repeat(6,1fr);gap:var(--esp-4)}
+.elevacoes{grid-template-columns:repeat(4,1fr)}
+.raio-item,.elev-item{text-align:center}
+.raio-caixa{height:64px;background:var(--paysi-secundaria);margin-bottom:var(--esp-2)}
+.elev-caixa{height:64px;background:var(--fundo-elevado);border-radius:var(--raio-md);margin-bottom:var(--esp-2);border:1px solid var(--borda)}
+.raio-item small,.elev-item small,.esp-item small{font:500 .6875rem/1.4 var(--fonte-numerica);color:var(--texto-apoio);display:block}
+.espacos{display:grid;gap:6px;max-width:560px}
+.esp-item{display:flex;align-items:center;gap:var(--esp-4)}
+.esp-item small{width:34px;text-align:right;flex:none;margin:0}
+.esp-barra{background:var(--paysi-primaria);border-radius:2px;height:13px;flex:none}
+
+/* ===== VOZ ===== */
+.voz{display:grid;grid-template-columns:1fr 1fr;gap:var(--esp-4)}
+.voz-col{border:1px solid var(--borda);border-radius:var(--raio-lg);padding:var(--esp-6);background:var(--fundo-elevado)}
+.voz-col h4{margin:0 0 var(--esp-4);font:600 .8125rem/1 var(--fonte-marca);letter-spacing:var(--tracking-rotulo);text-transform:uppercase}
+.voz-col.sim h4{color:var(--sucesso)}
+.voz-col.nao h4{color:var(--erro)}
+.voz-col ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--esp-3)}
+.voz-col li{font:var(--texto-apoio-p);color:var(--texto-corpo);padding-left:var(--esp-5);position:relative}
+.voz-col.sim li::before{content:"✓";position:absolute;left:0;color:var(--sucesso);font-weight:700}
+.voz-col.nao li::before{content:"×";position:absolute;left:0;color:var(--erro);font-weight:700;font-size:1.05rem;line-height:1.35}
+
+/* ===== ARQUIVOS ===== */
+.arquivos{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--esp-2)}
+.arquivo{
+  display:flex;align-items:center;gap:var(--esp-3);padding:var(--esp-3) var(--esp-4);
+  border:1px solid var(--borda);border-radius:var(--raio-sm);background:var(--fundo-elevado);
+}
+.arquivo code{font:500 .8125rem/1.4 var(--fonte-numerica);color:var(--texto-titulo)}
+.arquivo span{font:var(--texto-legenda);color:var(--texto-apoio);margin-left:auto;text-align:right}
+
+/* ===== RODAPÉ ===== */
+footer{padding:var(--esp-12) 0 var(--esp-20)}
+.rodape-in{display:flex;align-items:center;gap:var(--esp-4);flex-wrap:wrap}
+.rodape-in svg{height:22px;width:auto}
+.rodape-in p{margin:0;font:var(--texto-apoio-p);color:var(--texto-apoio)}
+.rodape-in .dir{margin-left:auto;font:var(--texto-legenda);color:var(--texto-apoio)}
+
+/* ===== TOAST ===== */
+#toast{
+  position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--fundo-inverso);color:var(--fundo-pagina);padding:11px 18px;border-radius:var(--raio-total);
+  font:600 .8125rem/1 var(--fonte-marca);z-index:60;box-shadow:var(--sombra-lg);
+  transition:opacity var(--duracao-padrao) var(--curva-padrao),transform var(--duracao-padrao) var(--curva-padrao);
+}
+#toast.ver{opacity:1;transform:translate(-50%,0)}
+
+/* ===== RESPONSIVO ===== */
+@media (max-width:860px){
+  .grade-4{grid-template-columns:repeat(2,1fr)}
+  .grade-3{grid-template-columns:1fr}
+  .amostras{grid-template-columns:repeat(2,1fr)}
+  .estados{grid-template-columns:repeat(2,1fr)}
+  .raios{grid-template-columns:repeat(3,1fr)}
+  .elevacoes{grid-template-columns:repeat(2,1fr)}
+  .pesos{grid-template-columns:1fr}
+  .topo nav{display:none}
+}
+@media (max-width:620px){
+  .capa h1{font-size:2.25rem}
+  .grade-2,.voz,.proibido,.arquivos{grid-template-columns:1fr}
+  .amostras{grid-template-columns:1fr}
+  .estados{grid-template-columns:1fr}
+  section{padding:var(--esp-12) 0}
+}
+@media print{
+  .topo,.tema-btn,#toast,.interruptor{display:none}
+  section{break-inside:avoid;border-bottom:1px solid #ddd}
+}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="wrap topo-in">
+    <svg class="marca marca-pos" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.48 162.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura principal</title>
+  <path fill="#1D6BD8" fill-rule="evenodd" transform="translate(0 0.00) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#14181F" transform="translate(156.76 129.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg><svg class="marca marca-neg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.48 162.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura negativa</title>
+  <path fill="#FFFFFF" fill-rule="evenodd" transform="translate(0 0.00) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#FFFFFF" transform="translate(156.76 129.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg>
+    <span class="versao">Manual v1.0</span>
+    <nav aria-label="Seções">
+      <a href="#conceito">Conceito</a>
+      <a href="#assinatura">Assinatura</a>
+      <a href="#cores">Cores</a>
+      <a href="#tipografia">Tipografia</a>
+      <a href="#interface">Interface</a>
+      <a href="#voz">Voz</a>
+      <a href="#arquivos">Arquivos</a>
+    </nav>
+    <button class="tema-btn" id="tema" aria-pressed="false">Ver no escuro</button>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+
+  <div class="capa">
+    <span class="selo">Direção aprovada</span>
+    <h1>Paysi — Identidade Visual</h1>
+    <p>Sistema de identidade para o ecossistema de pagamentos Paysi. Este manual documenta a direção aprovada e define as regras que faltavam para aplicar a marca em produto, campanha e impresso sem improviso.</p>
+    <dl class="capa-meta">
+      <div><dt>Versão</dt><dd>1.0</dd></div>
+      <div><dt>Cor da marca</dt><dd>#1D6BD8</dd></div>
+      <div><dt>Tipografia</dt><dd>Inter / Segoe UI</dd></div>
+      <div><dt>Assinatura verbal</dt><dd>Pagamentos inteligentes<br>para o seu negócio</dd></div>
+    </dl>
+  </div>
+
+  <!-- 1 CONCEITO -->
+  <section id="conceito">
+    <div class="cabeca">
+      <span class="num">01 · CONCEITO</span>
+      <h2>Uma letra que também é uma maquininha</h2>
+      <p>O símbolo une a inicial <strong>P</strong> à silhueta de um terminal POS. A haste do P é o corpo do aparelho; o bojo é a face com display e teclado.<span class="tag tag-arte">arte</span></p>
+    </div>
+    <div class="grade grade-2">
+      <div>
+        <div class="palco palco--suave"><div class="simbolo-md"><svg style="height:100%;width:auto;display:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 100" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; s&#237;mbolo</title>
+  <path fill="#1D6BD8" fill-rule="evenodd" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+</svg></div></div>
+        <div class="legenda"><span>Símbolo</span><code>72 : 100</code></div>
+      </div>
+      <div style="align-self:center">
+        <h3 style="margin-top:0">Três leituras ao mesmo tempo</h3>
+        <p class="nota"><strong>Categoria.</strong> Reconhecimento imediato do universo de pagamentos, sem precisar de explicação.</p>
+        <p class="nota"><strong>Inicial.</strong> A marca continua legível como letra — é o que sustenta o símbolo isolado como ícone de app.</p>
+        <p class="nota"><strong>Ponto de contato.</strong> A maquininha é onde o lojista encontra a Paysi todo dia. O símbolo é o produto.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 ASSINATURA -->
+  <section id="assinatura">
+    <div class="cabeca">
+      <span class="num">02 · ASSINATURA</span>
+      <h2>Assinatura e construção</h2>
+      <p>Símbolo à esquerda, logotipo à direita. É a versão padrão — na dúvida, use esta. O logotipo está em curvas: não depende de fonte instalada e não deve ser redigitado.</p>
+    </div>
+
+    <div class="palco"><div class="logo-principal"><svg style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.48 162.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura principal</title>
+  <path fill="#1D6BD8" fill-rule="evenodd" transform="translate(0 0.00) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#14181F" transform="translate(156.76 129.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg></div></div>
+    <div class="legenda"><span>Assinatura principal, positiva<span class="tag tag-arte">arte</span></span><code>paysi-logo-horizontal.svg</code></div>
+
+    <h3>Grade de construção e área de proteção<span class="tag tag-ext">extensão</span></h3>
+    <p class="nota">A unidade é a altura de capitular <strong>H</strong> — a altura do “P”. O símbolo mede 1,58 H, o respiro entre símbolo e logotipo é 0,43 H e a área de proteção é <strong>X = altura do símbolo ÷ 4</strong> nos quatro lados. Nada entra nessa margem: texto, imagem, borda, dobra ou recorte.</p>
+
+    <div class="palco palco--suave" style="padding:var(--esp-16) var(--esp-6)">
+      <div class="construcao" id="construcao">
+        <div class="logo-principal" style="width:min(380px,72vw)"><svg style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.48 162.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura principal</title>
+  <path fill="#1D6BD8" fill-rule="evenodd" transform="translate(0 0.00) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#14181F" transform="translate(156.76 129.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg></div>
+        <div class="marcas" aria-hidden="true">
+          <div class="protecao"></div>
+          <span class="x x-esq">X</span>
+          <span class="x x-topo">X</span>
+        </div>
+      </div>
+    </div>
+    <label class="interruptor">
+      <input type="checkbox" id="tgConstrucao">
+      <span class="pista"></span>
+      <span>Mostrar área de proteção</span>
+    </label>
+
+    <h3>Versões</h3>
+    <div class="grade grade-3">
+      <div>
+        <div class="palco palco--escuro" style="min-height:150px"><div class="logo-md"><svg style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.48 162.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura negativa</title>
+  <path fill="#FFFFFF" fill-rule="evenodd" transform="translate(0 0.00) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#FFFFFF" transform="translate(156.76 129.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg></div></div>
+        <div class="legenda"><span>Negativa<span class="tag tag-arte">arte</span></span></div>
+      </div>
+      <div>
+        <div class="palco" style="min-height:150px"><div style="width:118px"><svg style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; &#237;cone de aplicativo</title>
+  <rect width="512" height="512" rx="114" fill="#FFFFFF"/>
+  <path fill="#1D6BD8" fill-rule="evenodd" transform="translate(134.35 87.04) scale(3.37920)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+</svg></div></div>
+        <div class="legenda"><span>App icon<span class="tag tag-arte">arte</span></span></div>
+      </div>
+      <div>
+        <div class="palco palco--suave" style="min-height:150px"><div style="width:118px"><svg style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 325.72 331.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura vertical</title>
+  <path fill="#1D6BD8" fill-rule="evenodd" transform="translate(105.98 0) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#14181F" transform="translate(0.00 298.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg></div></div>
+        <div class="legenda"><span>Vertical<span class="tag tag-ext">extensão</span></span></div>
+      </div>
+    </div>
+
+    <h3>Tamanhos mínimos<span class="tag tag-ext">extensão</span></h3>
+    <p class="nota">Abaixo de 96 px de largura, troque a assinatura horizontal pelo símbolo isolado — o logotipo fecha e vira mancha.</p>
+    <div class="palco palco--suave" style="padding:var(--esp-10) var(--esp-6)">
+      <div class="escadinha">
+        <figure><div style="width:220px"><svg style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.48 162.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura principal</title>
+  <path fill="#1D6BD8" fill-rule="evenodd" transform="translate(0 0.00) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#14181F" transform="translate(156.76 129.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg></div><figcaption class="legenda" style="justify-content:center">220 px · confortável</figcaption></figure>
+        <figure><div style="width:96px"><svg style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.48 162.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura principal</title>
+  <path fill="#1D6BD8" fill-rule="evenodd" transform="translate(0 0.00) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#14181F" transform="translate(156.76 129.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg></div><figcaption class="legenda" style="justify-content:center">96 px · mínimo</figcaption></figure>
+        <figure><div style="width:24px"><svg style="height:100%;width:auto;display:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 100" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; s&#237;mbolo</title>
+  <path fill="#1D6BD8" fill-rule="evenodd" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+</svg></div><figcaption class="legenda" style="justify-content:center">24 px · só símbolo</figcaption></figure>
+      </div>
+    </div>
+
+    <h3>Não faça</h3>
+    <ul class="proibido">
+      <li>Recolorir fora da paleta oficial</li>
+      <li>Aplicar gradiente, sombra, contorno ou brilho</li>
+      <li>Distorcer, condensar, esticar ou inclinar</li>
+      <li>Rotacionar em qualquer ângulo</li>
+      <li>Redigitar “Paysi” com fonte de sistema</li>
+      <li>Alterar o respiro entre símbolo e logotipo</li>
+      <li>Aplicar sobre foto ou padrão sem contraste</li>
+      <li>Encaixar em caixa ou moldura não prevista</li>
+      <li>Escrever PAYSI, paysi ou PaySi — a grafia é <strong>Paysi</strong></li>
+      <li>Usar símbolo azul sobre fundo azul de baixo contraste</li>
+    </ul>
+  </section>
+
+  <!-- 3 CORES -->
+  <section id="cores">
+    <div class="cabeca">
+      <span class="num">03 · CORES</span>
+      <h2>Paleta</h2>
+      <p>Sete cores num único eixo azul frio, entre 214° e 220°. Nenhuma destoa de temperatura — é isso que dá a coesão do sistema. Clique para copiar o HEX.</p>
+    </div>
+
+    <div class="amostras"><button class="amostra" data-hex="#1D6BD8" title="Copiar #1D6BD8"><span class="chapa" style="background:#1D6BD8"></span><span class="info"><span class="nome">Primária</span><span class="hex">#1D6BD8</span><span class="papel">Ações primárias, símbolo, destaques</span></span></button><button class="amostra" data-hex="#1858B4" title="Copiar #1858B4"><span class="chapa" style="background:#1858B4"></span><span class="info"><span class="nome">Pressionado</span><span class="hex">#1858B4</span><span class="papel">Estado :active, links sobre fundo claro</span></span></button><button class="amostra" data-hex="#7FAFEE" title="Copiar #7FAFEE"><span class="chapa" style="background:#7FAFEE"></span><span class="info"><span class="nome">Secundária</span><span class="hex">#7FAFEE</span><span class="papel">Preenchimentos, gráficos, apoio</span></span></button><button class="amostra" data-hex="#14181F" title="Copiar #14181F"><span class="chapa" style="background:#14181F"></span><span class="info"><span class="nome">Texto principal</span><span class="hex">#14181F</span><span class="papel">Títulos e corpo de texto</span></span></button><button class="amostra" data-hex="#5C6472" title="Copiar #5C6472"><span class="chapa" style="background:#5C6472"></span><span class="info"><span class="nome">Texto secundário</span><span class="hex">#5C6472</span><span class="papel">Legendas, apoio, metadados</span></span></button><button class="amostra" data-hex="#E6E9EF" title="Copiar #E6E9EF"><span class="chapa" style="background:#E6E9EF"></span><span class="info"><span class="nome">Linha</span><span class="hex">#E6E9EF</span><span class="papel">Divisores, bordas, contorno de campo</span></span></button><button class="amostra" data-hex="#F7F9FC" title="Copiar #F7F9FC"><span class="chapa" style="background:#F7F9FC"></span><span class="info"><span class="nome">Fundo suave</span><span class="hex">#F7F9FC</span><span class="papel">Fundo de seção, cards discretos</span></span></button></div>
+
+    <h3>Proporção de uso<span class="tag tag-ext">extensão</span></h3>
+    <p class="nota"><strong>60 / 30 / 10.</strong> 60% neutros claros, 30% texto e estrutura, 10% azul de marca. O azul é o acento, não o fundo — quando tudo é azul, nada é ação.</p>
+    <div class="rampa" style="border-radius:var(--raio-md)">
+      <div style="flex:6;background:#FFFFFF;border-right:1px solid var(--borda);color:var(--texto-apoio)">60%</div>
+      <div style="flex:3;background:#14181F;color:#fff">30%</div>
+      <div style="flex:1;background:#1D6BD8;color:#fff">10%</div>
+    </div>
+
+    <h3>Rampas tonais<span class="tag tag-ext">extensão</span></h3>
+    <p class="nota">Escala completa a partir dos âncoras da arte. Azul: 300 = Secundária, 500 = Primária, 600 = Pressionado. Neutra: 25 = Fundo suave, 100 = Linha, 500 = Texto secundário, 900 = Texto principal.</p>
+    <div class="rampa"><div style="background:#F0F5FD;color:#14181F" title="#F0F5FD">50</div><div style="background:#DCE8FA;color:#14181F" title="#DCE8FA">100</div><div style="background:#BBD2F6;color:#14181F" title="#BBD2F6">200</div><div style="background:#7FAFEE;color:#14181F" title="#7FAFEE">300</div><div style="background:#4A8AE3;color:#FFFFFF" title="#4A8AE3">400</div><div style="background:#1D6BD8;color:#FFFFFF" title="#1D6BD8">500</div><div style="background:#1858B4;color:#FFFFFF" title="#1858B4">600</div><div style="background:#144890;color:#FFFFFF" title="#144890">700</div><div style="background:#12386C;color:#FFFFFF" title="#12386C">800</div><div style="background:#0F2A4E;color:#FFFFFF" title="#0F2A4E">900</div></div>
+    <div class="rampa" style="margin-top:var(--esp-3)"><div style="background:#FFFFFF;color:#14181F" title="#FFFFFF">0</div><div style="background:#F7F9FC;color:#14181F" title="#F7F9FC">25</div><div style="background:#F1F4F9;color:#14181F" title="#F1F4F9">50</div><div style="background:#E6E9EF;color:#14181F" title="#E6E9EF">100</div><div style="background:#D3D8E2;color:#14181F" title="#D3D8E2">200</div><div style="background:#B4BCCA;color:#14181F" title="#B4BCCA">300</div><div style="background:#8B94A5;color:#FFFFFF" title="#8B94A5">400</div><div style="background:#5C6472;color:#FFFFFF" title="#5C6472">500</div><div style="background:#474E5C;color:#FFFFFF" title="#474E5C">600</div><div style="background:#343A46;color:#FFFFFF" title="#343A46">700</div><div style="background:#23282F;color:#FFFFFF" title="#23282F">800</div><div style="background:#14181F;color:#FFFFFF" title="#14181F">900</div></div>
+
+    <h3>Cores de estado<span class="tag tag-ext">extensão</span></h3>
+    <p class="nota">A arte não define estados, e um produto de pagamentos não opera sem eles — a tela mais importante da Paysi é a que diz se a venda passou. Todas dessaturadas o suficiente para conviver com o azul da marca, e todas acima de 4,5:1.</p>
+    <div class="estados">
+      <div class="estado" style="background:var(--sucesso-superficie);color:var(--sucesso)"><strong>Sucesso</strong><span>#067A55</span><p>Pagamento aprovado, transferência concluída</p></div>
+      <div class="estado" style="background:var(--atencao-superficie);color:var(--atencao)"><strong>Atenção</strong><span>#8A5A00</span><p>Pendência, antecipação em análise</p></div>
+      <div class="estado" style="background:var(--erro-superficie);color:var(--erro)"><strong>Erro</strong><span>#C0362E</span><p>Transação recusada, maquininha offline</p></div>
+      <div class="estado" style="background:var(--info-superficie);color:var(--info)"><strong>Informação</strong><span>#1858B4</span><p>Avisos neutros, dicas, novidades</p></div>
+    </div>
+
+    <h3>Contraste verificado<span class="tag tag-ext">extensão</span></h3>
+    <table>
+      <thead><tr><th>Combinação</th><th>Razão</th><th>WCAG 2.1</th></tr></thead>
+      <tbody>
+        <tr><td><code>#14181F</code> sobre branco</td><td class="pontos">17,79:1</td><td><span class="selo-aaa">AAA</span></td></tr>
+        <tr><td><code>#5C6472</code> sobre branco</td><td class="pontos">5,96:1</td><td><span class="selo-aa">AA</span></td></tr>
+        <tr><td><code>#1D6BD8</code> sobre branco</td><td class="pontos">5,06:1</td><td><span class="selo-aa">AA</span></td></tr>
+        <tr><td>Branco sobre <code>#1D6BD8</code></td><td class="pontos">5,06:1</td><td><span class="selo-aa">AA</span></td></tr>
+        <tr><td>Branco sobre <code>#1858B4</code></td><td class="pontos">6,79:1</td><td><span class="selo-aa">AA</span></td></tr>
+        <tr><td><code>#7FAFEE</code> sobre branco</td><td class="pontos">2,27:1</td><td><span class="selo-nao">Reprovado</span></td></tr>
+        <tr><td><code>#7FAFEE</code> sobre <code>#14181F</code></td><td class="pontos">7,85:1</td><td><span class="selo-aaa">AAA</span></td></tr>
+        <tr><td><code>#E6E9EF</code> sobre branco</td><td class="pontos">1,22:1</td><td><span class="selo-nao">Só decorativo</span></td></tr>
+      </tbody>
+    </table>
+    <p class="nota" style="margin-top:var(--esp-5)"><strong>Três regras saem daí.</strong> A Secundária nunca recebe texto sobre fundo claro — ela brilha é sobre fundo escuro. Para link e texto pequeno em azul, prefira <code>#1858B4</code>. E nenhum estado é comunicado só por cor: aprovado, recusado e pendente sempre trazem ícone ou rótulo, porque vermelho/verde é justamente o eixo mais afetado pela deficiência de visão de cores.</p>
+  </section>
+
+  <!-- 4 TIPOGRAFIA -->
+  <section id="tipografia">
+    <div class="cabeca">
+      <span class="num">04 · TIPOGRAFIA</span>
+      <h2>Inter / Segoe UI</h2>
+      <p>Uma grotesca neutra de tela, com terminais retos e altura-x generosa. A pilha entrega Inter onde houver, cai para a nativa do sistema e mantém a mesma métrica visual.<span class="tag tag-arte">arte</span></p>
+    </div>
+
+    <div class="palco palco--suave" style="padding:var(--esp-12) var(--esp-8);place-items:start">
+      <div style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:700;letter-spacing:-0.02em;color:#14181F;line-height:1.05">AaBbCc0123</div>
+      <div style="font:400 1rem/1.9 var(--fonte-marca);color:#5C6472;margin-top:var(--esp-5);word-break:break-word">
+        ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz<br>0123456789 R$ % , . : ; ( ) — “ ” ç ã é í ô
+      </div>
+    </div>
+
+    <h3>Pesos<span class="tag tag-arte">arte</span></h3>
+    <p class="nota">Três pesos, e só. O 700 existe apenas dentro do logotipo, já vetorizado — usar 700 em interface quebra a hierarquia contra o 600.</p>
+    <div class="pesos">
+      <div class="peso"><div class="glifo" style="font-weight:600">Paysi</div><div class="rot"><strong>600 Semibold</strong> — títulos, rótulos, valores em destaque, botões</div></div>
+      <div class="peso"><div class="glifo" style="font-weight:500">Paysi</div><div class="rot"><strong>500 Medium</strong> — rótulos de campo, legendas com ênfase, tabs</div></div>
+      <div class="peso"><div class="glifo" style="font-weight:400">Paysi</div><div class="rot"><strong>400 Regular</strong> — corpo de texto, descrições, listas</div></div>
+    </div>
+
+    <h3>Escala<span class="tag tag-ext">extensão</span></h3>
+    <div>
+      <div class="espec"><div class="amostra-txt" style="font:700 3rem/1.1 var(--fonte-marca);letter-spacing:-0.02em">Pagamentos inteligentes</div><div class="dados">Display · 48 / 1,1 · 700 · −0,02em</div></div>
+      <div class="espec"><div class="amostra-txt" style="font:600 2rem/1.2 var(--fonte-marca);letter-spacing:-0.015em">Sua venda caiu na conta</div><div class="dados">H1 · 32 / 1,2 · 600 · −0,015em</div></div>
+      <div class="espec"><div class="amostra-txt" style="font:600 1.5rem/1.3 var(--fonte-marca);letter-spacing:-0.01em">Recebimentos da semana</div><div class="dados">H2 · 24 / 1,3 · 600 · −0,01em</div></div>
+      <div class="espec"><div class="amostra-txt" style="font:600 1.25rem/1.4 var(--fonte-marca)">Antecipar vendas</div><div class="dados">H3 · 20 / 1,4 · 600</div></div>
+      <div class="espec"><div class="amostra-txt" style="font:400 1.125rem/1.6 var(--fonte-marca)">Acompanhe cada transação da maquininha em tempo real.</div><div class="dados">Corpo grande · 18 / 1,6 · 400</div></div>
+      <div class="espec"><div class="amostra-txt" style="font:400 1rem/1.5 var(--fonte-marca)">Acompanhe cada transação da maquininha em tempo real.</div><div class="dados">Corpo · 16 / 1,5 · 400</div></div>
+      <div class="espec"><div class="amostra-txt" style="font:400 .875rem/1.5 var(--fonte-marca)">Taxa de 1,99% no débito, sem mensalidade.</div><div class="dados">Apoio · 14 / 1,5 · 400</div></div>
+      <div class="espec"><div class="amostra-txt" style="font:500 .75rem/1.4 var(--fonte-marca)">Atualizado há 2 minutos</div><div class="dados">Legenda · 12 / 1,4 · 500</div></div>
+      <div class="espec"><div class="amostra-txt" style="font:600 .75rem/1.2 var(--fonte-marca);letter-spacing:.08em;text-transform:uppercase">Resumo do dia</div><div class="dados">Rótulo · 12 / 1,2 · 600 · +0,08em</div></div>
+    </div>
+
+    <h3>Valores monetários<span class="tag tag-ext">extensão</span></h3>
+    <p class="nota">Crítico para uma marca de pagamentos. Toda cifra em tabela, extrato ou recibo usa algarismos tabulares — sem isso as colunas de R$ desalinham e o extrato parece quebrado. Formato brasileiro sempre: <code>R$ 1.234,56</code>.</p>
+    <div class="extrato">
+      <table>
+        <thead><tr><th>Transação</th><th>Status</th><th>Valor</th></tr></thead>
+        <tbody>
+          <tr><td>Crédito à vista · final 4821</td><td><span class="chip" style="background:var(--sucesso-superficie);color:var(--sucesso)">Aprovada</span></td><td class="paysi-valor" style="font-weight:600">R$ 1.284,90</td></tr>
+          <tr><td>Débito · final 0317</td><td><span class="chip" style="background:var(--sucesso-superficie);color:var(--sucesso)">Aprovada</span></td><td class="paysi-valor" style="font-weight:600">R$ 89,00</td></tr>
+          <tr><td>Pix · Paysi QR</td><td><span class="chip" style="background:var(--atencao-superficie);color:var(--atencao)">Pendente</span></td><td class="paysi-valor" style="font-weight:600">R$ 2.450,75</td></tr>
+          <tr><td>Crédito 3x · final 9902</td><td><span class="chip" style="background:var(--erro-superficie);color:var(--erro)">Recusada</span></td><td class="paysi-valor" style="font-weight:600">R$ 317,40</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5 INTERFACE -->
+  <section id="interface">
+    <div class="cabeca">
+      <span class="num">05 · INTERFACE</span>
+      <h2>Sistema de produto<span class="tag tag-ext">extensão</span></h2>
+      <p>Derivado da própria arte: cantos arredondados generosos, sombras curtas e frias, contornos de 1 px. Todos os valores estão em <code>paysi-tokens.css</code>.</p>
+    </div>
+
+    <h3>Ações</h3>
+    <div class="linha-btn">
+      <button class="btn btn-primario">Cobrar agora</button>
+      <button class="btn btn-secundario">Ver extrato</button>
+      <button class="btn btn-texto">Antecipar</button>
+      <button class="btn btn-primario" disabled>Indisponível</button>
+    </div>
+    <p class="nota" style="margin-top:var(--esp-4)">Alvo mínimo de 44 × 44 px e foco visível em todos eles — o app do lojista é usado em pé, com uma mão, no balcão. Navegue por tab para conferir o anel de foco.</p>
+
+    <h3>Raio de canto</h3>
+    <div class="raios">
+      <div class="raio-item"><div class="raio-caixa" style="border-radius:4px"></div><small>xs · 4</small></div>
+      <div class="raio-item"><div class="raio-caixa" style="border-radius:8px"></div><small>sm · 8</small></div>
+      <div class="raio-item"><div class="raio-caixa" style="border-radius:12px"></div><small>md · 12</small></div>
+      <div class="raio-item"><div class="raio-caixa" style="border-radius:16px"></div><small>lg · 16</small></div>
+      <div class="raio-item"><div class="raio-caixa" style="border-radius:24px"></div><small>xl · 24</small></div>
+      <div class="raio-item"><div class="raio-caixa" style="border-radius:999px"></div><small>total</small></div>
+    </div>
+
+    <h3>Espaçamento · grade de 4</h3>
+    <div class="espacos"><div class="esp-item"><small>4</small><div class="esp-barra" style="width:4px"></div></div><div class="esp-item"><small>8</small><div class="esp-barra" style="width:8px"></div></div><div class="esp-item"><small>12</small><div class="esp-barra" style="width:12px"></div></div><div class="esp-item"><small>16</small><div class="esp-barra" style="width:16px"></div></div><div class="esp-item"><small>20</small><div class="esp-barra" style="width:20px"></div></div><div class="esp-item"><small>24</small><div class="esp-barra" style="width:24px"></div></div><div class="esp-item"><small>32</small><div class="esp-barra" style="width:32px"></div></div><div class="esp-item"><small>40</small><div class="esp-barra" style="width:40px"></div></div><div class="esp-item"><small>48</small><div class="esp-barra" style="width:48px"></div></div><div class="esp-item"><small>64</small><div class="esp-barra" style="width:64px"></div></div><div class="esp-item"><small>80</small><div class="esp-barra" style="width:80px"></div></div><div class="esp-item"><small>96</small><div class="esp-barra" style="width:96px"></div></div></div>
+
+    <h3>Elevação</h3>
+    <p class="nota">Sombras curtas, de baixa opacidade e tonalizadas com o <code>#14181F</code> da marca — nunca preto puro.</p>
+    <div class="elevacoes">
+      <div class="elev-item"><div class="elev-caixa" style="box-shadow:var(--sombra-sm)"></div><small>sm</small></div>
+      <div class="elev-item"><div class="elev-caixa" style="box-shadow:var(--sombra-md)"></div><small>md</small></div>
+      <div class="elev-item"><div class="elev-caixa" style="box-shadow:var(--sombra-lg)"></div><small>lg</small></div>
+      <div class="elev-item"><div class="elev-caixa" style="box-shadow:var(--sombra-xl)"></div><small>xl</small></div>
+    </div>
+  </section>
+
+  <!-- 6 VOZ -->
+  <section id="voz">
+    <div class="cabeca">
+      <span class="num">06 · VOZ</span>
+      <h2>Como a Paysi fala<span class="tag tag-ext">extensão</span></h2>
+      <p>O público é lojista, não analista financeiro. Palavra aqui é material de projeto, não decoração.</p>
+    </div>
+    <div class="voz">
+      <div class="voz-col sim">
+        <h4>Escreva assim</h4>
+        <ul>
+          <li>“Seu dinheiro cai amanhã.”</li>
+          <li>Botão diz o que acontece: <strong>Cobrar</strong>, não <em>Prosseguir</em>.</li>
+          <li>A mesma ação mantém o mesmo nome do começo ao fim: <strong>Antecipar</strong> gera <strong>Antecipação solicitada</strong>.</li>
+          <li>“Cartão recusado pelo banco emissor. Peça outra forma de pagamento.”</li>
+          <li>“Nenhuma venda hoje ainda. Faça a primeira cobrança.”</li>
+          <li>Número explícito: <strong>taxa de 1,99%</strong>.</li>
+        </ul>
+      </div>
+      <div class="voz-col nao">
+        <h4>Não escreva assim</h4>
+        <ul>
+          <li>“Liquidação em D+1.”</li>
+          <li>Botões genéricos: <em>Prosseguir</em>, <em>Enviar</em>, <em>OK</em>.</li>
+          <li>Trocar o nome da ação no meio do fluxo.</li>
+          <li>“Ops! Algo deu errado. Tente novamente.”</li>
+          <li>Tela vazia sem saída, só um desenho e um “Nada por aqui”.</li>
+          <li>“As menores taxas do mercado!”</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 ARQUIVOS -->
+  <section id="arquivos">
+    <div class="cabeca">
+      <span class="num">07 · ARQUIVOS</span>
+      <h2>O que veio no kit</h2>
+      <p>Todos os vetores foram reconstruídos em curvas a partir da arte aprovada. O logotipo está convertido em contornos e o símbolo é um único <code>path</code> com <code>fill-rule="evenodd"</code> — display e teclas são furos transparentes, não formas brancas, então o símbolo funciona sobre qualquer fundo.</p>
+    </div>
+    <div class="arquivos"><div class="arquivo"><code>assets/paysi-logo-horizontal.svg</code><span>Assinatura principal</span></div><div class="arquivo"><code>assets/paysi-logo-horizontal-negativo.svg</code><span>Fundo escuro</span></div><div class="arquivo"><code>assets/paysi-logo-horizontal-mono.svg</code><span>1 cor · currentColor</span></div><div class="arquivo"><code>assets/paysi-logo-vertical.svg</code><span>Espaços estreitos</span></div><div class="arquivo"><code>assets/paysi-logotipo.svg</code><span>Só a palavra</span></div><div class="arquivo"><code>assets/paysi-simbolo.svg</code><span>Símbolo isolado</span></div><div class="arquivo"><code>assets/paysi-simbolo-currentcolor.svg</code><span>Símbolo em código</span></div><div class="arquivo"><code>assets/paysi-app-icon.svg</code><span>Ícone de app</span></div><div class="arquivo"><code>assets/paysi-app-icon-azul.svg</code><span>Ícone fundo azul</span></div><div class="arquivo"><code>assets/paysi-favicon.svg</code><span>32 px e abaixo</span></div><div class="arquivo"><code>tokens/paysi-tokens.css</code><span>Variáveis CSS · claro e escuro</span></div><div class="arquivo"><code>tokens/paysi-tokens.json</code><span>W3C Design Tokens</span></div><div class="arquivo"><code>tokens/paysi.tailwind.preset.js</code><span>Preset Tailwind</span></div><div class="arquivo"><code>MANUAL-IDENTIDADE-PAYSI.md</code><span>Manual completo</span></div></div>
+
+    <h3>Ainda falta decidir</h3>
+    <ol class="nota" style="padding-left:1.2em;display:grid;gap:var(--esp-2)">
+      <li><strong>Iconografia.</strong> Não há sistema definido. Sugiro grade de 24 px, traço de 1,5 px, cantos coerentes com o símbolo.</li>
+      <li><strong>Fotografia.</strong> A categoria pede lojista real em ambiente real, luz natural — não banco de imagem genérico.</li>
+      <li><strong>Padrão gráfico.</strong> O teclado do símbolo é um ativo óbvio para virar textura em cartão, sacola e fundo de peça.</li>
+      <li><strong>Licença tipográfica.</strong> Imprimir com Segoe UI exige checar licença Microsoft. Padronizar em Inter (OFL) elimina o risco.</li>
+      <li><strong>Co-branding.</strong> Regras de convívio com bandeiras e adquirentes ainda não existem.</li>
+      <li><strong>Registro.</strong> Vale busca de anterioridade e depósito no INPI nas classes de serviços financeiros e software.</li>
+    </ol>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap rodape-in">
+    <svg class="marca-pos" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.48 162.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura principal</title>
+  <path fill="#1D6BD8" fill-rule="evenodd" transform="translate(0 0.00) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#14181F" transform="translate(156.76 129.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg><svg class="marca-neg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.48 162.15" fill="none" role="img" aria-label="Paysi">
+  <title>Paysi &#8212; assinatura negativa</title>
+  <path fill="#FFFFFF" fill-rule="evenodd" transform="translate(0 0.00) scale(1.58000)" d="M14 0H58A14 14 0 0 1 72 14V69A14 14 0 0 1 58 83H31A5 5 0 0 0 26 88V91A9 9 0 0 1 17 100H9A9 9 0 0 1 0 91V14A14 14 0 0 1 14 0ZM16.5 12H55.5A5.5 5.5 0 0 1 61 17.5V25.5A5.5 5.5 0 0 1 55.5 31H16.5A5.5 5.5 0 0 1 11 25.5V17.5A5.5 5.5 0 0 1 16.5 12ZM13.5 39H20.5A2.5 2.5 0 0 1 23 41.5V45.5A2.5 2.5 0 0 1 20.5 48H13.5A2.5 2.5 0 0 1 11 45.5V41.5A2.5 2.5 0 0 1 13.5 39ZM32.5 39H39.5A2.5 2.5 0 0 1 42 41.5V45.5A2.5 2.5 0 0 1 39.5 48H32.5A2.5 2.5 0 0 1 30 45.5V41.5A2.5 2.5 0 0 1 32.5 39ZM51.5 39H58.5A2.5 2.5 0 0 1 61 41.5V45.5A2.5 2.5 0 0 1 58.5 48H51.5A2.5 2.5 0 0 1 49 45.5V41.5A2.5 2.5 0 0 1 51.5 39ZM13.5 52H20.5A2.5 2.5 0 0 1 23 54.5V58.5A2.5 2.5 0 0 1 20.5 61H13.5A2.5 2.5 0 0 1 11 58.5V54.5A2.5 2.5 0 0 1 13.5 52ZM32.5 52H39.5A2.5 2.5 0 0 1 42 54.5V58.5A2.5 2.5 0 0 1 39.5 61H32.5A2.5 2.5 0 0 1 30 58.5V54.5A2.5 2.5 0 0 1 32.5 52ZM51.5 52H58.5A2.5 2.5 0 0 1 61 54.5V58.5A2.5 2.5 0 0 1 58.5 61H51.5A2.5 2.5 0 0 1 49 58.5V54.5A2.5 2.5 0 0 1 51.5 52ZM13.5 65H20.5A2.5 2.5 0 0 1 23 67.5V71.5A2.5 2.5 0 0 1 20.5 74H13.5A2.5 2.5 0 0 1 11 71.5V67.5A2.5 2.5 0 0 1 13.5 65ZM32.5 65H39.5A2.5 2.5 0 0 1 42 67.5V71.5A2.5 2.5 0 0 1 39.5 74H32.5A2.5 2.5 0 0 1 30 71.5V67.5A2.5 2.5 0 0 1 32.5 65ZM51.5 65H58.5A2.5 2.5 0 0 1 61 67.5V71.5A2.5 2.5 0 0 1 58.5 74H51.5A2.5 2.5 0 0 1 49 71.5V67.5A2.5 2.5 0 0 1 51.5 65Z"/>
+  <path fill="#FFFFFF" transform="translate(156.76 129.00)" d="M7.45 0.00V-100.00H46.91Q58.12 -100.00 66.34 -96.01Q74.56 -92.01 79.03 -84.63Q83.49 -77.25 83.49 -67.18Q83.49 -57.11 78.96 -49.77Q74.43 -42.42 66.17 -38.39Q57.92 -34.36 46.64 -34.36H28.12V0.00ZM28.12 -51.68H45.57Q53.76 -51.68 58.52 -55.87Q63.29 -60.07 63.29 -67.18Q63.29 -74.36 58.52 -78.52Q53.76 -82.68 45.57 -82.68H28.12Z M109.67 1.21Q99.06 1.21 92.18 -4.09Q85.30 -9.40 85.30 -20.00Q85.30 -27.99 89.13 -32.52Q92.96 -37.05 99.26 -39.13Q105.57 -41.21 112.96 -41.88Q122.69 -42.89 126.58 -43.89Q130.47 -44.90 130.47 -48.32V-48.79Q130.47 -52.68 127.39 -55.17Q124.30 -57.65 118.86 -57.65Q113.36 -57.65 109.94 -55.10Q106.51 -52.55 106.18 -48.46H87.59Q88.26 -59.40 96.58 -65.87Q104.90 -72.35 119.47 -72.35Q134.03 -72.35 142.02 -65.87Q150.00 -59.40 150.00 -48.05V0.00H130.67V-10.00H130.41Q127.59 -4.83 122.69 -1.81Q117.79 1.21 109.67 1.21ZM115.17 -12.55Q122.28 -12.55 126.45 -16.34Q130.61 -20.13 130.61 -25.91V-33.02Q128.93 -32.08 125.04 -31.31Q121.14 -30.54 116.38 -29.80Q111.28 -28.99 107.75 -26.88Q104.23 -24.77 104.23 -20.54Q104.23 -16.78 107.22 -14.66Q110.20 -12.55 115.17 -12.55Z M159.94 28.05V12.42H168.93Q172.49 12.42 174.20 10.70Q175.91 8.99 177.32 4.90L179.27 -0.27L152.02 -70.87H172.76L184.64 -35.84Q185.84 -32.01 187.02 -28.19Q188.19 -24.36 189.33 -20.54Q190.48 -24.36 191.68 -28.22Q192.89 -32.08 194.10 -35.84L206.05 -70.87H226.58L195.37 10.94Q192.02 19.80 186.65 23.93Q181.28 28.05 173.03 28.05Z M259.67 1.74Q245.85 1.74 236.82 -4.56Q227.79 -10.87 226.85 -22.28H246.32Q246.85 -17.65 250.21 -15.03Q253.57 -12.42 259.34 -12.42Q264.84 -12.42 267.99 -14.50Q271.15 -16.58 271.15 -19.87Q271.15 -22.68 268.70 -24.40Q266.25 -26.11 261.95 -26.98L249.54 -29.40Q228.46 -33.42 228.46 -50.07Q228.46 -60.13 236.59 -66.24Q244.71 -72.35 258.53 -72.35Q272.29 -72.35 280.68 -65.91Q289.07 -59.46 289.34 -48.39H271.01Q270.95 -52.62 267.63 -55.47Q264.30 -58.32 259.07 -58.32Q253.97 -58.32 251.08 -56.14Q248.20 -53.96 248.20 -50.81Q248.20 -48.05 250.44 -46.31Q252.69 -44.56 256.79 -43.69L270.21 -41.07Q280.95 -38.99 286.01 -34.26Q291.08 -29.53 291.08 -21.68Q291.08 -14.63 287.09 -9.36Q283.10 -4.09 276.01 -1.17Q268.93 1.74 259.67 1.74Z M298.94 0.00V-70.87H318.74V0.00ZM308.80 -79.80Q303.90 -79.80 300.68 -82.79Q297.46 -85.77 297.46 -90.34Q297.46 -94.90 300.68 -97.89Q303.90 -100.87 308.80 -100.87Q313.63 -100.87 316.86 -97.89Q320.08 -94.90 320.08 -90.34Q320.08 -85.77 316.86 -82.79Q313.63 -79.80 308.80 -79.80Z"/>
+</svg>
+    <p>Pagamentos inteligentes para o seu negócio.</p>
+    <span class="dir">Manual v1.0 · Dúvidas de aplicação: consulte antes de improvisar.</span>
+  </div>
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var html = document.documentElement, btn = document.getElementById('tema');
+  btn.addEventListener('click', function(){
+    var escuro = html.getAttribute('data-tema') === 'escuro';
+    html.setAttribute('data-tema', escuro ? 'claro' : 'escuro');
+    btn.textContent = escuro ? 'Ver no escuro' : 'Ver no claro';
+    btn.setAttribute('aria-pressed', String(!escuro));
+  });
+
+  var tg = document.getElementById('tgConstrucao'), alvo = document.getElementById('construcao');
+  tg.addEventListener('change', function(){ alvo.classList.toggle('ativo', tg.checked); });
+
+  var toast = document.getElementById('toast'), t;
+  function aviso(msg){
+    toast.textContent = msg; toast.classList.add('ver');
+    clearTimeout(t); t = setTimeout(function(){ toast.classList.remove('ver'); }, 1600);
+  }
+  document.querySelectorAll('.amostra').forEach(function(el){
+    el.addEventListener('click', function(){
+      var hex = el.getAttribute('data-hex');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(hex).then(function(){ aviso(hex + ' copiado'); },
+                                                 function(){ aviso(hex); });
+      } else { aviso(hex); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
