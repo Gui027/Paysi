@@ -1,0 +1,40 @@
+package com.paysi.config;
+
+import com.paysi.core.error.ConflictException;
+import com.paysi.core.error.ValidationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
+
+/**
+ * Tradução única de erro de domínio/formato para o envelope HTTP do documento 2, §4.1.
+ * Cross-cutting a todos os módulos web — não é específico de identity.
+ */
+@RestControllerAdvice
+class ApiExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
+        List<ApiError.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> new ApiError.FieldError(fe.getField(), "INVALID", fe.getDefaultMessage()))
+                .toList();
+        var body = ApiError.of("VALIDATION_ERROR", "Um ou mais campos são inválidos", fieldErrors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    ResponseEntity<ApiError> handleValidation(ValidationException ex) {
+        var body = ApiError.of(ex.code(), ex.getMessage(), ex.field());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    ResponseEntity<ApiError> handleConflict(ConflictException ex) {
+        var body = ApiError.of(ex.code(), ex.getMessage(), ex.field());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+}

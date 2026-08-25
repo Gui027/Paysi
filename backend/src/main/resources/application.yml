@@ -15,6 +15,10 @@ spring:
     user: ${DATABASE_MIGRATION_USER:paysi}
     password: ${DATABASE_MIGRATION_PASSWORD:paysi}
     validate-migration-naming: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
   data:
     redis:
       host: ${REDIS_HOST:localhost}
