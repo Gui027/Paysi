@@ -39,3 +39,8 @@ server:
   error:
     include-message: never
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha

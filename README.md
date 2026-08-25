@@ -2,6 +2,15 @@
 
 Base executável da plataforma de checkout, divisão de pagamentos e afiliados, criada a partir da documentação v3.0.
 
+## Links essenciais
+
+- Repositório: https://github.com/Gui027/Paysi
+- Swagger UI local: http://localhost:8080/swagger-ui.html
+- Contrato OpenAPI em JSON: http://localhost:8080/v3/api-docs
+- Saúde do backend: http://localhost:8080/actuator/health
+
+> Os endereços `localhost` funcionam somente com o ambiente local em execução. Ainda não existe uma URL pública de homologação ou produção cadastrada.
+
 ## Estrutura
 
 - `backend`: Spring Boot 3, Java 21, Flyway e o núcleo financeiro.
@@ -28,12 +37,22 @@ npm run dev:checkout
 ```
 
 - API/saúde: `http://localhost:8080/actuator/health`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 - Painel: `http://localhost:3000`
 - Checkout: `http://localhost:5173`
 - RabbitMQ: `http://localhost:15672` (`guest` / `guest`)
 - Mailpit: `http://localhost:8025`
 
 O Flyway usa o papel proprietário `paysi`; a aplicação usa `paysi_app`. As credenciais incluídas são exclusivamente locais. Copie `.env.example` para `.env` apenas quando precisar sobrescrever os padrões. As 30 migrações do DDL autoritativo foram preservadas e a `V030` complementa os privilégios operacionais que o documento descrevia, mas o SQL consolidado ainda não concedia.
+
+### Como acessar o Swagger
+
+1. Suba a infraestrutura com `docker compose -f infra/docker-compose.yml up -d`.
+2. Inicie o backend com `cd backend` e `./mvnw spring-boot:run` (Windows: `mvnw.cmd spring-boot:run`).
+3. Abra `http://localhost:8080/swagger-ui.html` no navegador.
+
+O Swagger lista automaticamente os endpoints implementados pelos controladores Spring. O JSON em `/v3/api-docs` é o contrato que deve ser usado para integrações e geração de clientes. Se a página não abrir, confirme primeiro o health check e verifique se a porta `8080` está livre.
 
 ## Verificação
 
