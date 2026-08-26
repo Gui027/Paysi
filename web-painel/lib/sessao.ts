@@ -21,6 +21,13 @@ export function logout() {
   return apiRequest<void>("/v1/sessions/current", { method: "DELETE" });
 }
 
+export function switchMode(mode: SessionCreated["activeMode"]) {
+  return apiRequest<SessionCreated>("/v1/sessions/current/mode", {
+    method: "PUT",
+    body: JSON.stringify({ mode }),
+  });
+}
+
 export function requestPasswordRecovery(email: string) {
   return apiRequest<void>("/v1/password-recovery", {
     method: "POST",
