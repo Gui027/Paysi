@@ -26,6 +26,9 @@ spring:
   rabbitmq:
     host: ${RABBIT_HOST:localhost}
     port: ${RABBIT_PORT:5672}
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
 
 management:
   endpoints:
@@ -50,5 +53,8 @@ springdoc:
     tags-sorter: alpha
 
 paysi:
+  web-base-url: ${PAYSI_WEB_BASE_URL:http://localhost:3000}
+  mail:
+    from: ${PAYSI_MAIL_FROM:nao-responda@paysi.local}
   session:
     cookie-secure: ${SESSION_COOKIE_SECURE:false}

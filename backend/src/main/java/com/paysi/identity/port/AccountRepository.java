@@ -3,6 +3,7 @@ package com.paysi.identity.port;
 import com.paysi.identity.domain.Account;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Porta de persistência de contas. A verificação de duplicidade ignora contas
@@ -15,6 +16,10 @@ public interface AccountRepository {
     boolean existsActiveByTaxId(String taxIdDigits);
 
     Optional<Account> findOpenByEmail(String normalizedEmail);
+
+    Optional<Account> findById(UUID accountId);
+
+    void updatePassword(UUID accountId, String passwordHash);
 
     /** Persiste a conta nova. Dispara, no banco, a criação automática do plano padrão (V022). */
     void insert(Account account);

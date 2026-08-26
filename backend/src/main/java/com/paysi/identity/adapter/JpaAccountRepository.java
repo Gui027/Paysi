@@ -40,6 +40,19 @@ class JpaAccountRepository implements AccountRepository {
     }
 
     @Override
+    public Optional<Account> findById(java.util.UUID accountId) {
+        return jpaRepository.findById(accountId).map(AccountEntity::toDomain);
+    }
+
+    @Override
+    public void updatePassword(java.util.UUID accountId, String passwordHash) {
+        AccountEntity entity = jpaRepository.findById(accountId)
+                .orElseThrow(() -> new IllegalStateException("Conta do token de recuperação não encontrada"));
+        entity.changePassword(passwordHash);
+        jpaRepository.saveAndFlush(entity);
+    }
+
+    @Override
     public void insert(Account account) {
         try {
             // saveAndFlush força a checagem dos índices únicos ainda dentro deste
