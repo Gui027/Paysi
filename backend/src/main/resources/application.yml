@@ -58,3 +58,5 @@ paysi:
     from: ${PAYSI_MAIL_FROM:nao-responda@paysi.local}
   session:
     cookie-secure: ${SESSION_COOKIE_SECURE:false}
+  kyc:
+    provider-base-url: ${KYC_PROVIDER_BASE_URL:https://kyc.local/process}
