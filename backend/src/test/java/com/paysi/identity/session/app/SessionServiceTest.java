@@ -86,6 +86,8 @@ class SessionServiceTest {
             public boolean existsActiveByEmail(String email) { return false; }
             public boolean existsActiveByTaxId(String taxId) { return false; }
             public Optional<Account> findOpenByEmail(String email) { return Optional.ofNullable(account); }
+            public Optional<Account> findById(UUID accountId) { return Optional.ofNullable(account); }
+            public void updatePassword(UUID accountId, String passwordHash) { }
             public void insert(Account ignored) { }
         };
         PasswordHasher passwords = new PasswordHasher() {

@@ -114,6 +114,16 @@ class SignUpServiceTest {
         }
 
         @Override
+        public Optional<Account> findById(java.util.UUID accountId) {
+            return inserted.stream().filter(account -> account.id().equals(accountId)).findFirst();
+        }
+
+        @Override
+        public void updatePassword(java.util.UUID accountId, String passwordHash) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void insert(Account account) {
             inserted.add(account);
         }

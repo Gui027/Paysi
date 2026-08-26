@@ -92,4 +92,8 @@ class AccountEntity {
                 new TaxId(taxId), KycStatus.valueOf(kycStatus), PayoutDelay.valueOf(payoutDelay), riskTier,
                 AccountStatus.valueOf(status), createdAt);
     }
+
+    void changePassword(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
 }
