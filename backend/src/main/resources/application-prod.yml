@@ -9,3 +9,6 @@ logging:
     root: INFO
     com.paysi: INFO
 
+paysi:
+  mfa:
+    encryption-key: ${MFA_ENCRYPTION_KEY_BASE64}
