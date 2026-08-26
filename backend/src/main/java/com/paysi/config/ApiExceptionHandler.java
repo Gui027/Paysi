@@ -2,6 +2,8 @@ package com.paysi.config;
 
 import com.paysi.core.error.ConflictException;
 import com.paysi.core.error.ValidationException;
+import com.paysi.core.error.UnauthorizedException;
+import com.paysi.core.error.ForbiddenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -36,5 +38,17 @@ class ApiExceptionHandler {
     ResponseEntity<ApiError> handleConflict(ConflictException ex) {
         var body = ApiError.of(ex.code(), ex.getMessage(), ex.field());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.of(ex.code(), ex.getMessage(), (String) null));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    ResponseEntity<ApiError> handleForbidden(ForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiError.of(ex.code(), ex.getMessage(), (String) null));
     }
 }

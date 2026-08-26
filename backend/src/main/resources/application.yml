@@ -48,3 +48,7 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+
+paysi:
+  session:
+    cookie-secure: ${SESSION_COOKIE_SECURE:false}
