@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -20,7 +22,7 @@ class SignUpServiceTest {
     @Test
     void createsNormalizedAccountWithHashedPasswordAndDefaultPlan() {
         var accounts = new InMemoryAccounts();
-        PasswordHasher hasher = raw -> "argon2:" + raw;
+        PasswordHasher hasher = passwordHasher(raw -> "argon2:" + raw);
         PlatformPlanReader plans = accountId -> "TRANSACIONAL";
         var service = new SignUpService(accounts, plans, hasher);
 
@@ -44,10 +46,10 @@ class SignUpServiceTest {
         var accounts = new InMemoryAccounts();
         accounts.duplicateEmail = true;
         var hashCalls = new ArrayList<String>();
-        var service = new SignUpService(accounts, accountId -> "TRANSACIONAL", raw -> {
+        var service = new SignUpService(accounts, accountId -> "TRANSACIONAL", passwordHasher(raw -> {
             hashCalls.add(raw);
             return "hash";
-        });
+        }));
 
         assertThatThrownBy(() -> service.signUp(command("Pessoa Teste", "pessoa@exemplo.com", "52998224725")))
                 .isInstanceOfSatisfying(ConflictException.class, error -> {
@@ -63,7 +65,7 @@ class SignUpServiceTest {
     void rejectsDuplicateActiveTaxId() {
         var accounts = new InMemoryAccounts();
         accounts.duplicateTaxId = true;
-        var service = new SignUpService(accounts, accountId -> "TRANSACIONAL", raw -> "hash");
+        var service = new SignUpService(accounts, accountId -> "TRANSACIONAL", passwordHasher(raw -> "hash"));
 
         assertThatThrownBy(() -> service.signUp(command("Pessoa Teste", "pessoa@exemplo.com", "52998224725")))
                 .isInstanceOfSatisfying(ConflictException.class, error -> {
@@ -75,6 +77,20 @@ class SignUpServiceTest {
     private static SignUpCommand command(String fullName, String email, String taxId) {
         return new SignUpCommand(fullName, email, "senha-segura", PersonType.PF, taxId,
                 InitialMode.SELLER, "sha256:termos-v1");
+    }
+
+    private static PasswordHasher passwordHasher(Function<String, String> hash) {
+        return new PasswordHasher() {
+            @Override
+            public String hash(String rawPassword) {
+                return hash.apply(rawPassword);
+            }
+
+            @Override
+            public boolean matches(String rawPassword, String passwordHash) {
+                return false;
+            }
+        };
     }
 
     private static final class InMemoryAccounts implements AccountRepository {
@@ -90,6 +106,11 @@ class SignUpServiceTest {
         @Override
         public boolean existsActiveByTaxId(String taxIdDigits) {
             return duplicateTaxId;
+        }
+
+        @Override
+        public Optional<Account> findOpenByEmail(String normalizedEmail) {
+            return Optional.empty();
         }
 
         @Override

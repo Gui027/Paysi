@@ -34,6 +34,12 @@ class JpaAccountRepository implements AccountRepository {
     }
 
     @Override
+    public Optional<Account> findOpenByEmail(String normalizedEmail) {
+        return jpaRepository.findFirstByEmailAndStatusNot(normalizedEmail, AccountStatus.CLOSED.name())
+                .map(AccountEntity::toDomain);
+    }
+
+    @Override
     public void insert(Account account) {
         try {
             // saveAndFlush força a checagem dos índices únicos ainda dentro deste
