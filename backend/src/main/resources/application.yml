@@ -60,5 +60,6 @@ paysi:
     cookie-secure: ${SESSION_COOKIE_SECURE:false}
   kyc:
     provider-base-url: ${KYC_PROVIDER_BASE_URL:https://kyc.local/process}
+    webhook-secret: ${KYC_WEBHOOK_SECRET:}
   mfa:
     encryption-key: ${MFA_ENCRYPTION_KEY_BASE64:}
