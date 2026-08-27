@@ -10,5 +10,7 @@ logging:
     com.paysi: INFO
 
 paysi:
+  kyc:
+    webhook-secret: ${KYC_WEBHOOK_SECRET}
   mfa:
     encryption-key: ${MFA_ENCRYPTION_KEY_BASE64}

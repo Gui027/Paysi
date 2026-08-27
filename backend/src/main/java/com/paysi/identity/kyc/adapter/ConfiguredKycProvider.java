@@ -26,4 +26,10 @@ public class ConfiguredKycProvider implements KycProvider {
                 List.of(new KycRequirement("IDENTITY_DOCUMENT", "Documento de identidade", "PENDING", null, null),
                         new KycRequirement("LIVENESS", "Prova de vida", "PENDING", null, null)));
     }
+
+    @Override
+    public String ensureSubaccount(UUID accountId) {
+        // O accountId é a chave de idempotência no contrato do adaptador real.
+        return "sub_" + accountId;
+    }
 }
