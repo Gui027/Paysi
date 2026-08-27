@@ -1,0 +1,2 @@
+package com.paysi.ledger.domain;
+public enum ReferenceType { CHARGE, REFUND, DISPUTE, PAYOUT, RECEIVABLE, PLATFORM_SUB, VERIFICATION, DEBT_WRITEOFF, ADJUSTMENT }

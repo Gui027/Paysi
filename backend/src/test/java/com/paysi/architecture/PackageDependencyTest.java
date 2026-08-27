@@ -15,5 +15,12 @@ class PackageDependencyTest {
                 .resideInAnyPackage("org.springframework..", "jakarta.persistence..")
                 .check(classes);
     }
-}
 
+    @Test
+    void ledgerDomainStaysIndependentFromFrameworks() {
+        var classes = new ClassFileImporter().importPackages("com.paysi.ledger.domain");
+        noClasses().should().dependOnClassesThat()
+                .resideInAnyPackage("org.springframework..", "jakarta.persistence..")
+                .check(classes);
+    }
+}
