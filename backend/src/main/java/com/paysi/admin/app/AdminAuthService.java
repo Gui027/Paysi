@@ -22,6 +22,7 @@ public class AdminAuthService {
     private final TotpCodes totp;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public AdminAuthService(AdminRepository repository, PasswordHasher passwords,
                             SecretProtector protector, TotpCodes totp) {
         this(repository, passwords, protector, totp, Clock.systemUTC());

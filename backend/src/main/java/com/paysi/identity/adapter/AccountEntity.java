@@ -22,7 +22,7 @@ class AccountEntity {
     @Id
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "citext")
     private String email;
 
     @Column(name = "password_hash", nullable = false)

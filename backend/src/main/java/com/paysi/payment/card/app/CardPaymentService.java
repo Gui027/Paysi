@@ -21,6 +21,7 @@ public class CardPaymentService {
     private final PaymentProvider provider;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public CardPaymentService(CardPaymentRepository repository, PaymentProvider provider) {
         this(repository, provider, Clock.systemUTC());
     }
