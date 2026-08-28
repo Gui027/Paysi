@@ -7,6 +7,7 @@ COPY web-checkout/package.json web-checkout/package.json
 RUN npm ci
 
 FROM dependencies AS build
+COPY shared shared
 COPY web-painel web-painel
 RUN npm run build --workspace web-painel
 
