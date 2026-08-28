@@ -63,7 +63,9 @@ public class FakePaymentProvider implements PaymentProvider {
         String chargeId = "fake_charge_" + request.orderId();
         Instant now = clock.instant();
         long fee = Math.max(1, request.amountCents() * 2 / 100);
-        var status = mappedStatus();
+        var status = request.method() == ProviderPaymentMethod.BOLETO
+                && outcome == FakeProviderOutcome.APPROVED
+                ? ProviderChargeStatus.PENDING : mappedStatus();
         var data = paymentData(request, status, now);
         var threeDs = threeDs(request, status);
         String error = outcome == FakeProviderOutcome.TIMEOUT ? "PROVIDER_TIMEOUT"
@@ -91,7 +93,8 @@ public class FakePaymentProvider implements PaymentProvider {
             case PIX -> new ProviderPaymentData("000201FAKE" + request.orderId(), null, null,
                     now.plus(30, ChronoUnit.MINUTES));
             case BOLETO -> new ProviderPaymentData(null, "34191FAKE" + request.orderId(),
-                    "https://fake.paysi/boleto/" + request.orderId(), now.plus(3, ChronoUnit.DAYS));
+                    "https://fake.paysi/boleto/" + request.orderId(),
+                    now.plus(request.boletoDueDays(), ChronoUnit.DAYS));
             case CARD -> null;
         };
     }
