@@ -14,3 +14,5 @@ paysi:
     webhook-secret: ${KYC_WEBHOOK_SECRET}
   mfa:
     encryption-key: ${MFA_ENCRYPTION_KEY_BASE64}
+  payout:
+    mfa-threshold-cents: ${PAYOUT_MFA_THRESHOLD_CENTS:100000}
