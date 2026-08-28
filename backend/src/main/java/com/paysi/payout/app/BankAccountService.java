@@ -15,6 +15,7 @@ import java.util.UUID;
 @Service
 public class BankAccountService {
     private final PayoutRepository repository;private final BankVerificationProvider provider;private final SecretProtector protector;private final MfaGuard mfa;private final Clock clock;
+    @org.springframework.beans.factory.annotation.Autowired
     public BankAccountService(PayoutRepository r,BankVerificationProvider p,SecretProtector s,MfaGuard m){this(r,p,s,m,Clock.systemUTC());}
     BankAccountService(PayoutRepository r,BankVerificationProvider p,SecretProtector s,MfaGuard m,Clock c){repository=r;provider=p;protector=s;mfa=m;clock=c;}
     @Transactional public BankAccount create(UUID accountId,BankAccountCommand command,UUID challengeId){

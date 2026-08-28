@@ -17,6 +17,7 @@ public class BoletoPaymentService {
     private final PaymentProvider provider;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public BoletoPaymentService(BoletoRepository repository, PaymentProvider provider) {
         this(repository, provider, Clock.systemUTC());
     }

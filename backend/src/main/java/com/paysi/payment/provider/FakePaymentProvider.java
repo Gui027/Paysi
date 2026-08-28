@@ -20,6 +20,7 @@ public class FakePaymentProvider implements PaymentProvider {
     private final Clock clock;
     private final Map<UUID, StoredCall> calls = new ConcurrentHashMap<>();
 
+    @org.springframework.beans.factory.annotation.Autowired
     public FakePaymentProvider(@Value("${paysi.payment.fake-outcome:APPROVED}") String outcome) {
         this(FakeProviderOutcome.valueOf(outcome.toUpperCase()), Clock.systemUTC());
     }

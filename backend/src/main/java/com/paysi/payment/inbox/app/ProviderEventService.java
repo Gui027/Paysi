@@ -23,6 +23,7 @@ public class ProviderEventService {
     private final ProviderEventRepository repository;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public ProviderEventService(ObjectMapper json, PaymentEventSignatureVerifier signatures,
                                 ProviderEventRepository repository) {
         this(json, signatures, repository, Clock.systemUTC());

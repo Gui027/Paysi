@@ -17,6 +17,7 @@ public class KycService {
     private final KycProvider provider;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public KycService(AccountRepository accounts, KycStore store, KycProvider provider) {
         this(accounts, store, provider, Clock.systemUTC());
     }
