@@ -66,3 +66,14 @@ npm run build
 ```
 
 As decisões de produto, pendências jurídicas/PSP e critérios financeiros permanecem nos documentos. Em especial, PEN-10, PEN-21 e PEN-04 devem ser resolvidas antes de operação real.
+
+## Deploy no Portainer
+
+A stack de homologação está em `infra/portainer-stack.yml` e constrói banco, backend, painel e checkout diretamente da branch `main`. Ela requer as variáveis `PAYSI_DB_PASSWORD`, `PAYSI_APP_DB_PASSWORD`, `PAYSI_RABBIT_PASSWORD`, `KYC_WEBHOOK_SECRET`, `PAYMENT_WEBHOOK_SECRET` e `MFA_ENCRYPTION_KEY_BASE64` configuradas no Portainer.
+
+- Painel: `http://<servidor>:3020`
+- Checkout: `http://<servidor>:5180`
+- API/Swagger: `http://<servidor>:8090/swagger-ui.html`
+- Saúde: `http://<servidor>:8090/actuator/health`
+
+PostgreSQL, Redis e RabbitMQ não publicam portas no host. Os dados persistentes usam volumes exclusivos com prefixo `paysi_`.
