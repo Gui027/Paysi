@@ -87,6 +87,20 @@ abstract class PaymentProviderContractTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void validChallengeConfirmsAndInvalidChallengeNeverApproves() {
+        var provider = provider(FakeProviderOutcome.PENDING);
+        var started = provider.charge(request());
+        var invalid = provider.confirmThreeDs(new ProviderThreeDsConfirmation(
+                request().orderId(), started.providerChargeId(), "invalid"));
+        assertThat(invalid.status()).isNotEqualTo(ProviderChargeStatus.APPROVED);
+
+        var approved = provider.confirmThreeDs(new ProviderThreeDsConfirmation(
+                request().orderId(), started.providerChargeId(), "fake-3ds-valid"));
+        assertThat(approved.status()).isEqualTo(ProviderChargeStatus.APPROVED);
+        assertThat(approved.threeDs().eci()).isEqualTo("05");
+    }
+
     protected static ProviderPaymentRequest request() {
         return new ProviderPaymentRequest(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
