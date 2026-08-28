@@ -41,6 +41,24 @@ public class FakePaymentProvider implements PaymentProvider {
         return stored.result();
     }
 
+    @Override
+    public ProviderPaymentResult confirmThreeDs(ProviderThreeDsConfirmation confirmation) {
+        var stored = calls.get(confirmation.orderId());
+        if (stored == null || !stored.result().providerChargeId().equals(confirmation.providerChargeId())
+                || stored.result().status() != ProviderChargeStatus.PENDING) {
+            return invalidChallenge(confirmation.providerChargeId(), 0);
+        }
+        if (!confirmation.challengeToken().equals("fake-3ds-valid")) {
+            return invalidChallenge(confirmation.providerChargeId(), stored.result().providerFeeCents());
+        }
+        var approved = new ProviderPaymentResult(stored.result().providerChargeId(),
+                ProviderChargeStatus.APPROVED, null, stored.result().providerFeeCents(),
+                stored.result().receivables(), new ProviderThreeDs("AUTHENTICATED", null, "05"),
+                null, false);
+        calls.put(confirmation.orderId(), new StoredCall(stored.request(), approved));
+        return approved;
+    }
+
     private ProviderPaymentResult create(ProviderPaymentRequest request) {
         String chargeId = "fake_charge_" + request.orderId();
         Instant now = clock.instant();
@@ -80,15 +98,21 @@ public class FakePaymentProvider implements PaymentProvider {
 
     private static ProviderThreeDs threeDs(ProviderPaymentRequest request, ProviderChargeStatus status) {
         if (request.method() != ProviderPaymentMethod.CARD) {
-            return new ProviderThreeDs("NOT_APPLICABLE", null);
+            return new ProviderThreeDs("NOT_APPLICABLE", null, null);
         }
         return switch (status) {
-            case APPROVED -> new ProviderThreeDs("AUTHENTICATED", null);
+            case APPROVED -> new ProviderThreeDs("AUTHENTICATED", null, "05");
             case PENDING -> new ProviderThreeDs("CHALLENGE_REQUIRED",
-                    "https://fake.paysi/3ds/" + request.orderId());
-            case DECLINED -> new ProviderThreeDs("FAILED", null);
-            case EXPIRED, ERROR -> new ProviderThreeDs("NOT_APPLICABLE", null);
+                    "https://fake.paysi/3ds/" + request.orderId(), null);
+            case DECLINED -> new ProviderThreeDs("FAILED", null, null);
+            case EXPIRED, ERROR -> new ProviderThreeDs("NOT_APPLICABLE", null, null);
         };
+    }
+
+    private static ProviderPaymentResult invalidChallenge(String providerChargeId, long providerFeeCents) {
+        return new ProviderPaymentResult(providerChargeId, ProviderChargeStatus.DECLINED,
+                null, providerFeeCents, java.util.List.of(), new ProviderThreeDs("FAILED", null, null),
+                "THREE_DS_INVALID", false);
     }
 
     private static java.util.List<ProviderReceivable> receivables(ProviderPaymentRequest request, Instant now) {

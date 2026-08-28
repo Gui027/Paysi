@@ -7,7 +7,7 @@ public record ProviderPaymentResult(String providerChargeId, ProviderChargeStatu
                                     List<ProviderReceivable> receivables, ProviderThreeDs threeDs,
                                     String errorCode, boolean retryable) {
     public ProviderPaymentResult {
-        if (providerChargeId == null || providerChargeId.isBlank() || status == null) {
+        if (providerChargeId == null || providerChargeId.isBlank() || status == null || threeDs == null) {
             throw new IllegalArgumentException("Identificador e status do provedor são obrigatórios");
         }
         if (providerFeeCents < 0) throw new IllegalArgumentException("Taxa do provedor não pode ser negativa");
