@@ -22,6 +22,7 @@ public class MfaService {
     private static final Duration CHALLENGE_TTL = Duration.ofMinutes(5);
     private final MfaStore store; private final SecretProtector protector; private final TotpCodes totp;
     private final SecureRandom random; private final Clock clock;
+    @org.springframework.beans.factory.annotation.Autowired
     public MfaService(MfaStore store, SecretProtector protector, TotpCodes totp) { this(store,protector,totp,new SecureRandom(),Clock.systemUTC()); }
     MfaService(MfaStore store, SecretProtector protector, TotpCodes totp, SecureRandom random, Clock clock) { this.store=store;this.protector=protector;this.totp=totp;this.random=random;this.clock=clock; }
 

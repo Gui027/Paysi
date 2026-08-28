@@ -22,6 +22,7 @@ public class AdminService {
     private final LedgerService ledger;
     private final long autoApprovalLimit;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public AdminService(AdminRepository repository, LedgerService ledger) {
         this(repository, ledger, 10_000);
     }

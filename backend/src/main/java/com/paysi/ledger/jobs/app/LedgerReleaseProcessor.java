@@ -19,6 +19,7 @@ public class LedgerReleaseProcessor {
     private final LedgerService ledger;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public LedgerReleaseProcessor(LedgerReleaseRepository releases, LedgerService ledger) {
         this(releases, ledger, Clock.systemUTC());
     }

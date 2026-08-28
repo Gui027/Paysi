@@ -27,6 +27,7 @@ public class SessionService {
     private final SessionTokenService tokens;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public SessionService(AccountRepository accounts, PasswordHasher passwordHasher, SessionStore sessions,
                           SessionTokenService tokens) {
         this(accounts, passwordHasher, sessions, tokens, Clock.systemUTC());

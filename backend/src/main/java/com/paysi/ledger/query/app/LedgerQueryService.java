@@ -11,6 +11,7 @@ import java.util.*;
 @Service
 public class LedgerQueryService {
     private final LedgerQueryRepository repository;private final Clock clock;
+    @org.springframework.beans.factory.annotation.Autowired
     public LedgerQueryService(LedgerQueryRepository repository){this(repository,Clock.systemUTC());}
     LedgerQueryService(LedgerQueryRepository repository,Clock clock){this.repository=repository;this.clock=clock;}
 

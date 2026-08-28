@@ -1,0 +1,128 @@
+services:
+  db:
+    build:
+      context: https://github.com/Gui027/Paysi.git#main
+      dockerfile: infra/postgres/Dockerfile
+    image: paysi-postgres:${PAYSI_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paysi
+      POSTGRES_USER: paysi
+      POSTGRES_PASSWORD: ${PAYSI_DB_PASSWORD}
+      PAYSI_APP_DB_PASSWORD: ${PAYSI_APP_DB_PASSWORD}
+    volumes:
+      - paysi_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paysi -d paysi"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - paysi_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  rabbit:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: paysi
+      RABBITMQ_DEFAULT_PASS: ${PAYSI_RABBIT_PASSWORD}
+    volumes:
+      - paysi_rabbitdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  mail:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: https://github.com/Gui027/Paysi.git#main
+      dockerfile: backend/Dockerfile
+    image: paysi-backend:${PAYSI_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbit:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://db:5432/paysi
+      DATABASE_USER: paysi_app
+      DATABASE_PASSWORD: ${PAYSI_APP_DB_PASSWORD}
+      DATABASE_MIGRATION_USER: paysi
+      DATABASE_MIGRATION_PASSWORD: ${PAYSI_DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBIT_HOST: rabbit
+      RABBIT_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: paysi
+      SPRING_RABBITMQ_PASSWORD: ${PAYSI_RABBIT_PASSWORD}
+      MAIL_HOST: mail
+      MAIL_PORT: 1025
+      PAYSI_WEB_BASE_URL: http://186.218.63.106:3020
+      PAYSI_MAIL_FROM: nao-responda@paysi.local
+      SESSION_COOKIE_SECURE: "false"
+      PAYSI_PROVIDER: fake
+      PAYSI_FISCAL: fake
+      PAYMENT_FAKE_OUTCOME: APPROVED
+      KYC_WEBHOOK_SECRET: ${KYC_WEBHOOK_SECRET}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
+      MFA_ENCRYPTION_KEY_BASE64: ${MFA_ENCRYPTION_KEY_BASE64}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+
+  painel:
+    build:
+      context: https://github.com/Gui027/Paysi.git#main
+      dockerfile: web-painel/Dockerfile
+    image: paysi-painel:${PAYSI_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "3020:3000"
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      PAYSI_API_URL: http://backend:8080
+
+  checkout:
+    build:
+      context: https://github.com/Gui027/Paysi.git#main
+      dockerfile: web-checkout/Dockerfile
+    image: paysi-checkout:${PAYSI_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "5180:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  paysi_pgdata:
+  paysi_redisdata:
+  paysi_rabbitdata:

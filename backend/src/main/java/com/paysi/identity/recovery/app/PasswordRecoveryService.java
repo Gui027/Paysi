@@ -31,6 +31,7 @@ public class PasswordRecoveryService {
     private final SessionStore sessions;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public PasswordRecoveryService(AccountRepository accounts, PasswordResetTokenStore resetTokens,
                                    RecoveryTokenService tokens, RecoveryMailSender mailSender,
                                    PasswordHasher passwordHasher, SessionStore sessions) {
