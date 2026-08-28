@@ -10,9 +10,12 @@ logging:
     com.paysi: INFO
 
 paysi:
+  provider: ${PAYSI_PROVIDER}
   kyc:
     webhook-secret: ${KYC_WEBHOOK_SECRET}
   mfa:
     encryption-key: ${MFA_ENCRYPTION_KEY_BASE64}
   payout:
     mfa-threshold-cents: ${PAYOUT_MFA_THRESHOLD_CENTS:100000}
+  payment:
+    fake-outcome: ${PAYMENT_FAKE_OUTCOME:APPROVED}
