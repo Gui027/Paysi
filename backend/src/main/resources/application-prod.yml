@@ -19,3 +19,4 @@ paysi:
     mfa-threshold-cents: ${PAYOUT_MFA_THRESHOLD_CENTS:100000}
   payment:
     fake-outcome: ${PAYMENT_FAKE_OUTCOME:APPROVED}
+    webhook-secret: ${PAYMENT_WEBHOOK_SECRET}

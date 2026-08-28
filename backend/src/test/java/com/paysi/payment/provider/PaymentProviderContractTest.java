@@ -85,6 +85,9 @@ abstract class PaymentProviderContractTest {
         assertThatThrownBy(() -> new ProviderPaymentRequest(UUID.randomUUID(), 1_000,
                 ProviderPaymentMethod.PIX, 1, null, buyer, new ProviderSplit(799, 0, 200)))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ProviderPaymentRequest(UUID.randomUUID(), 1_000,
+                ProviderPaymentMethod.BOLETO, 1, null, buyer, new ProviderSplit(800, 0, 200), 16))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
