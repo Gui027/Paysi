@@ -53,6 +53,7 @@ springdoc:
     tags-sorter: alpha
 
 paysi:
+  provider: ${PAYSI_PROVIDER:fake}
   web-base-url: ${PAYSI_WEB_BASE_URL:http://localhost:3000}
   mail:
     from: ${PAYSI_MAIL_FROM:nao-responda@paysi.local}
@@ -65,3 +66,5 @@ paysi:
     encryption-key: ${MFA_ENCRYPTION_KEY_BASE64:}
   payout:
     mfa-threshold-cents: ${PAYOUT_MFA_THRESHOLD_CENTS:100000}
+  payment:
+    fake-outcome: ${PAYMENT_FAKE_OUTCOME:APPROVED}
