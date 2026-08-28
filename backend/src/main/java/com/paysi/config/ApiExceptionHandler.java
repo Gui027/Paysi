@@ -1,12 +1,14 @@
 package com.paysi.config;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.paysi.core.error.ConflictException;
-import com.paysi.core.error.ValidationException;
-import com.paysi.core.error.UnauthorizedException;
 import com.paysi.core.error.ForbiddenException;
 import com.paysi.core.error.NotFoundException;
+import com.paysi.core.error.UnauthorizedException;
+import com.paysi.core.error.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -57,5 +59,24 @@ class ApiExceptionHandler {
     ResponseEntity<ApiError> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiError.of(ex.code(), ex.getMessage(), (String) null));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiError> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        InvalidFormatException invalidFormat = findCause(ex, InvalidFormatException.class);
+        if (invalidFormat != null && !invalidFormat.getPath().isEmpty()) {
+            String field = invalidFormat.getPath().getLast().getFieldName();
+            return ResponseEntity.badRequest().body(ApiError.of(
+                    "INVALID_ENUM", "Valor inválido para o campo " + field, field));
+        }
+        return ResponseEntity.badRequest().body(ApiError.of(
+                "MALFORMED_JSON", "Corpo da requisição é inválido", (String) null));
+    }
+
+    private static <T extends Throwable> T findCause(Throwable error, Class<T> type) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (type.isInstance(cause)) return type.cast(cause);
+        }
+        return null;
     }
 }

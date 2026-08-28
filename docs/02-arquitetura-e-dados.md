@@ -191,6 +191,12 @@ WHERE id = :id AND archived_at IS NULL
 
 `BOLETO` só existe em oferta de segmento `SAAS`, por gatilho sobre `offer_payment_methods`.
 
+**Contrato do produto (BE-03.1).** A habilitação de afiliados pertence ao produto,
+assim como o vínculo das afiliações. A migração `V041` move o valor histórico de
+`offers.affiliates_enabled` para `products.affiliation_enabled` e remove a coluna
+antiga, preservando uma única fonte de verdade. Produtos criados pela API nascem
+em `DRAFT`; publicação e slug continuam sendo responsabilidades da oferta.
+
 ### 3.4 Comprador
 
 ```sql
@@ -733,6 +739,10 @@ REST sobre JSON. Autenticação por token de sessão no painel e por chave de AP
 | GET | `/v1/accounts/me` | Dados e estado da verificação |
 | POST | `/v1/accounts/me/kyc` | Iniciar verificação, devolve link do provedor |
 | POST | `/v1/products` | Criar produto |
+| GET | `/v1/products` | Listar produtos do vendedor por cursor |
+| GET | `/v1/products/{id}` | Detalhar produto do vendedor |
+| PUT | `/v1/products/{id}` | Editar campos do produto enquanto permitido |
+| DELETE | `/v1/products/{id}` | Arquivar produto logicamente |
 | POST | `/v1/products/{id}/offers` | Criar oferta |
 | GET | `/v1/offers/{slug}/checkout` | Dados públicos, incluindo campos exigidos pelo segmento |
 | POST | `/v1/checkout/{slug}/orders` | Criar pedido e cobrança |

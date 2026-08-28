@@ -23,4 +23,18 @@ class PackageDependencyTest {
                 .resideInAnyPackage("org.springframework..", "jakarta.persistence..")
                 .check(classes);
     }
+
+    @Test
+    void catalogDomainStaysIndependentAndWebDoesNotReachAdapters() {
+        var classes = new ClassFileImporter().importPackages("com.paysi.catalog");
+
+        noClasses().that().resideInAnyPackage("..catalog..domain..")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage("org.springframework..", "jakarta.persistence..")
+                .check(classes);
+
+        noClasses().that().resideInAnyPackage("..catalog..web..")
+                .should().dependOnClassesThat().resideInAnyPackage("..catalog..adapter..")
+                .check(classes);
+    }
 }
