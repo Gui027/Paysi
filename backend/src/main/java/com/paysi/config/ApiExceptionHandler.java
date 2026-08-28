@@ -4,6 +4,7 @@ import com.paysi.core.error.ConflictException;
 import com.paysi.core.error.ValidationException;
 import com.paysi.core.error.UnauthorizedException;
 import com.paysi.core.error.ForbiddenException;
+import com.paysi.core.error.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -49,6 +50,12 @@ class ApiExceptionHandler {
     @ExceptionHandler(ForbiddenException.class)
     ResponseEntity<ApiError> handleForbidden(ForbiddenException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiError.of(ex.code(), ex.getMessage(), (String) null));
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    ResponseEntity<ApiError> handleNotFound(NotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiError.of(ex.code(), ex.getMessage(), (String) null));
     }
 }
