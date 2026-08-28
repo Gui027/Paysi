@@ -3,7 +3,7 @@ services:
     build:
       context: https://github.com/Gui027/Paysi.git#main
       dockerfile: infra/postgres/Dockerfile
-    image: paysi-postgres:16
+    image: paysi-postgres:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       POSTGRES_DB: paysi
@@ -52,7 +52,7 @@ services:
     build:
       context: https://github.com/Gui027/Paysi.git#main
       dockerfile: backend/Dockerfile
-    image: paysi-backend:latest
+    image: paysi-backend:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - "8090:8080"
@@ -98,7 +98,7 @@ services:
     build:
       context: https://github.com/Gui027/Paysi.git#main
       dockerfile: web-painel/Dockerfile
-    image: paysi-painel:latest
+    image: paysi-painel:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - "3020:3000"
@@ -112,7 +112,7 @@ services:
     build:
       context: https://github.com/Gui027/Paysi.git#main
       dockerfile: web-checkout/Dockerfile
-    image: paysi-checkout:latest
+    image: paysi-checkout:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - "5180:8080"
