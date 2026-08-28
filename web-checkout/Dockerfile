@@ -7,6 +7,7 @@ COPY web-checkout/package.json web-checkout/package.json
 RUN npm ci
 
 COPY web-checkout web-checkout
+COPY shared shared
 RUN npm run build --workspace web-checkout
 
 FROM nginx:1.27-alpine
