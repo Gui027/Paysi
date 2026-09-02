@@ -70,6 +70,20 @@ class JdbcOfferRepository implements OfferRepository {
     }
 
     @Override
+    public Optional<Offer> findPublishedBySlug(String slug) {
+        return jdbc.query("""
+                SELECT o.*
+                  FROM offers o
+                  JOIN products p ON p.id = o.product_id
+                 WHERE o.slug = ?
+                   AND o.status = 'PUBLISHED'
+                   AND o.archived_at IS NULL
+                   AND p.status = 'ACTIVE'
+                   AND p.archived_at IS NULL
+                """, (rs, row) -> map(rs), slug).stream().findFirst();
+    }
+
+    @Override
     public void update(Offer offer) {
         try {
             int changed = jdbc.update("""
@@ -91,6 +105,30 @@ class JdbcOfferRepository implements OfferRepository {
             }
             throw error;
         }
+    }
+
+    @Override
+    public boolean publish(UUID sellerId, UUID offerId, Instant publishedAt) {
+        int changed = jdbc.update("""
+                UPDATE offers o
+                   SET status = 'PUBLISHED', updated_at = ?
+                  FROM products p
+                 WHERE p.id = o.product_id
+                   AND p.seller_id = ?
+                   AND p.archived_at IS NULL
+                   AND o.id = ?
+                   AND o.status = 'DRAFT'
+                   AND o.archived_at IS NULL
+                """, Timestamp.from(publishedAt), sellerId, offerId);
+        if (changed == 1) {
+            jdbc.update("""
+                    UPDATE products p
+                       SET status = 'ACTIVE'
+                      FROM offers o
+                     WHERE o.product_id = p.id AND o.id = ? AND p.seller_id = ?
+                    """, offerId, sellerId);
+        }
+        return changed == 1;
     }
 
     @Override

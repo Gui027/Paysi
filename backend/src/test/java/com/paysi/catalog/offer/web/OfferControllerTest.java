@@ -2,6 +2,9 @@ package com.paysi.catalog.offer.web;
 
 import com.paysi.catalog.offer.app.OfferService;
 import com.paysi.catalog.offer.app.OfferView;
+import com.paysi.catalog.offer.app.OfferPublication;
+import com.paysi.catalog.offer.app.OfferPublicationService;
+import com.paysi.catalog.offer.app.PublicationAction;
 import com.paysi.catalog.offer.domain.BillingCycle;
 import com.paysi.catalog.offer.domain.Offer;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
@@ -50,6 +53,9 @@ class OfferControllerTest {
 
     @MockitoBean
     private OfferService offers;
+
+    @MockitoBean
+    private OfferPublicationService publications;
 
     @MockitoBean
     private SessionService sessions;
@@ -106,6 +112,44 @@ class OfferControllerTest {
     }
 
     @Test
+    void publishesOfferOrReturnsRequiredKycAction() throws Exception {
+        OfferView stored = view();
+        when(publications.publish(SELLER, stored.offer().id()))
+                .thenReturn(OfferPublication.action(PublicationAction.COMPLETE_KYC,
+                        "https://kyc/process", stored));
+
+        mvc.perform(post("/v1/offers/{id}/publish", stored.offer().id()).cookie(cookie()))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.published").value(false))
+                .andExpect(jsonPath("$.requiredAction").value("COMPLETE_KYC"))
+                .andExpect(jsonPath("$.actionUrl").value("https://kyc/process"));
+
+        Offer published = new Offer(stored.offer().id(), PRODUCT, ChargeType.SUBSCRIPTION, Segment.SAAS,
+                stored.offer().slug(), 10_000, BillingCycle.MONTHLY, 7, false, 7, 12, 3, 5,
+                stored.offer().paymentMethods(), OfferPayoutDelay.D15, OfferStatus.PUBLISHED,
+                null, NOW, NOW);
+        when(publications.publish(SELLER, stored.offer().id()))
+                .thenReturn(OfferPublication.published(new OfferView(published, stored.availableAt())));
+
+        mvc.perform(post("/v1/offers/{id}/publish", stored.offer().id()).cookie(cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.published").value(true))
+                .andExpect(jsonPath("$.offer.status").value("PUBLISHED"));
+    }
+
+    @Test
+    void exposesOnlyPublishedCheckoutContractWithoutSession() throws Exception {
+        OfferView published = view();
+        when(offers.getPublished(published.offer().slug())).thenReturn(published);
+
+        mvc.perform(get("/v1/offers/{slug}/checkout", published.offer().slug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value(published.offer().slug()));
+
+        verify(offers).getPublished(published.offer().slug());
+    }
+
+    @Test
     void rejectsInvalidRangesAndEnumsBeforeService() throws Exception {
         mvc.perform(post("/v1/products/{id}/offers", PRODUCT).cookie(cookie())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -118,6 +162,17 @@ class OfferControllerTest {
                 .andExpect(jsonPath("$.field").value("cycle"));
 
         verifyNoInteractions(offers);
+    }
+
+    @Test
+    void rejectsAttemptsToChangeImmutableContractFields() throws Exception {
+        mvc.perform(put("/v1/offers/{id}", UUID.randomUUID()).cookie(cookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validBody().replace("\"payoutDelay\": \"D15\"",
+                                "\"payoutDelay\": \"D15\", \"productId\": \"" + PRODUCT
+                                        + "\", \"segment\": \"DIGITAL\", \"chargeType\": \"ONE_TIME\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
     private static jakarta.servlet.http.Cookie cookie() {
