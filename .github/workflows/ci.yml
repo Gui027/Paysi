@@ -56,5 +56,6 @@ jobs:
           node-version: "20.19"
           cache: npm
       - run: npm ci
+      - run: npm run test
       - run: npm run lint
       - run: npm run build

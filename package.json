@@ -6,10 +6,10 @@
     "dev:painel": "npm run dev --workspace web-painel",
     "dev:checkout": "npm run dev --workspace web-checkout",
     "build": "npm run build --workspaces",
-    "lint": "npm run lint --workspaces"
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspace web-painel"
   },
   "engines": {
     "node": ">=20.19.0"
   }
 }
-
