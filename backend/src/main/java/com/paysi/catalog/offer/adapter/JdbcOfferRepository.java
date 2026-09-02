@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
@@ -52,7 +53,7 @@ class JdbcOfferRepository implements OfferRepository {
                 offer.slug(), offer.priceCents(), name(offer.cycle()), offer.trialDays(),
                 offer.trialRequiresCard(), offer.guaranteeDays(), offer.maxInstallments(),
                 offer.boletoDueDays(), offer.boletoAdvanceDays(), offer.payoutDelay().name(),
-                offer.status().name(), offer.createdAt(), offer.updatedAt());
+                offer.status().name(), Timestamp.from(offer.createdAt()), Timestamp.from(offer.updatedAt()));
         replaceMethods(offer);
     }
 
@@ -80,7 +81,7 @@ class JdbcOfferRepository implements OfferRepository {
                     """, offer.priceCents(), name(offer.cycle()), offer.trialDays(),
                     offer.trialRequiresCard(), offer.guaranteeDays(), offer.maxInstallments(),
                     offer.boletoDueDays(), offer.boletoAdvanceDays(), offer.payoutDelay().name(),
-                    offer.updatedAt(), offer.id());
+                    Timestamp.from(offer.updatedAt()), offer.id());
             if (changed != 1) throw new IllegalStateException("Oferta desapareceu durante a atualização");
             replaceMethods(offer);
         } catch (DataAccessException error) {
@@ -103,7 +104,7 @@ class JdbcOfferRepository implements OfferRepository {
                    AND p.archived_at IS NULL
                    AND o.id = ?
                    AND o.archived_at IS NULL
-                """, archivedAt, archivedAt, sellerId, offerId) == 1;
+                """, Timestamp.from(archivedAt), Timestamp.from(archivedAt), sellerId, offerId) == 1;
     }
 
     private Offer map(ResultSet rs) throws SQLException {
