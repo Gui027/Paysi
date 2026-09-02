@@ -87,6 +87,16 @@ public record Offer(
                 values.paymentMethods(), values.payoutDelay(), status, archivedAt, createdAt, now);
     }
 
+    public Offer publish(Instant now) {
+        if (status == OfferStatus.PUBLISHED) return this;
+        if (status != OfferStatus.DRAFT) {
+            throw invalid("Apenas ofertas em rascunho podem ser publicadas", "status");
+        }
+        return new Offer(id, productId, chargeType, segment, slug, priceCents, cycle, trialDays,
+                trialRequiresCard, guaranteeDays, maxInstallments, boletoDueDays, boletoAdvanceDays,
+                paymentMethods, payoutDelay, OfferStatus.PUBLISHED, null, createdAt, now);
+    }
+
     private static ValidationException invalid(String message, String field) {
         return new ValidationException("OFFER_INVALID", message, field);
     }

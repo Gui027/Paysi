@@ -13,7 +13,11 @@ public interface OfferRepository {
 
     Optional<Offer> findActiveOwned(UUID sellerId, UUID offerId);
 
+    Optional<Offer> findPublishedBySlug(String slug);
+
     void update(Offer offer);
+
+    boolean publish(UUID sellerId, UUID offerId, java.time.Instant publishedAt);
 
     boolean archive(UUID sellerId, UUID offerId, java.time.Instant archivedAt);
 }

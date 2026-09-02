@@ -182,7 +182,13 @@ class OfferServiceTest {
             return rows.stream().filter(o -> o.id().equals(offerId) && o.archivedAt() == null)
                     .filter(o -> owners.get(o.id()).equals(sellerId)).findFirst();
         }
+        public Optional<Offer> findPublishedBySlug(String slug) {
+            return rows.stream().filter(o -> o.slug().equals(slug))
+                    .filter(o -> o.status() == com.paysi.catalog.offer.domain.OfferStatus.PUBLISHED)
+                    .findFirst();
+        }
         public void update(Offer offer) { rows.replaceAll(o -> o.id().equals(offer.id()) ? offer : o); }
+        public boolean publish(UUID sellerId, UUID offerId, Instant publishedAt) { return false; }
         public boolean archive(UUID sellerId, UUID offerId, Instant archivedAt) {
             Optional<Offer> found = findActiveOwned(sellerId, offerId);
             if (found.isEmpty()) return false;

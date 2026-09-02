@@ -58,6 +58,12 @@ public class OfferService {
         return view(requireOffer(sellerId, offerId), clock.instant());
     }
 
+    @Transactional(readOnly = true)
+    public OfferView getPublished(String slug) {
+        Offer offer = offers.findPublishedBySlug(slug).orElseThrow(OfferService::offerNotFound);
+        return view(offer, clock.instant());
+    }
+
     @Transactional
     public OfferView update(UUID sellerId, UUID offerId, OfferValues values) {
         Offer changed = requireOffer(sellerId, offerId).update(values, clock.instant());

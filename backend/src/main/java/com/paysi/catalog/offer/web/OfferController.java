@@ -1,6 +1,8 @@
 package com.paysi.catalog.offer.web;
 
 import com.paysi.catalog.offer.app.OfferService;
+import com.paysi.catalog.offer.app.OfferPublicationService;
+import com.paysi.catalog.offer.web.dto.OfferPublicationResponse;
 import com.paysi.catalog.offer.web.dto.OfferRequest;
 import com.paysi.catalog.offer.web.dto.OfferResponse;
 import com.paysi.identity.session.app.SessionService;
@@ -29,10 +31,12 @@ public class OfferController {
     private static final String COOKIE_NAME = "paysi_session";
 
     private final OfferService offers;
+    private final OfferPublicationService publications;
     private final SessionService sessions;
 
-    public OfferController(OfferService offers, SessionService sessions) {
+    public OfferController(OfferService offers, OfferPublicationService publications, SessionService sessions) {
         this.offers = offers;
+        this.publications = publications;
         this.sessions = sessions;
     }
 
@@ -60,6 +64,22 @@ public class OfferController {
             @CookieValue(name = COOKIE_NAME, required = false) String token,
             @PathVariable UUID offerId) {
         return OfferResponse.from(offers.get(accountId(token), offerId));
+    }
+
+    @GetMapping("/offers/{slug}/checkout")
+    @Operation(summary = "Carregar oferta publicada para checkout")
+    public OfferResponse checkout(@PathVariable String slug) {
+        return OfferResponse.from(offers.getPublished(slug));
+    }
+
+    @PostMapping("/offers/{offerId}/publish")
+    @Operation(summary = "Publicar oferta")
+    public ResponseEntity<OfferPublicationResponse> publish(
+            @CookieValue(name = COOKIE_NAME, required = false) String token,
+            @PathVariable UUID offerId) {
+        OfferPublicationResponse response = OfferPublicationResponse.from(
+                publications.publish(accountId(token), offerId));
+        return response.published() ? ResponseEntity.ok(response) : ResponseEntity.accepted().body(response);
     }
 
     @PutMapping("/offers/{offerId}")
