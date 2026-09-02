@@ -4,7 +4,7 @@ import com.paysi.catalog.product.app.ProductCursor;
 import com.paysi.catalog.product.domain.Product;
 import com.paysi.catalog.product.port.ProductRepository;
 import com.paysi.core.error.ConflictException;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -51,7 +51,7 @@ class JpaProductRepository implements ProductRepository {
         entity.apply(product);
         try {
             jpa.saveAndFlush(entity);
-        } catch (DataIntegrityViolationException error) {
+        } catch (DataAccessException error) {
             if (containsMessage(error, "segment e charge_type imutaveis apos existir oferta")) {
                 throw new ConflictException("PRODUCT_CONTRACT_IMMUTABLE",
                         "Segmento e tipo de cobrança não podem mudar após a criação de uma oferta", null);

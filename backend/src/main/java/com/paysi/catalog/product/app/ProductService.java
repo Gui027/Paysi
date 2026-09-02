@@ -4,6 +4,7 @@ import com.paysi.catalog.product.domain.Product;
 import com.paysi.catalog.product.port.ProductRepository;
 import com.paysi.core.error.ConflictException;
 import com.paysi.core.error.NotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ public class ProductService {
     private final ProductRepository repository;
     private final Clock clock;
 
+    @Autowired
     public ProductService(ProductRepository repository) {
         this(repository, Clock.systemUTC());
     }
