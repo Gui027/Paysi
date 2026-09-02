@@ -98,17 +98,19 @@ class OfferRepositoryIntegrationTest {
     }
 
     @Test
-    void databaseRejectsInvalidCommercialCombinations() {
+    void databaseRejectsPriceBelowMinimum() {
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO offers (id,product_id,charge_type,segment,slug,amount_cents,cycle)
                 VALUES (?,?,'IGNORED','IGNORED','baixo',1999,'MONTHLY')
                 """, UUID.randomUUID(), PRODUCT)).isInstanceOf(DataIntegrityViolationException.class);
+    }
 
-        Offer offer = offer();
-        repository.insert(offer);
+    @Test
+    void databaseRejectsBoletoForDigitalProduct() {
+        UUID offerId = digitalOffer();
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO offer_payment_methods (offer_id,method) VALUES (?,'BOLETO')
-                """, digitalOffer())).isInstanceOf(DataIntegrityViolationException.class);
+                """, offerId)).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private UUID digitalOffer() {
