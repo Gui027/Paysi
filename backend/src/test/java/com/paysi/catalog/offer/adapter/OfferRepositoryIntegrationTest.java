@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -110,7 +111,8 @@ class OfferRepositoryIntegrationTest {
         UUID offerId = digitalOffer();
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO offer_payment_methods (offer_id,method) VALUES (?,'BOLETO')
-                """, offerId)).isInstanceOf(DataIntegrityViolationException.class);
+                """, offerId)).isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("Boleto disponivel apenas no segmento SAAS");
     }
 
     private UUID digitalOffer() {
