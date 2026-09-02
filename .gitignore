@@ -11,6 +11,7 @@ backend/target/
 node_modules/
 .next/
 dist/
+.test-dist/
 coverage/
 *.tsbuildinfo
 
@@ -22,4 +23,3 @@ Thumbs.db
 
 # Infra local
 infra/.data/
-

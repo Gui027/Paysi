@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <a className="skip-link" href="#conteudo">Ir para o conteúdo</a>
     <aside id="menu-principal" className={`sidebar ${open ? "sidebar-open" : ""}`}>
       <img src="/paysi-logo.svg" alt="Paysi" />
-      <nav aria-label="Navegação principal">{links.map(([href, label]) => <Link key={href} href={href} aria-current={pathname === href ? "page" : undefined} onClick={() => setOpen(false)}>{label}</Link>)}</nav>
+      <nav aria-label="Navegação principal">{links.map(([href, label]) => <Link key={href} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? "page" : undefined} onClick={() => setOpen(false)}>{label}</Link>)}</nav>
       <LogoutButton />
     </aside>
     <div className="app-column">
