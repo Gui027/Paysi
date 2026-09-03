@@ -7,7 +7,7 @@ const panelRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const output = join(panelRoot, ".test-dist");
 const tsc = join(panelRoot, "..", "node_modules", "typescript", "bin", "tsc");
 
-const modules = ["produtos", "moeda"];
+const modules = ["produtos", "moeda", "dashboard"];
 
 rmSync(output, { recursive: true, force: true });
 
