@@ -54,8 +54,6 @@ services:
       dockerfile: backend/Dockerfile
     image: paysi-backend:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
-    ports:
-      - "8090:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -78,21 +76,35 @@ services:
       SPRING_RABBITMQ_PASSWORD: ${PAYSI_RABBIT_PASSWORD}
       MAIL_HOST: mail
       MAIL_PORT: 1025
-      PAYSI_WEB_BASE_URL: http://186.218.63.106:3020
+      PAYSI_WEB_BASE_URL: https://${PAYSI_PAINEL_DOMAIN}
+      PAYSI_PUBLIC_API_URL: https://${PAYSI_API_DOMAIN}
+      PAYSI_ASSET_STORAGE_PATH: /var/lib/paysi/assets
       PAYSI_MAIL_FROM: nao-responda@paysi.local
-      SESSION_COOKIE_SECURE: "false"
+      SESSION_COOKIE_SECURE: "true"
       PAYSI_PROVIDER: fake
       PAYSI_FISCAL: fake
       PAYMENT_FAKE_OUTCOME: APPROVED
       KYC_WEBHOOK_SECRET: ${KYC_WEBHOOK_SECRET}
       PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
       MFA_ENCRYPTION_KEY_BASE64: ${MFA_ENCRYPTION_KEY_BASE64}
+    volumes:
+      - paysi_assets:/var/lib/paysi/assets
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
       interval: 15s
       timeout: 5s
       retries: 20
       start_period: 45s
+    networks:
+      - default
+      - traefik-public
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.paysi-api.rule=Host(`${PAYSI_API_DOMAIN}`)
+      - traefik.http.routers.paysi-api.entrypoints=websecure
+      - traefik.http.routers.paysi-api.tls.certresolver=le
+      - traefik.http.services.paysi-api.loadbalancer.server.port=8080
 
   painel:
     build:
@@ -100,13 +112,21 @@ services:
       dockerfile: web-painel/Dockerfile
     image: paysi-painel:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
-    ports:
-      - "3020:3000"
     depends_on:
       backend:
         condition: service_started
     environment:
       PAYSI_API_URL: http://backend:8080
+    networks:
+      - default
+      - traefik-public
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.paysi-painel.rule=Host(`${PAYSI_PAINEL_DOMAIN}`)
+      - traefik.http.routers.paysi-painel.entrypoints=websecure
+      - traefik.http.routers.paysi-painel.tls.certresolver=le
+      - traefik.http.services.paysi-painel.loadbalancer.server.port=3000
 
   checkout:
     build:
@@ -114,15 +134,29 @@ services:
       dockerfile: web-checkout/Dockerfile
     image: paysi-checkout:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
-    ports:
-      - "5180:8080"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
       interval: 15s
       timeout: 5s
       retries: 10
+    networks:
+      - default
+      - traefik-public
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.paysi-checkout.rule=Host(`${PAYSI_CHECKOUT_DOMAIN}`)
+      - traefik.http.routers.paysi-checkout.entrypoints=websecure
+      - traefik.http.routers.paysi-checkout.tls.certresolver=le
+      - traefik.http.services.paysi-checkout.loadbalancer.server.port=8080
+
+networks:
+  default:
+  traefik-public:
+    external: true
 
 volumes:
   paysi_pgdata:
   paysi_redisdata:
   paysi_rabbitdata:
+  paysi_assets:
