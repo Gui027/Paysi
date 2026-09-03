@@ -150,6 +150,22 @@ services:
       - traefik.http.routers.paysi-checkout.tls.certresolver=le
       - traefik.http.services.paysi-checkout.loadbalancer.server.port=8080
 
+  site:
+    build:
+      context: https://github.com/Gui027/Paysi.git#main
+      dockerfile: web-site/Dockerfile
+    image: paysi-site:${PAYSI_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.paysi-site.rule=Host(`${PAYSI_SITE_DOMAIN}`)
+      - traefik.http.routers.paysi-site.entrypoints=websecure
+      - traefik.http.routers.paysi-site.tls.certresolver=le
+      - traefik.http.services.paysi-site.loadbalancer.server.port=3030
+
 networks:
   default:
   traefik-public:
