@@ -54,15 +54,17 @@ export function getLedgerEntries(limit = 100) {
   return apiRequest<CursorPage<LedgerItem>>(`/v1/accounts/me/ledger?limit=${limit}`);
 }
 
-export function upcomingReceivables(items: LedgerItem[], now: Date = new Date()): LedgerItem[] {
+export type Recebivel = LedgerItem & { availableAt: string };
+
+export function upcomingReceivables(items: LedgerItem[], now: Date = new Date()): Recebivel[] {
   return items
-    .filter((item): item is LedgerItem & { availableAt: string } =>
+    .filter((item): item is Recebivel =>
       item.bucket === "PENDING" && item.direction === "CREDIT" && item.availableAt !== null && new Date(item.availableAt) > now)
     .sort((a, b) => new Date(a.availableAt).getTime() - new Date(b.availableAt).getTime())
     .slice(0, 5);
 }
 
-export async function fetchUpcomingReceivables(now: Date = new Date()): Promise<LedgerItem[]> {
+export async function fetchUpcomingReceivables(now: Date = new Date()): Promise<Recebivel[]> {
   const page = await getLedgerEntries(100);
   return upcomingReceivables(page.items, now);
 }
