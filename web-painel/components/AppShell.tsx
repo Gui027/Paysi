@@ -7,7 +7,7 @@ import { currentSession, SessionCreated, switchMode } from "../lib/sessao";
 import { Botao } from "./ui";
 import { LogoutButton } from "./LogoutButton";
 
-const links = [["/inicio", "Início"], ["/produtos", "Produtos"], ["/vendas", "Vendas"], ["/assinaturas", "Assinaturas"], ["/afiliados", "Afiliados"], ["/saldo", "Saldo"], ["/componentes", "Componentes"]] as const;
+const links = [["/inicio", "Início"], ["/produtos", "Produtos"], ["/vendas", "Vendas"], ["/assinaturas", "Assinaturas"], ["/afiliados", "Afiliados"], ["/saldo", "Saldo"], ["/verificacao", "Verificação"], ["/perfil", "Perfil"], ["/componentes", "Componentes"]] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

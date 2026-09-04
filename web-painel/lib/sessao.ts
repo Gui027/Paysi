@@ -23,7 +23,7 @@ export function logout() {
 
 export function switchMode(mode: SessionCreated["activeMode"]) {
   return apiRequest<SessionCreated>("/v1/sessions/current/mode", {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify({ mode }),
   });
 }

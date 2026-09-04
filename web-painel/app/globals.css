@@ -187,6 +187,9 @@ button { cursor: pointer; }
 .product-form-grid .ui-field { margin-bottom: var(--esp-2); }
 .field-explanation { min-height: 42px; margin: 0 0 var(--esp-5); color: var(--texto-apoio); font-size: 13px; }
 .contract-lock, .draft-note { padding: var(--esp-3) var(--esp-4); border-radius: var(--raio-sm); font-size: 14px; }
+.kyc-checklist { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--esp-4); }
+.kyc-requirement { padding: var(--esp-4); border: 1px solid var(--borda); border-radius: var(--raio-sm); }
+.kyc-requirement p { margin: var(--esp-2) 0 0; color: var(--texto-apoio); font-size: 14px; }
 .contract-lock { margin: 0 0 var(--esp-5); color: var(--atencao); background: var(--atencao-superficie); }
 .draft-note { color: var(--texto-apoio); background: var(--info-superficie); }
 .product-form-actions { margin-top: var(--esp-6); }
