@@ -56,3 +56,53 @@ export function Skeleton({ label = "Carregando conteúdo" }: { label?: string })
 export function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
   return <div className="ui-empty"><span aria-hidden="true">◇</span><h2>{title}</h2><p>{description}</p>{action}</div>;
 }
+
+export function UploadImagem({ label, hint, error, previewUrl, uploading, onSelect, onRemove }: {
+  label: string;
+  hint?: string;
+  error?: string;
+  previewUrl: string | null;
+  uploading?: boolean;
+  onSelect: (file: File) => void;
+  onRemove?: () => void;
+}) {
+  const generatedId = useId();
+  const helpId = `${generatedId}-help`;
+  return <div className="ui-field ui-upload">
+    <span>{label}</span>
+    {previewUrl && <img className="ui-upload-preview" src={previewUrl} alt="" />}
+    <input id={generatedId} type="file" accept="image/png,image/jpeg" disabled={uploading}
+      aria-invalid={Boolean(error)} aria-describedby={(error || hint) ? helpId : undefined}
+      onChange={event => {
+        const file = event.target.files?.[0];
+        if (file) onSelect(file);
+        event.target.value = "";
+      }} />
+    <div className="ui-upload-actions">
+      {uploading && <span role="status">Enviando…</span>}
+      {previewUrl && onRemove && !uploading && <Botao type="button" variant="secondary" onClick={onRemove}>Remover</Botao>}
+    </div>
+    {(error || hint) && <small id={helpId} className={error ? "ui-error" : "ui-hint"}>{error ?? hint}</small>}
+  </div>;
+}
+
+export function SeletorCor({ label, value, error, onChange }: {
+  label: string;
+  value: string;
+  error?: string;
+  onChange: (value: string) => void;
+}) {
+  const generatedId = useId();
+  const helpId = `${generatedId}-help`;
+  const previewColor = /^#[0-9A-Fa-f]{6}$/.test(value) ? value : "#000000";
+  return <label className="ui-field" htmlFor={generatedId}>
+    <span>{label}</span>
+    <div className="ui-color-row">
+      <input type="color" aria-label={`${label} (seletor visual)`} value={previewColor} onChange={event => onChange(event.target.value.toUpperCase())} />
+      <input id={generatedId} type="text" value={value} maxLength={7} placeholder="#2563EB"
+        aria-invalid={Boolean(error)} aria-describedby={error ? helpId : undefined}
+        onChange={event => onChange(event.target.value)} />
+    </div>
+    {error && <small id={helpId} className="ui-error">{error}</small>}
+  </label>;
+}
