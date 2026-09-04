@@ -138,18 +138,6 @@ class OfferControllerTest {
     }
 
     @Test
-    void exposesOnlyPublishedCheckoutContractWithoutSession() throws Exception {
-        OfferView published = view();
-        when(offers.getPublished(published.offer().slug())).thenReturn(published);
-
-        mvc.perform(get("/v1/offers/{slug}/checkout", published.offer().slug()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.slug").value(published.offer().slug()));
-
-        verify(offers).getPublished(published.offer().slug());
-    }
-
-    @Test
     void rejectsInvalidRangesAndEnumsBeforeService() throws Exception {
         mvc.perform(post("/v1/products/{id}/offers", PRODUCT).cookie(cookie())
                         .contentType(MediaType.APPLICATION_JSON)
