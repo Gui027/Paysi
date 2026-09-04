@@ -29,6 +29,10 @@ spring:
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 management:
   endpoints:
@@ -55,6 +59,9 @@ springdoc:
 paysi:
   provider: ${PAYSI_PROVIDER:fake}
   web-base-url: ${PAYSI_WEB_BASE_URL:http://localhost:3000}
+  asset:
+    storage-path: ${PAYSI_ASSET_STORAGE_PATH:./data/assets}
+    public-base-url: ${PAYSI_PUBLIC_API_URL:http://localhost:8080}
   mail:
     from: ${PAYSI_MAIL_FROM:nao-responda@paysi.local}
   session:
