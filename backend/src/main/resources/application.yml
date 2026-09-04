@@ -62,6 +62,10 @@ paysi:
   asset:
     storage-path: ${PAYSI_ASSET_STORAGE_PATH:./data/assets}
     public-base-url: ${PAYSI_PUBLIC_API_URL:http://localhost:8080}
+  checkout:
+    legal:
+      terms-url: ${PAYSI_CHECKOUT_TERMS_URL:https://paysi.com.br/termos}
+      privacy-url: ${PAYSI_CHECKOUT_PRIVACY_URL:https://paysi.com.br/privacidade}
   mail:
     from: ${PAYSI_MAIL_FROM:nao-responda@paysi.local}
   session:

@@ -66,12 +66,6 @@ public class OfferController {
         return OfferResponse.from(offers.get(accountId(token), offerId));
     }
 
-    @GetMapping("/offers/{slug}/checkout")
-    @Operation(summary = "Carregar oferta publicada para checkout")
-    public OfferResponse checkout(@PathVariable String slug) {
-        return OfferResponse.from(offers.getPublished(slug));
-    }
-
     @PostMapping("/offers/{offerId}/publish")
     @Operation(summary = "Publicar oferta")
     public ResponseEntity<OfferPublicationResponse> publish(
