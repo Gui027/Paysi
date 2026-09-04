@@ -189,6 +189,26 @@ button { cursor: pointer; }
 .unsaved-indicator { color: var(--atencao); font-size: 13px; }
 @keyframes skeleton { to { background-position: -200% 0; } }
 
+.appearance-form { max-width: 960px; }
+.appearance-form .ui-toast { margin: 0 0 var(--esp-5); }
+.appearance-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--esp-5); }
+.ui-upload { gap: var(--esp-3); }
+.ui-upload input[type="file"] { min-height: auto; padding: var(--esp-2) 0; border: 0; }
+.ui-upload-preview { width: 100%; max-height: 160px; object-fit: contain; border: 1px solid var(--borda); border-radius: var(--raio-sm); background: var(--fundo-secao); }
+.ui-upload-actions { display: flex; align-items: center; gap: var(--esp-3); }
+.ui-color-row { display: flex; align-items: center; gap: var(--esp-3); }
+.ui-color-row input[type="color"] { width: 46px; padding: 4px; }
+.ui-color-row input[type="text"] { flex: 1; text-transform: uppercase; }
+.appearance-preview-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--esp-6); margin-top: var(--esp-6); }
+.appearance-preview { border: 1px solid var(--borda); border-radius: var(--raio-lg); overflow: hidden; background: var(--fundo-secao); }
+.appearance-preview header { padding: var(--esp-2) var(--esp-4); font-size: 13px; color: var(--texto-apoio); background: var(--fundo-elevado); border-bottom: 1px solid var(--borda); }
+.appearance-preview-body { padding: var(--esp-6); display: grid; gap: var(--esp-4); justify-items: center; text-align: center; }
+.appearance-preview-body img { max-width: 100%; max-height: 96px; object-fit: contain; }
+.appearance-preview-body button { border: 0; border-radius: var(--raio-md); padding: var(--esp-3) var(--esp-6); color: white; font-weight: var(--peso-forte); }
+.appearance-preview-desktop .appearance-preview-body { min-height: 220px; }
+.appearance-preview-mobile { max-width: 240px; }
+.appearance-preview-mobile .appearance-preview-body { min-height: 260px; }
+
 @media (max-width: 800px) {
   .auth-shell { grid-template-columns: 1fr; }
   .auth-brand { display: none; }
@@ -206,4 +226,6 @@ button { cursor: pointer; }
   .product-filters, .product-row, .product-detail-grid { grid-template-columns: 1fr; }
   .product-form-grid { grid-template-columns: 1fr; gap: 0; }
   .product-actions { justify-content: flex-start; }
+  .appearance-grid { grid-template-columns: 1fr; }
+  .appearance-preview-grid { grid-template-columns: 1fr; }
 }
