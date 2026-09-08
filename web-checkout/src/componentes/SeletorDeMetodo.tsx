@@ -1,10 +1,16 @@
 export type Metodo = "cartao" | "pix" | "boleto";
 
-export function SeletorDeMetodo({ value, onChange }: { value: Metodo; onChange: (value: Metodo) => void }) {
+const TODOS_OS_METODOS: readonly Metodo[] = ["cartao", "pix", "boleto"];
+
+export function SeletorDeMetodo({ value, onChange, disponiveis = TODOS_OS_METODOS }: {
+  value: Metodo;
+  onChange: (value: Metodo) => void;
+  disponiveis?: readonly Metodo[];
+}) {
   return (
     <fieldset className="payment-methods">
       <legend>Como você quer pagar?</legend>
-      {(["cartao", "pix", "boleto"] as const).map((method) => (
+      {disponiveis.map((method) => (
         <label key={method} className={value === method ? "selected" : undefined}>
           <input type="radio" name="metodo" value={method} checked={value === method} onChange={() => onChange(method)} />
           {method === "cartao" ? "Cartão" : method === "pix" ? "Pix" : "Boleto"}
