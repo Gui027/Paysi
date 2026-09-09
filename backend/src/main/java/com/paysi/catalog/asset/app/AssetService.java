@@ -7,6 +7,7 @@ import com.paysi.catalog.asset.port.AssetStorage;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.core.error.ValidationException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class AssetService {
     private final Clock clock;
     private final String publicBaseUrl;
 
+    @Autowired
     public AssetService(AssetRepository assets, AssetStorage storage,
                         @Value("${paysi.asset.public-base-url:http://localhost:8080}") String publicBaseUrl) {
         this(assets, storage, Clock.systemUTC(), publicBaseUrl);

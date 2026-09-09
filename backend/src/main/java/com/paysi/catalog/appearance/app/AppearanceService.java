@@ -7,6 +7,7 @@ import com.paysi.catalog.asset.port.AssetRepository;
 import com.paysi.catalog.offer.port.OfferRepository;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.core.error.ValidationException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ public class AppearanceService {
     private final AppearanceRepository appearances;
     private final Clock clock;
 
+    @Autowired
     public AppearanceService(OfferRepository offers, AssetRepository assets,
                              AppearanceRepository appearances) {
         this(offers, assets, appearances, Clock.systemUTC());
