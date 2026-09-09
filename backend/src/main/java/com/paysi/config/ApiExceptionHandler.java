@@ -12,6 +12,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 
@@ -71,6 +72,12 @@ class ApiExceptionHandler {
         }
         return ResponseEntity.badRequest().body(ApiError.of(
                 "MALFORMED_JSON", "Corpo da requisição é inválido", (String) null));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiError> handleUploadTooLarge(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.badRequest().body(ApiError.of(
+                "ASSET_TOO_LARGE", "A imagem deve ter no máximo 5 MB", "file"));
     }
 
     private static <T extends Throwable> T findCause(Throwable error, Class<T> type) {
