@@ -13,7 +13,7 @@ import {
   getKyc,
 } from "../../../lib/dashboard";
 import { formatarCentavos } from "../../../lib/moeda";
-import { Cartao, EmptyState, Etiqueta, Skeleton, Tabela, Toast } from "../../../components/ui";
+import { Cartao, Etiqueta, Skeleton, Tabela, Toast } from "../../../components/ui";
 
 const bucketLabel = {
   guarantee: "Garantia",
@@ -89,8 +89,8 @@ function SaldoBuckets() {
       {bucketOrder.map(bucket => {
         const tone = bucketTone(bucket, balance[bucket]);
         return <Cartao key={bucket} className="bucket-tile" data-tone={tone}>
-          <span>{bucketLabel[bucket]}</span>
-          <strong className={`paysi-valor bucket-valor-${tone}`}>{formatarCentavos(balance[bucket])}</strong>
+          <span className="bucket-rotulo">{bucketLabel[bucket]}</span>
+          <strong className={`paysi-valor bucket-valor bucket-valor-${tone}`}>{formatarCentavos(balance[bucket])}</strong>
         </Cartao>;
       })}
     </div>}
@@ -121,9 +121,14 @@ function Alertas() {
     <h2 id="alertas-titulo">Alertas</h2>
     {error && <Toast tone="danger">{error} <button className="toast-action" onClick={() => void load()}>Tentar novamente</button></Toast>}
     {loading ? <Skeleton label="Carregando alertas" /> :
-      alerts?.length === 0 ? <EmptyState title="Nenhum alerta no momento" description="Sua conta está em dia." /> :
+      alerts?.length === 0 ? <Cartao className="estado-vazio">
+        <IconeSelo tone="success"><IconCheque /></IconeSelo>
+        <h3>Nenhum alerta no momento</h3>
+        <p>Sua conta está em dia.</p>
+      </Cartao> :
       alerts && <div className="alert-list">
         {alerts.map(alert => <Cartao key={alert.id} role={alert.tone === "danger" ? "alert" : "status"}>
+          <IconeSelo tone={alert.tone === "danger" ? "danger" : "warning"}><IconAlerta /></IconeSelo>
           <div className="ui-labels"><Etiqueta tone={alert.tone}>{alert.tone === "danger" ? "Atenção" : "Aviso"}</Etiqueta></div>
           <h3>{alert.title}</h3>
           <p>{alert.description}</p>
@@ -156,9 +161,13 @@ function ProximosRecebimentos() {
     <h2 id="recebimentos-titulo">Próximos recebimentos</h2>
     {error && <Toast tone="danger">{error} <button className="toast-action" onClick={() => void load()}>Tentar novamente</button></Toast>}
     {loading ? <Skeleton label="Carregando próximos recebimentos" /> :
-      items?.length === 0 ? <EmptyState title="Nenhum recebimento previsto" description="Quando houver valores a caminho do seu saldo disponível, eles aparecem aqui." /> :
+      items?.length === 0 ? <Cartao className="estado-vazio">
+        <IconeSelo><IconCalendario /></IconeSelo>
+        <h3>Nenhum recebimento previsto</h3>
+        <p>Quando houver valores a caminho do seu saldo disponível, eles aparecem aqui.</p>
+      </Cartao> :
       items && <Tabela
-        caption="Próximos recebimentos"
+        caption="Recebíveis previstos, por data"
         headers={["Data prevista", "Valor"]}
         rows={items.map((item): ReactNode[] => [
           new Intl.DateTimeFormat("pt-BR").format(new Date(item.availableAt)),
@@ -170,11 +179,36 @@ function ProximosRecebimentos() {
 
 function BlocoEmBreve({ icon, title, description, cta }: { icon: ReactNode; title: string; description: string; cta?: boolean }) {
   return <Cartao className="em-breve">
-    <span className="em-breve-icone" aria-hidden="true">{icon}</span>
+    <IconeSelo>{icon}</IconeSelo>
     <h2>{title}</h2>
     <p>{description}</p>
     {cta && <Link className="ui-button ui-button-primary" href="/produtos/novo">Criar produto</Link>}
   </Cartao>;
+}
+
+function IconeSelo({ tone = "neutral", children }: { tone?: "neutral" | "success" | "warning" | "danger"; children: ReactNode }) {
+  return <span className={`icone-selo icone-selo-${tone}`} aria-hidden="true">{children}</span>;
+}
+
+function IconCheque() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 10.5 8 14.5 16 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>;
+}
+
+function IconAlerta() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 3 18 16.5H2L10 3Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+    <path d="M10 8.2v3.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+    <circle cx="10" cy="14" r="0.9" fill="currentColor"/>
+  </svg>;
+}
+
+function IconCalendario() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="4.5" width="14" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.6"/>
+    <path d="M3 8h14M6.5 3v3M13.5 3v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+  </svg>;
 }
 
 function IconVendas() {
