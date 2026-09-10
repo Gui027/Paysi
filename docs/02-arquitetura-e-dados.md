@@ -751,8 +751,9 @@ REST sobre JSON. Autenticação por token de sessão no painel e por chave de AP
 | GET | `/v1/charges/{id}/refunds` | Listar reembolsos de uma cobrança |
 | GET | `/v1/subscriptions` | Listar assinaturas |
 | POST | `/v1/subscriptions/{id}/cancel` | Cancelar |
-| GET | `/v1/balance` | Saldo nos cinco estados |
-| GET | `/v1/ledger` | Extrato paginado com memória de cálculo |
+| GET | `/v1/accounts/me/balance` | Saldo nos cinco estados |
+| GET | `/v1/accounts/me/ledger` | Extrato paginado com memória de cálculo |
+| GET | `/v1/accounts/me/dashboard?period=today|7d|30d` | Resumo operacional do vendedor, com estado independente por bloco |
 | POST | `/v1/payouts` | Solicitar saque |
 | GET | `/v1/marketplace` | Vitrine de produtos |
 | POST | `/v1/affiliations` | Pedir afiliação |
@@ -763,7 +764,28 @@ REST sobre JSON. Autenticação por token de sessão no painel e por chave de AP
 
 > **O reembolso é rota de cobrança, não de pedido.** Era `/v1/orders/{id}/refund`. Com assinatura, o pedido tem N cobranças e a rota não sabe qual delas estornar — a mesma raiz do defeito D04.
 
-### 4.3 Criação de pedido
+### 4.3 Dashboard do vendedor (FE-04.1)
+
+O painel consulta uma única rota autenticada, sempre escopada à conta da sessão:
+`GET /v1/accounts/me/dashboard?period=today|7d|30d`. O período é resolvido em UTC pelo servidor: `today` começa no início do dia atual; `7d` e `30d` incluem, respectivamente, os 7 e 30 dias corridos até o instante da consulta. Valores monetários são `bigint` em centavos.
+
+Cada bloco retorna `state: SUCCESS | EMPTY | ERROR`. Em `SUCCESS`, `data` contém o valor; em `ERROR`, `code` e `message` são seguros para exibição. Um erro de consulta não invalida os demais blocos.
+
+```json
+{
+  "period": { "preset": "7d", "from": "2026-09-03T00:00:00Z", "to": "2026-09-09T12:00:00Z" },
+  "salesToday": { "state": "SUCCESS", "data": { "amountCents": 17700, "count": 3 } },
+  "balance": { "state": "SUCCESS", "data": { "guarantee": 0, "pending": 5000, "reserve": 0, "available": 12700, "debt": 0, "asOf": "2026-09-09T12:00:00Z" } },
+  "nextReceivables": { "state": "EMPTY" },
+  "subscriptions": { "state": "SUCCESS", "data": { "active": 2, "pastDue": 1 } },
+  "alerts": { "state": "SUCCESS", "data": [] },
+  "recentSales": { "state": "SUCCESS", "data": [] }
+}
+```
+
+`salesToday` contém somente cobranças confirmadas no período. `nextReceivables` é limitado aos cinco próximos recebíveis não liquidados e usa o `seller_amount_cents` já rateado. `recentSales` contém cinco cobranças confirmadas e o nome do comprador já mascarado. Alertas KYC, fiscal, risco e dívida são determinados pelo backend. O frontend não filtra, soma, calcula ou infere esses blocos; apenas apresenta estados e formata centavos.
+
+### 4.4 Criação de pedido
 
 ```http
 POST /v1/checkout/crm-pro/orders
@@ -819,7 +841,7 @@ Idempotency-Key: 5f2c9a1e-3b7d-4c8f-9e0a-1d2b3c4d5e6f
 >
 > O exemplo tinha sido escrito à mão e nunca passou pelo motor de divisão — que é justamente o componente já pronto e testado. Um cliente que integrasse por ele construiria a conciliação errada. **Todo exemplo numérico de contrato de API passa a ser gerado por teste, não digitado.**
 
-### 4.4 Eventos emitidos
+### 4.5 Eventos emitidos
 
 | Evento | Quando |
 |---|---|

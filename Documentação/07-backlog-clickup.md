@@ -221,9 +221,9 @@ Fonte: documentação v3.0, DDL autoritativo, testes SQL e estado atual do repos
 
 ### FE-04 — Dashboard do vendedor e troca de modo
 
-**Campos/blocos:** vendas hoje/período, quantidade, saldo nos cinco buckets, próximos recebimentos, assinaturas ativas/inadimplentes, alertas KYC/fiscal/risco/dívida, últimas vendas e ações rápidas.
+**Campos/blocos:** vendas hoje/período, quantidade, saldo nos cinco buckets, próximos recebimentos, assinaturas ativas/inadimplentes, alertas KYC/fiscal/risco/dívida, últimas vendas e ações rápidas. O contrato agregado é `GET /v1/accounts/me/dashboard?period=today|7d|30d`; cada bloco responde com `state (SUCCESS|EMPTY|ERROR)` e os valores monetários vêm em centavos.
 
-**Critérios de aceite:** período e estados refletem resposta do backend; moeda apenas formatada; vazio orienta cadastrar produto; erro parcial não derruba a página; alternar vendedor/afiliado preserva sessão e rota válida.
+**Critérios de aceite:** período e estados refletem resposta do backend; moeda apenas formatada; vazio orienta cadastrar produto; erro parcial não derruba a página; alternar vendedor/afiliado preserva sessão e rota válida; vendas usam cobranças confirmadas; comprador chega mascarado; não há aritmética financeira no cliente.
 
 ### FE-05 — Produtos e ofertas: lista, cadastro, edição e publicação
 

@@ -53,8 +53,9 @@ export function Skeleton({ label = "Carregando conteúdo" }: { label?: string })
   return <div className="ui-skeleton" role="status" aria-label={label}><span /><span /><span /></div>;
 }
 
-export function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
-  return <div className="ui-empty"><span aria-hidden="true">◇</span><h2>{title}</h2><p>{description}</p>{action}</div>;
+export function EmptyState({ title, description, action, headingLevel = "h2" }: { title: string; description: string; action?: ReactNode; headingLevel?: "h2" | "h3" }) {
+  const Heading = headingLevel;
+  return <div className="ui-empty"><span aria-hidden="true">◇</span><Heading>{title}</Heading><p>{description}</p>{action}</div>;
 }
 
 export function UploadImagem({ label, hint, error, previewUrl, uploading, onSelect, onRemove }: {

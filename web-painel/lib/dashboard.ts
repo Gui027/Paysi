@@ -1,5 +1,4 @@
 import { apiRequest, CursorPage } from "./api";
-import { formatarCentavos } from "./moeda";
 
 export type Bucket = "GUARANTEE" | "PENDING" | "RESERVE" | "AVAILABLE" | "DEBT" | "SYSTEM";
 export type Direction = "CREDIT" | "DEBIT";
@@ -54,21 +53,6 @@ export function getLedgerEntries(limit = 100) {
   return apiRequest<CursorPage<LedgerItem>>(`/v1/accounts/me/ledger?limit=${limit}`);
 }
 
-export type Recebivel = LedgerItem & { availableAt: string };
-
-export function upcomingReceivables(items: LedgerItem[], now: Date = new Date()): Recebivel[] {
-  return items
-    .filter((item): item is Recebivel =>
-      item.bucket === "PENDING" && item.direction === "CREDIT" && item.availableAt !== null && new Date(item.availableAt) > now)
-    .sort((a, b) => new Date(a.availableAt).getTime() - new Date(b.availableAt).getTime())
-    .slice(0, 5);
-}
-
-export async function fetchUpcomingReceivables(now: Date = new Date()): Promise<Recebivel[]> {
-  const page = await getLedgerEntries(100);
-  return upcomingReceivables(page.items, now);
-}
-
 export type DashboardAlert = {
   id: string;
   tone: "warning" | "danger";
@@ -77,44 +61,38 @@ export type DashboardAlert = {
   actionUrl: string | null;
 };
 
-const kycAlertCopy: Partial<Record<KycStatus, { title: string; description: string }>> = {
-  PENDING: {
-    title: "Verificação de identidade pendente",
-    description: "Inicie a verificação para poder publicar ofertas e receber pagamentos.",
-  },
-  SUBMITTED: {
-    title: "Verificação em análise",
-    description: "Seus documentos estão em análise pelo provedor. Isso pode levar alguns dias.",
-  },
-  REJECTED: {
-    title: "Verificação de identidade recusada",
-    description: "Revise os requisitos pendentes e reenvie os documentos.",
-  },
+export type DashboardPeriodPreset = "today" | "7d" | "30d";
+
+export type DashboardBlock<T> = {
+  state: "SUCCESS" | "EMPTY" | "ERROR";
+  data?: T;
+  code?: string;
+  message?: string;
 };
 
-export function dashboardAlerts(balance: BalanceView, kyc: KycView): DashboardAlert[] {
-  const alerts: DashboardAlert[] = [];
+export type SalesSummary = { amountCents: number; count: number };
+export type UpcomingReceivable = { amountCents: number; availableAt: string };
+export type SubscriptionSummary = { active: number; pastDue: number };
 
-  const kycCopy = kycAlertCopy[kyc.kycStatus];
-  if (kycCopy) {
-    alerts.push({
-      id: "kyc",
-      tone: kyc.kycStatus === "REJECTED" ? "danger" : "warning",
-      title: kycCopy.title,
-      description: kycCopy.description,
-      actionUrl: kyc.providerUrl,
-    });
-  }
+export type RecentSale = {
+  id: string;
+  buyer: string;
+  amountCents: number;
+  method: string;
+  status: string;
+  occurredAt: string;
+};
 
-  if (balance.debt !== 0) {
-    alerts.push({
-      id: "debt",
-      tone: "danger",
-      title: "Conta com débito em aberto",
-      description: `Saldo de débito: ${formatarCentavos(balance.debt)}. O valor é descontado automaticamente das próximas vendas.`,
-      actionUrl: null,
-    });
-  }
+export type DashboardView = {
+  period: { preset: DashboardPeriodPreset; from: string; to: string };
+  salesToday: DashboardBlock<SalesSummary>;
+  balance: DashboardBlock<BalanceView>;
+  nextReceivables: DashboardBlock<UpcomingReceivable[]>;
+  subscriptions: DashboardBlock<SubscriptionSummary>;
+  alerts: DashboardBlock<DashboardAlert[]>;
+  recentSales: DashboardBlock<RecentSale[]>;
+};
 
-  return alerts;
+export function getDashboard(period: DashboardPeriodPreset = "today") {
+  return apiRequest<DashboardView>(`/v1/accounts/me/dashboard?period=${encodeURIComponent(period)}`);
 }
