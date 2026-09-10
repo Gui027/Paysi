@@ -20,6 +20,23 @@ export type Affiliation = {
   createdAt: string;
 };
 
+export type MarketplaceSegment = "SAAS" | "DIGITAL";
+export type MarketplaceChargeType = "ONE_TIME" | "SUBSCRIPTION";
+
+export type MarketplaceItem = {
+  productId: string;
+  product: string;
+  description: string | null;
+  seller: string;
+  segment: MarketplaceSegment;
+  chargeType: MarketplaceChargeType;
+  startingPriceCents: number;
+  suggestedCommissionBps: number | null;
+  guaranteeDays: number;
+  payoutDelayDays: number;
+  attributionDays: number;
+};
+
 export const affiliationStatusLabel: Record<AffiliationStatus, string> = {
   PENDING: "Pendente",
   APPROVED: "Aprovada",
@@ -69,5 +86,24 @@ export function endAffiliation(id: string, reason: "BY_SELLER" | "FRAUD") {
   return apiRequest<Affiliation>(`/v1/affiliations/${encodeURIComponent(id)}/end`, {
     method: "POST",
     body: JSON.stringify({ reason }),
+  });
+}
+
+export function listAffiliateAffiliations(cursor?: string) {
+  const query = new URLSearchParams({ role: "AFFILIATE", limit: "50" });
+  if (cursor) query.set("cursor", cursor);
+  return apiRequest<CursorPage<Affiliation>>(`/v1/affiliations?${query}`);
+}
+
+export function listMarketplace(cursor?: string) {
+  const query = new URLSearchParams({ limit: "20" });
+  if (cursor) query.set("cursor", cursor);
+  return apiRequest<CursorPage<MarketplaceItem>>(`/v1/marketplace?${query}`);
+}
+
+export function requestAffiliation(productId: string) {
+  return apiRequest<Affiliation>("/v1/affiliations", {
+    method: "POST",
+    body: JSON.stringify({ productId }),
   });
 }
