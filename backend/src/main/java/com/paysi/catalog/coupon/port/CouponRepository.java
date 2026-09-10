@@ -14,6 +14,12 @@ public interface CouponRepository {
 
     Optional<Coupon> findActiveOwned(UUID sellerId, UUID couponId);
 
+    default Optional<Coupon> findApplicableOwned(UUID sellerId, UUID offerId, String code) {
+        return listActiveOwned(sellerId).stream()
+                .filter(coupon -> coupon.code().equals(code) && coupon.offerIds().contains(offerId))
+                .findFirst();
+    }
+
     void update(Coupon coupon);
 
     boolean archive(UUID sellerId, UUID couponId, Instant archivedAt);

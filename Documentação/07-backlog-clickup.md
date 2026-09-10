@@ -55,11 +55,11 @@ Fonte: documentação v3.0, DDL autoritativo, testes SQL e estado atual do repos
 
 **Objetivo:** permitir desconto concorrente e personalização limitada sem ampliar o escopo PCI.
 
-**Campos e contratos:** cupom `code`, `discountType (PERCENT|FIXED)`, `discountBps?`, `discountCents?`, `startsAt?`, `expiresAt?`, `maxRedemptions?`, `maxPerBuyer?`, `offerIds[]`; aparência `logoAssetId?`, `primaryColor`, `buttonText`, `bannerAssetId?`, `sideImageAssetId?`. Endpoint de simulação recebe `offerId`, `method`, `installments`, `couponCode?` e devolve memória completa calculada pelo backend.
+**Campos e contratos:** cupom `code`, `discountType (PERCENT|FIXED)`, `discountBps?`, `discountCents?`, `startsAt?`, `expiresAt?`, `maxRedemptions?`, `maxPerBuyer?`, `offerIds[]`; aparência `logoAssetId?`, `primaryColor`, `buttonText`, `bannerAssetId?`, `sideImageAssetId?`. O endpoint autenticado `POST /v1/offers/{offerId}/simulation` recebe `method (PIX|CARD|BOLETO)`, `installments` e `couponCode?`, sem consumir o cupom, e devolve `grossCents`, `discountCents`, `paidCents`, `platformFeeCents`, `providerCostCents`, `commissionCents`, `sellerCents` e `availableAt`. A simulação do cadastro de oferta é venda direta e devolve `commissionCents=0`.
 
 **Regras:** resgate usa `UPDATE` condicional na mesma transação do pedido; limite por comprador é conferido depois do bloqueio do cupom; taxas e comissão incidem sobre o pago; uploads hospedados pela Paysi, nunca URL externa; validar MIME, tamanho e dimensões; sem CSS livre.
 
-**Critérios de aceite:** cem resgates simultâneos não excedem limite; cupom inválido/expirado/esgotado retorna código estável; simulação com e sem desconto fecha em centavos; exclusão é lógica; URL externa e arquivo inválido são recusados; testes cobrem concorrência e autorização por vendedor.
+**Critérios de aceite:** cem resgates simultâneos não excedem limite; cupom inválido/expirado/esgotado retorna código estável; simulação com e sem desconto fecha em centavos sem alterar o cupom; exclusão é lógica; URL externa e arquivo inválido são recusados; testes cobrem concorrência e autorização por vendedor.
 
 **Referências:** RF-018, RF-027 a RF-030, RNF-034.
 
@@ -229,7 +229,7 @@ Fonte: documentação v3.0, DDL autoritativo, testes SQL e estado atual do repos
 
 **Campos:** `nome`, `descrição`, `segmento`, `tipo de cobrança`, `preço`, `ciclo`, `teste grátis em dias`, `exigir cartão no teste`, `garantia`, `meios`, `parcelas`, `vencimento/antecedência do boleto`, `prazo de recebimento`, `afiliações`, status e slug. Exibir simulação por método/cupom recebida do backend.
 
-**Critérios de aceite:** campos condicionais seguem segmento/cobrança; limites são visíveis; rascunho salva sem KYC; publicar inicia KYC quando necessário; campos imutáveis ficam bloqueados com explicação; copiar/abrir link funciona; nenhuma taxa é calculada no browser.
+**Critérios de aceite:** campos condicionais seguem segmento/cobrança; limites são visíveis; rascunho salva sem KYC; publicar inicia KYC quando necessário; a resposta de oferta expõe `immutableFields` (`CYCLE` e/ou `GUARANTEE`) quando já existe cobrança confirmada, e esses campos ficam bloqueados com explicação; copiar/abrir link funciona; nenhuma taxa é calculada no browser.
 
 ### FE-06 — Cupons e aparência do checkout
 

@@ -1,6 +1,7 @@
 package com.paysi.catalog.offer.web.dto;
 
 import com.paysi.catalog.offer.app.OfferView;
+import com.paysi.catalog.offer.app.OfferImmutableField;
 import com.paysi.catalog.offer.domain.BillingCycle;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
 import com.paysi.catalog.offer.domain.OfferPayoutDelay;
@@ -30,6 +31,7 @@ public record OfferResponse(
         OfferPayoutDelay payoutDelay,
         OfferStatus status,
         Instant availableAt,
+        Set<OfferImmutableField> immutableFields,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -39,6 +41,7 @@ public record OfferResponse(
                 offer.slug(), offer.priceCents(), offer.cycle(), offer.trialDays(),
                 offer.trialRequiresCard(), offer.guaranteeDays(), offer.maxInstallments(),
                 offer.boletoDueDays(), offer.boletoAdvanceDays(), offer.paymentMethods(),
-                offer.payoutDelay(), offer.status(), view.availableAt(), offer.createdAt(), offer.updatedAt());
+                offer.payoutDelay(), offer.status(), view.availableAt(), view.immutableFields(),
+                offer.createdAt(), offer.updatedAt());
     }
 }

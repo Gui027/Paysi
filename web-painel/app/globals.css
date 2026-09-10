@@ -423,3 +423,29 @@ button { cursor: pointer; }
   .dashboard-section > .ui-empty { min-height: 144px; padding: var(--esp-5); }
   .dashboard-section > h2 { margin-bottom: var(--esp-3); }
 }
+
+.offer-form { display: grid; gap: 2rem; max-width: 980px; }
+.offer-form section { display: grid; gap: 1rem; }
+.offer-form h2 { margin: 0; }
+.offer-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.offer-choice-group { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; border: 0; padding: 0; margin: 0; }
+.offer-choice-group legend { font-weight: 700; margin-bottom: .5rem; width: 100%; }
+.offer-choice-group .ui-error { width: 100%; }
+.offer-simulation { border-top: 1px solid var(--borda); padding-top: 1.5rem; }
+.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.section-heading p { margin: .35rem 0 0; color: var(--texto-apoio); }
+.simulation-result { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 0; }
+.simulation-result div { padding: .9rem 1rem; background: var(--fundo-secao); border: 1px solid var(--borda); border-radius: .75rem; }
+.simulation-result dt { color: var(--texto-apoio); font-size: .8rem; }
+.simulation-result dd { margin: .25rem 0 0; font-weight: 750; font-variant-numeric: tabular-nums; }
+.offer-published { display: grid; gap: .5rem; padding: 1rem; background: var(--info-superficie); border: 1px solid var(--borda-foco); border-radius: .75rem; }
+.offer-published a { overflow-wrap: anywhere; }
+.offer-list { display: grid; gap: .75rem; }
+.offer-list-item { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--borda); border-radius: .75rem; }
+.offer-list-item > div { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.offer-list-item strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.offer-list-item span:not(.ui-label) { color: var(--texto-apoio); }
+@media (max-width: 700px) {
+  .offer-form-grid, .simulation-result { grid-template-columns: 1fr; }
+  .section-heading, .offer-list-item { align-items: stretch; flex-direction: column; }
+}

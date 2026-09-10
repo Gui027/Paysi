@@ -15,6 +15,10 @@ public interface OfferRepository {
 
     Optional<Offer> findPublishedBySlug(String slug);
 
+    default boolean hasPaidSale(UUID offerId) {
+        return false;
+    }
+
     void update(Offer offer);
 
     boolean publish(UUID sellerId, UUID offerId, java.time.Instant publishedAt);

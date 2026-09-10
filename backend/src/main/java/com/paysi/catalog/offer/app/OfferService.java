@@ -14,8 +14,10 @@ import java.text.Normalizer;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -79,8 +81,11 @@ public class OfferService {
         return offers.findActiveOwned(sellerId, offerId).orElseThrow(OfferService::offerNotFound);
     }
 
-    private static OfferView view(Offer offer, Instant now) {
-        return new OfferView(offer, now.plus(offer.payoutDelay().days(), ChronoUnit.DAYS));
+    private OfferView view(Offer offer, Instant now) {
+        Set<OfferImmutableField> immutable = offers.hasPaidSale(offer.id())
+                ? EnumSet.of(OfferImmutableField.CYCLE, OfferImmutableField.GUARANTEE)
+                : Set.of();
+        return new OfferView(offer, OfferAvailability.at(offer, now), immutable);
     }
 
     private static String slug(String productName, UUID id) {
