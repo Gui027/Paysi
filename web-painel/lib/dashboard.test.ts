@@ -6,6 +6,7 @@ import {
   DashboardView,
   getBalance,
   getDashboard,
+  getLedgerEntries,
 } from "./dashboard";
 
 const balance: BalanceView = { guarantee: 1000, pending: 2000, reserve: 300, available: 5000, debt: 0, asOf: "2026-09-03T12:00:00Z" };
@@ -27,6 +28,18 @@ test("busca o saldo dos cinco buckets na rota autenticada", async () => {
 test("propaga ApiRequestError quando a chamada de saldo falha", async () => {
   globalThis.fetch = (async () => new Response(JSON.stringify({ code: "UNAUTHORIZED", message: "Sessão expirada" }), { status: 401, headers: { "content-type": "application/json" } })) as typeof fetch;
   await assert.rejects(() => getBalance(), (error: unknown) => error instanceof ApiRequestError && error.status === 401);
+});
+
+test("pagina o extrato com cursor opaco", async () => {
+  let requestedUrl = "";
+  globalThis.fetch = (async input => {
+    requestedUrl = String(input);
+    return new Response(JSON.stringify({ items: [], nextCursor: "next" }), { status: 200, headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  const page = await getLedgerEntries("current page", 20);
+  assert.equal(page.nextCursor, "next");
+  assert.match(requestedUrl, /limit=20/);
+  assert.match(requestedUrl, /cursor=current\+page/);
 });
 
 function dashboard(): DashboardView {
