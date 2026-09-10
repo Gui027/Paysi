@@ -775,7 +775,9 @@ REST sobre JSON. Autenticação por token de sessão no painel e por chave de AP
 | POST | `/v1/payouts` | Solicitar saque |
 | GET | `/v1/marketplace` | Vitrine de produtos |
 | POST | `/v1/affiliations` | Pedir afiliação |
+| GET | `/v1/affiliations?role=AFFILIATE\|SELLER` | Listar vínculos por papel e cursor |
 | POST | `/v1/affiliations/{id}/approve` | Aprovar e fixar comissão |
+| POST | `/v1/affiliations/{id}/end` | Encerrar vínculo com motivo explícito |
 | GET | `/v1/invoices/{chargeId}` | Situação e link da nota fiscal |
 | POST | `/v1/webhook-endpoints` | Cadastrar destino e receber o segredo, uma única vez |
 | POST | `/v1/webhook-endpoints/{id}/rotate` | Rotacionar segredo com sobreposição |
