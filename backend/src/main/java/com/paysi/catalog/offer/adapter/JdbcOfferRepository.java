@@ -84,6 +84,18 @@ class JdbcOfferRepository implements OfferRepository {
     }
 
     @Override
+    public boolean hasPaidSale(UUID offerId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1
+                      FROM orders o
+                      JOIN charges c ON c.order_id = o.id
+                     WHERE o.offer_id = ? AND c.confirmed_at IS NOT NULL
+                )
+                """, Boolean.class, offerId));
+    }
+
+    @Override
     public void update(Offer offer) {
         try {
             int changed = jdbc.update("""

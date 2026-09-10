@@ -21,7 +21,7 @@ import java.util.UUID;
 @Repository
 class JdbcCouponRepository implements CouponRepository {
     private static final String SELECT = """
-            SELECT * FROM coupons WHERE seller_id = ? AND archived_at IS NULL
+            SELECT c.* FROM coupons c WHERE c.seller_id = ? AND c.archived_at IS NULL
             """;
 
     private final JdbcTemplate jdbc;
@@ -58,6 +58,12 @@ class JdbcCouponRepository implements CouponRepository {
     public Optional<Coupon> findActiveOwned(UUID sellerId, UUID couponId) {
         return jdbc.query(SELECT + " AND id = ?", (rs, row) -> map(rs), sellerId, couponId)
                 .stream().findFirst();
+    }
+
+    @Override
+    public Optional<Coupon> findApplicableOwned(UUID sellerId, UUID offerId, String code) {
+        return jdbc.query(SELECT + " AND c.code = ? AND EXISTS (SELECT 1 FROM coupon_offers co WHERE co.coupon_id = c.id AND co.offer_id = ?)",
+                (rs, row) -> map(rs), sellerId, code, offerId).stream().findFirst();
     }
 
     @Override

@@ -177,6 +177,19 @@ Três gatilhos sustentam a imutabilidade (RF-118):
 
 Preço continua editável: `orders` guarda `paid_cents` do momento da venda, então o histórico não se altera.
 
+As respostas autenticadas da oferta também expõem `immutableFields`, com
+`CYCLE` e `GUARANTEE` quando já existe cobrança confirmada. Isso permite que o
+painel bloqueie os controles antes do envio; o gatilho do banco continua sendo
+a autoridade final.
+
+O painel usa `POST /v1/offers/{offerId}/simulation` para consultar a memória de
+cálculo sem persistir pedido ou consumir cupom. O servidor retorna todos os
+valores em centavos (`grossCents`, `discountCents`, `paidCents`,
+`platformFeeCents`, `providerCostCents`, `commissionCents`, `sellerCents`) e a
+data `availableAt`. No cadastro de oferta, a simulação representa venda direta
+e a comissão é zero. A disponibilidade efetiva é `max(payoutDelay,
+guaranteeDays)` em dias corridos UTC.
+
 **Cupom.** `redeemed_count` é campo mutável com teto, e o resgate usa `UPDATE` condicional:
 
 ```sql
@@ -744,6 +757,11 @@ REST sobre JSON. Autenticação por token de sessão no painel e por chave de AP
 | PUT | `/v1/products/{id}` | Editar campos do produto enquanto permitido |
 | DELETE | `/v1/products/{id}` | Arquivar produto logicamente |
 | POST | `/v1/products/{id}/offers` | Criar oferta |
+| GET | `/v1/products/{id}/offers` | Listar ofertas do vendedor |
+| GET | `/v1/offers/{id}` | Detalhar oferta autenticada |
+| PUT | `/v1/offers/{id}` | Editar oferta autenticada |
+| POST | `/v1/offers/{id}/simulation` | Simular preço e divisão sem efeitos colaterais |
+| POST | `/v1/offers/{id}/publish` | Publicar oferta ou devolver ação necessária |
 | GET | `/v1/offers/{slug}/checkout` | Dados públicos, incluindo campos exigidos pelo segmento |
 | POST | `/v1/checkout/{slug}/orders` | Criar pedido e cobrança |
 | GET | `/v1/orders/{id}` | Consultar pedido, com estado consolidado |

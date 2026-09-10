@@ -15,7 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -75,6 +76,9 @@ public class OfferPublicationService {
     }
 
     private OfferView view(Offer offer) {
-        return new OfferView(offer, clock.instant().plus(offer.payoutDelay().days(), ChronoUnit.DAYS));
+        Set<OfferImmutableField> immutable = offers.hasPaidSale(offer.id())
+                ? EnumSet.of(OfferImmutableField.CYCLE, OfferImmutableField.GUARANTEE)
+                : Set.of();
+        return new OfferView(offer, OfferAvailability.at(offer, clock.instant()), immutable);
     }
 }

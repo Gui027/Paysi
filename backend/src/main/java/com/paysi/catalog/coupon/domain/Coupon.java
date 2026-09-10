@@ -69,6 +69,19 @@ public record Coupon(
                 values.offerIds(), archivedAt, createdAt);
     }
 
+    public boolean activeAt(Instant now) {
+        return (startsAt == null || !now.isBefore(startsAt))
+                && (expiresAt == null || now.isBefore(expiresAt))
+                && (maxRedemptions == null || redeemedCount < maxRedemptions);
+    }
+
+    public long discountCents(long grossCents) {
+        long discount = kind == CouponKind.FIXED
+                ? value
+                : Math.multiplyExact(grossCents, value) / 10_000;
+        return Math.min(grossCents, Math.max(0, discount));
+    }
+
     private static ValidationException invalid(String message, String field) {
         return new ValidationException("COUPON_INVALID", message, field);
     }

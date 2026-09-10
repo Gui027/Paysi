@@ -55,7 +55,7 @@ class OfferServiceTest {
                 15_000, BillingCycle.ANNUAL, 0, true, 14, 6, 5, 7,
                 Set.of(OfferPaymentMethod.CARD), OfferPayoutDelay.D7));
         assertThat(updated.offer().slug()).isEqualTo(permanentSlug);
-        assertThat(updated.availableAt()).isEqualTo(NOW.plusSeconds(7L * 86_400));
+        assertThat(updated.availableAt()).isEqualTo(NOW.plusSeconds(14L * 86_400));
     }
 
     @Test
