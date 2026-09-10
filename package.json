@@ -8,7 +8,7 @@
     "dev:site": "npm run dev --workspace web-site",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
-    "test": "npm run test --workspace web-painel"
+    "test": "npm run test --workspaces --if-present"
   },
   "engines": {
     "node": ">=20.19.0"
