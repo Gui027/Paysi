@@ -58,6 +58,13 @@ button, input { font: inherit; }
 .person-type-toggle label { min-height: 44px; display: flex; align-items: center; gap: var(--esp-2); padding: 0 var(--esp-4); border: 1px solid var(--borda); border-radius: var(--raio-sm); cursor: pointer; font-size: 14px; }
 .person-type-toggle label.selected { border-color: var(--paysi-primaria); background: var(--blue-50); color: var(--blue-700); font-weight: 500; }
 .link-button { border: 0; background: none; padding: 0; margin: var(--esp-3) 0 var(--esp-5); color: var(--texto-link); font-size: 14px; font-weight: 500; cursor: pointer; }
+.coupon-row { display: grid; grid-template-columns: 1fr auto; gap: var(--esp-2); margin-top: var(--esp-2); }
+.coupon-row input { min-height: 46px; border: 1px solid var(--borda); border-radius: var(--raio-sm); padding: 0 var(--esp-3); text-transform: uppercase; }
+.coupon-row input:focus-visible { outline: none; border-color: var(--borda-foco); box-shadow: var(--anel-foco); }
+.secondary-button { min-height: 46px; border: 1px solid var(--paysi-primaria); border-radius: var(--raio-sm); padding: 0 var(--esp-4); color: var(--paysi-primaria); background: var(--fundo-elevado); font-weight: 600; cursor: pointer; }
+.secondary-button:disabled { cursor: wait; opacity: .65; }
+.coupon-result { display: grid; gap: var(--esp-2); margin-top: var(--esp-3); padding: var(--esp-3); border-radius: var(--raio-sm); color: var(--texto-apoio); background: var(--blue-50); font-size: 14px; }
+.coupon-result > span { display: flex; justify-content: space-between; gap: var(--esp-3); }
 .installments-field { display: grid; gap: var(--esp-2); margin: 0 0 var(--esp-4); font-size: 14px; font-weight: 500; color: var(--texto-apoio); }
 .installments-field select { min-height: 46px; border: 1px solid var(--borda); border-radius: var(--raio-sm); padding: 0 var(--esp-3); color: var(--texto-corpo); }
 .summary-dates { display: grid; gap: var(--esp-1); margin-top: var(--esp-3); color: var(--blue-200); font-size: 13px; }

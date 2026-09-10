@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { CheckoutContract, PaymentMethod, PersonType } from "../lib/checkout";
 import { ApiRequestError } from "../lib/api";
 import { ChaveCampo, comoChaveCampo, validarCampo } from "../lib/camposComprador";
@@ -7,6 +7,8 @@ import { Metodo, SeletorDeMetodo } from "../componentes/SeletorDeMetodo";
 import { criarPedido } from "../lib/pedido";
 import { calcularTermosHash } from "../lib/termos";
 import { obterChaveDeIdempotencia } from "../lib/idempotencia";
+import { formatarCentavos } from "../lib/formato";
+import { SimulacaoCheckout, simularCheckout } from "../lib/simulacao";
 
 const METHOD_TO_METODO: Record<PaymentMethod, Metodo> = { CARD: "cartao", PIX: "pix", BOLETO: "boleto" };
 const METODO_TO_METHOD: Record<Metodo, PaymentMethod> = { cartao: "CARD", pix: "PIX", boleto: "BOLETO" };
@@ -17,6 +19,9 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [couponVisible, setCouponVisible] = useState(false);
   const [coupon, setCoupon] = useState("");
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [simulando, setSimulando] = useState(false);
+  const [simulacao, setSimulacao] = useState<SimulacaoCheckout | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
   const [metodo, setMetodo] = useState<Metodo>(METHOD_TO_METODO[contract.methods[0] ?? "PIX"]);
@@ -24,11 +29,48 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
   const [submitting, setSubmitting] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const simulationVersion = useRef(0);
 
   const disponiveis = contract.methods.map(method => METHOD_TO_METODO[method]);
   const campos = (contract.requiredBuyerFields[personType] ?? [])
     .map(comoChaveCampo)
     .filter((key): key is ChaveCampo => key !== null);
+  const paymentMethod = METODO_TO_METHOD[metodo];
+  const selectedInstallments = metodo === "cartao" ? installments : 1;
+
+  function invalidarSimulacao() {
+    simulationVersion.current += 1;
+    setSimulando(false);
+    setSimulacao(null);
+    setCouponError(null);
+    setGeneralError(null);
+  }
+
+  async function aplicarCupom() {
+    const couponCode = coupon.trim();
+    if (!couponCode) {
+      setCouponError("Informe o código do cupom.");
+      return;
+    }
+    setSimulando(true);
+    setCouponError(null);
+    setSimulacao(null);
+    const requestVersion = ++simulationVersion.current;
+    try {
+      const result = await simularCheckout(slug, {
+        method: paymentMethod,
+        installments: selectedInstallments,
+        couponCode,
+      });
+      if (simulationVersion.current === requestVersion) setSimulacao(result);
+    } catch (error) {
+      if (simulationVersion.current === requestVersion) {
+        setCouponError(error instanceof ApiRequestError ? error.message : "Não foi possível validar o cupom.");
+      }
+    } finally {
+      if (simulationVersion.current === requestVersion) setSimulando(false);
+    }
+  }
 
   function change(key: ChaveCampo, value: string) {
     setValues(current => ({ ...current, [key]: value }));
@@ -50,9 +92,11 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
       if (error) nextErrors[key] = error;
     }
     const hasTermsError = !termsAccepted;
+    const hasCouponError = couponVisible && Boolean(coupon.trim()) && !simulacao;
     setErrors(nextErrors);
     setTermsError(hasTermsError ? "É preciso aceitar os termos para continuar." : null);
-    if (Object.values(nextErrors).some(Boolean) || hasTermsError) {
+    setCouponError(hasCouponError ? "Valide o cupom antes de continuar." : null);
+    if (Object.values(nextErrors).some(Boolean) || hasTermsError || hasCouponError) {
       setGeneralError("Revise os campos destacados.");
       return;
     }
@@ -63,8 +107,8 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
       const termsHash = await calcularTermosHash(contract.legalTexts.termsUrl);
       await criarPedido(slug, {
         buyer: montarComprador(values, personType, campos),
-        method: METODO_TO_METHOD[metodo],
-        installments: metodo === "cartao" ? installments : 1,
+        method: paymentMethod,
+        installments: selectedInstallments,
         coupon: couponVisible && coupon.trim() ? coupon.trim() : null,
         termsHash,
       }, obterChaveDeIdempotencia());
@@ -106,18 +150,33 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
         <button type="button" className="link-button" onClick={() => setCouponVisible(true)}>Tenho um cupom</button>
       ) : (
         <label htmlFor="coupon">Código do cupom
-          <input id="coupon" value={coupon} autoComplete="off" onChange={event => setCoupon(event.target.value.toUpperCase())} />
-          <small className="field-hint">O desconto, se houver, é calculado pelo servidor ao confirmar a compra.</small>
+          <span className="coupon-row">
+            <input id="coupon" value={coupon} autoComplete="off" aria-invalid={Boolean(couponError)}
+              aria-describedby={couponError ? "coupon-error" : "coupon-hint"}
+              onChange={event => { setCoupon(event.target.value.toUpperCase()); invalidarSimulacao(); }} />
+            <button type="button" className="secondary-button" disabled={simulando} onClick={() => void aplicarCupom()}>
+              {simulando ? "Validando…" : "Aplicar"}
+            </button>
+          </span>
+          {couponError
+            ? <small id="coupon-error" className="field-error" role="alert">{couponError}</small>
+            : <small id="coupon-hint" className="field-hint">O desconto é calculado exclusivamente pela Paysi.</small>}
+          {simulacao && (
+            <span className="coupon-result" role="status">
+              <span>Desconto <strong>− {formatarCentavos(simulacao.discountCents)}</strong></span>
+              <span>Total após cupom <strong>{formatarCentavos(simulacao.paidCents)}</strong></span>
+            </span>
+          )}
         </label>
       )}
 
       <div className="section-title"><span className="step">3</span><h2>Pagamento</h2></div>
-      <SeletorDeMetodo value={metodo} onChange={setMetodo} disponiveis={disponiveis} />
+      <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); }} disponiveis={disponiveis} />
       {metodo === "cartao" && (
         <>
           {contract.installments > 1 && (
             <label className="installments-field">Parcelas
-              <select value={installments} onChange={event => setInstallments(Number(event.target.value))}>
+              <select value={installments} onChange={event => { setInstallments(Number(event.target.value)); invalidarSimulacao(); }}>
                 {Array.from({ length: contract.installments }, (_, index) => index + 1).map(n => (
                   <option key={n} value={n}>{n}x</option>
                 ))}
