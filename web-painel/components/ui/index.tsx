@@ -41,8 +41,9 @@ export function Etiqueta({ tone = "neutral", children }: { tone?: "neutral" | "s
 
 export function Dialog({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => { const dialog = dialogRef.current; if (!dialog) return; if (open && !dialog.open) dialog.showModal(); if (!open && dialog.open) dialog.close(); }, [open]);
-  return <dialog ref={dialogRef} className="ui-dialog" aria-labelledby="dialog-title" onCancel={event => { event.preventDefault(); onClose(); }}><h2 id="dialog-title">{title}</h2>{children}<Botao variant="secondary" onClick={onClose}>Fechar</Botao></dialog>;
+  return <dialog ref={dialogRef} className="ui-dialog" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onClose(); }}><h2 id={titleId}>{title}</h2>{children}<Botao variant="secondary" onClick={onClose}>Fechar</Botao></dialog>;
 }
 
 export function Toast({ tone = "success", children }: { tone?: "success" | "danger"; children: ReactNode }) {
