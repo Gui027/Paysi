@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { currentSession, SessionCreated, switchMode } from "../lib/sessao";
 import { LogoutButton } from "./LogoutButton";
 
-const links = [["/inicio", "Início"], ["/produtos", "Produtos"], ["/vendas", "Vendas"], ["/assinaturas", "Assinaturas"], ["/afiliados", "Afiliados"], ["/saldo", "Saldo"], ["/componentes", "Componentes"]] as const;
+const links = [["/inicio", "Início"], ["/produtos", "Produtos"], ["/vendas", "Vendas"], ["/assinaturas", "Assinaturas"], ["/afiliados", "Afiliados"], ["/vitrine", "Vitrine"], ["/saldo", "Saldo"], ["/componentes", "Componentes"]] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
