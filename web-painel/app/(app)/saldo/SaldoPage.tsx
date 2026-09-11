@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Botao, Cartao, Dialog, EmptyState, Etiqueta, Select, Skeleton, Toast } from "../../../components/ui";
 import { BalanceView, Bucket, Direction, LedgerItem, getBalance, getLedgerEntries } from "../../../lib/dashboard";
@@ -96,7 +97,7 @@ export function SaldoPage() {
   }
 
   return <>
-    <header className="content-header balance-heading"><div><span className="paysi-rotulo">Financeiro</span><h1>Saldo e extrato</h1><p>Entenda onde cada valor está e consulte a origem de todos os lançamentos.</p></div><Botao variant="secondary" disabled={loading} onClick={() => void load()}>Atualizar</Botao></header>
+    <header className="content-header balance-heading"><div><span className="paysi-rotulo">Financeiro</span><h1>Saldo e extrato</h1><p>Entenda onde cada valor está e consulte a origem de todos os lançamentos.</p></div><div className="ui-actions"><Link className="ui-button ui-button-secondary" href="/saldo/conta-bancaria">Conta bancária</Link><Link className="ui-button ui-button-primary" href="/saldo/sacar">Solicitar saque</Link><Botao variant="secondary" disabled={loading} onClick={() => void load()}>Atualizar</Botao></div></header>
 
     {error && <Toast tone="danger">{error} <button className="toast-action" onClick={() => void load()}>Tentar novamente</button></Toast>}
     {loading || !balance ? <Skeleton label="Carregando saldo e extrato" /> : <>

@@ -498,8 +498,22 @@ button { cursor: pointer; }
 .ledger-table { min-width: 920px; }
 .ledger-memory { margin: var(--esp-5) 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .ledger-memory dd { overflow-wrap: anywhere; }
+.payout-layout { display: grid; grid-template-columns: minmax(240px, .7fr) minmax(320px, 1.3fr); align-items: start; gap: var(--esp-6); }
+.payout-form { display: grid; gap: var(--esp-6); max-width: 920px; }
+.payout-form section { display: grid; gap: var(--esp-4); }
+.payout-form h2 { margin: 0; font: var(--texto-h3); }
+.payout-form p { margin: 0; color: var(--texto-apoio); }
+.payout-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--esp-4); }
+.payout-form-grid .ui-field { margin: 0; }
+.payout-balance { display: flex; flex-direction: column; gap: var(--esp-3); }
+.payout-balance > span, .payout-balance > small { color: var(--texto-apoio); }
+.payout-balance > strong { font: 600 1.75rem/1.1 var(--fonte-numerica); }
+.payout-balance p { margin: 0; }
+.bank-success { display: grid; gap: var(--esp-4); max-width: 720px; }
+.bank-success h2, .bank-success p { margin: 0; }
+.bank-success .ui-button { justify-self: start; }
 @media (max-width: 700px) {
-  .offer-form-grid, .simulation-result, .affiliate-filters, .affiliate-row, .affiliate-detail, .marketplace-filters, .marketplace-terms, .ledger-filters, .ledger-memory { grid-template-columns: 1fr; }
+  .offer-form-grid, .simulation-result, .affiliate-filters, .affiliate-row, .affiliate-detail, .marketplace-filters, .marketplace-terms, .ledger-filters, .ledger-memory, .payout-form-grid, .payout-layout { grid-template-columns: 1fr; }
   .section-heading, .offer-list-item { align-items: stretch; flex-direction: column; }
   .affiliate-actions { justify-content: flex-start; }
   .balance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
