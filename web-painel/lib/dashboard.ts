@@ -49,8 +49,10 @@ export function getKyc() {
   return apiRequest<KycView>("/v1/accounts/me");
 }
 
-export function getLedgerEntries(limit = 100) {
-  return apiRequest<CursorPage<LedgerItem>>(`/v1/accounts/me/ledger?limit=${limit}`);
+export function getLedgerEntries(cursor?: string, limit = 20) {
+  const query = new URLSearchParams({ limit: String(limit) });
+  if (cursor) query.set("cursor", cursor);
+  return apiRequest<CursorPage<LedgerItem>>(`/v1/accounts/me/ledger?${query}`);
 }
 
 export type DashboardAlert = {

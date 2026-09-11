@@ -477,8 +477,33 @@ button { cursor: pointer; }
 .marketplace-card > .ui-button { width: 100%; margin-top: auto; }
 .marketplace-terms { margin: var(--esp-5) 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .marketplace-terms dd { overflow-wrap: anywhere; }
+.balance-heading p { max-width: 680px; }
+.balance-as-of { margin: calc(-1 * var(--esp-4)) 0 var(--esp-5); color: var(--texto-apoio); font-size: 13px; }
+.balance-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--esp-4); }
+.balance-card { display: flex; flex-direction: column; gap: var(--esp-3); min-height: 150px; }
+.balance-card > span, .balance-card > small { color: var(--texto-apoio); }
+.balance-card > strong { margin-top: auto; font: 600 1.35rem/1.1 var(--fonte-numerica); }
+.balance-card-debt { border-color: color-mix(in srgb, var(--erro) 45%, var(--borda)); }
+.debt-warning { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--esp-4); margin-top: var(--esp-6); padding: var(--esp-5); border-left: 4px solid var(--erro); border-radius: var(--raio-md); color: var(--texto-corpo); background: var(--erro-superficie); }
+.debt-warning h2, .debt-warning p { margin: 0; }
+.debt-warning p { margin-top: var(--esp-2); }
+.debt-warning ul { grid-column: 1 / -1; margin: 0; padding-left: var(--esp-5); }
+.debt-warning button, .ledger-detail-button { border: 0; padding: var(--esp-1); color: var(--texto-link); background: transparent; text-decoration: underline; }
+.ledger-section { margin-top: var(--esp-10); }
+.ledger-section .section-heading { align-items: end; }
+.ledger-section .section-heading h2 { margin: 0; }
+.ledger-filters { display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: var(--esp-3); }
+.ledger-filters .ui-field { margin: 0; }
+.ledger-table-wrap { margin-top: var(--esp-5); padding: 0 var(--esp-4); overflow-x: auto; }
+.ledger-table { min-width: 920px; }
+.ledger-memory { margin: var(--esp-5) 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ledger-memory dd { overflow-wrap: anywhere; }
 @media (max-width: 700px) {
-  .offer-form-grid, .simulation-result, .affiliate-filters, .affiliate-row, .affiliate-detail, .marketplace-filters, .marketplace-terms { grid-template-columns: 1fr; }
+  .offer-form-grid, .simulation-result, .affiliate-filters, .affiliate-row, .affiliate-detail, .marketplace-filters, .marketplace-terms, .ledger-filters, .ledger-memory { grid-template-columns: 1fr; }
   .section-heading, .offer-list-item { align-items: stretch; flex-direction: column; }
   .affiliate-actions { justify-content: flex-start; }
+  .balance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .balance-card { min-height: 132px; }
+  .debt-warning { grid-template-columns: 1fr; }
+  .debt-warning ul { grid-column: auto; }
 }
