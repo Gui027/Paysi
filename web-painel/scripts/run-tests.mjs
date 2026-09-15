@@ -8,6 +8,7 @@ const output = join(panelRoot, ".test-dist");
 const tsc = join(panelRoot, "..", "node_modules", "typescript", "bin", "tsc");
 
 const modules = ["produtos", "moeda", "dashboard", "aparencia", "assets", "ofertas", "afiliados", "payout"];
+const modules = ["produtos", "moeda", "dashboard", "aparencia", "assets", "ofertas", "afiliados", "payout", "vendas"];
 
 rmSync(output, { recursive: true, force: true });
 
