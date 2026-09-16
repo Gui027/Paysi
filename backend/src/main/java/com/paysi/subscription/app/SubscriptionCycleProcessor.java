@@ -28,6 +28,7 @@ public class SubscriptionCycleProcessor {
     private final PaymentProvider provider;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionCycleProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
                                        PaymentProvider provider) {
         this(subscriptions, plans, provider, Clock.systemUTC());

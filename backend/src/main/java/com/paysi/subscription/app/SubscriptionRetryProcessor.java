@@ -22,6 +22,7 @@ public class SubscriptionRetryProcessor {
     private final PaymentProvider provider;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionRetryProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
                                        PaymentProvider provider) {
         this(subscriptions, plans, provider, Clock.systemUTC());
