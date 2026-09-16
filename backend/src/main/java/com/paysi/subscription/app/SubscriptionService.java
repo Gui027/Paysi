@@ -49,6 +49,7 @@ public class SubscriptionService {
     private final ObjectMapper json;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionService(SubscriptionRepository subscriptions, OfferRepository offers,
                                 PlatformPlanReader plans, PaymentProvider provider, ObjectMapper json) {
         this(subscriptions, offers, plans, provider, json, Clock.systemUTC());
