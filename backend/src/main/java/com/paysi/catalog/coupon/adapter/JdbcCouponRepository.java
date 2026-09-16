@@ -67,6 +67,46 @@ class JdbcCouponRepository implements CouponRepository {
     }
 
     @Override
+    public Optional<Coupon> findApplicable(UUID offerId, String code) {
+        return jdbc.query("""
+                SELECT c.* FROM coupons c
+                 WHERE c.archived_at IS NULL AND c.code = ?
+                   AND EXISTS (SELECT 1 FROM coupon_offers co
+                                WHERE co.coupon_id = c.id AND co.offer_id = ?)
+                """, (rs, row) -> map(rs), code, offerId).stream().findFirst();
+    }
+
+    @Override
+    public boolean reserve(UUID couponId, Instant now) {
+        Timestamp at = Timestamp.from(now);
+        return jdbc.update("""
+                UPDATE coupons
+                   SET redeemed_count = redeemed_count + 1
+                 WHERE id = ?
+                   AND archived_at IS NULL
+                   AND (starts_at IS NULL OR starts_at <= ?)
+                   AND (expires_at IS NULL OR expires_at > ?)
+                   AND (max_redemptions IS NULL OR redeemed_count < max_redemptions)
+                """, couponId, at, at) == 1;
+    }
+
+    @Override
+    public void recordRedemption(UUID couponId, UUID orderId, UUID buyerId, long amountCents) {
+        jdbc.update("""
+                INSERT INTO coupon_redemptions (coupon_id, order_id, buyer_id, amount_cents)
+                VALUES (?, ?, ?, ?)
+                """, couponId, orderId, buyerId, amountCents);
+    }
+
+    @Override
+    public int countRedemptionsByBuyer(UUID couponId, UUID buyerId) {
+        Integer total = jdbc.queryForObject("""
+                SELECT count(*) FROM coupon_redemptions WHERE coupon_id = ? AND buyer_id = ?
+                """, Integer.class, couponId, buyerId);
+        return total == null ? 0 : total;
+    }
+
+    @Override
     public void update(Coupon coupon) {
         try {
             int changed = jdbc.update("""
