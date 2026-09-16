@@ -160,7 +160,10 @@ export function maskDocument(doc: string): string {
   return "***";
 }
 
-export function orderMatchesFilters(order: OrderSummary, filters: OrderFilters): boolean {
+export function orderMatchesFilters(
+  order: OrderSummary,
+  filters: OrderFilters,
+): boolean {
   const q = filters.query.trim().toLowerCase();
   const matchesQuery =
     !q ||
@@ -170,12 +173,17 @@ export function orderMatchesFilters(order: OrderSummary, filters: OrderFilters):
 
   const matchesStatus = !filters.status || order.status === filters.status;
   const matchesMethod = !filters.method || order.method === filters.method;
-  const matchesProduct = !filters.productId || order.productId === filters.productId;
+  const matchesProduct =
+    !filters.productId || order.productId === filters.productId;
 
   return matchesQuery && matchesStatus && matchesMethod && matchesProduct;
 }
 
-export function listOrders(filters?: Partial<OrderFilters>, cursor?: string, limit = 20) {
+export function listOrders(
+  filters?: Partial<OrderFilters>,
+  cursor?: string,
+  limit = 20,
+) {
   const query = new URLSearchParams({ limit: String(limit) });
   if (cursor) query.set("cursor", cursor);
   if (filters?.status) query.set("status", filters.status);
@@ -191,3 +199,116 @@ export function getOrder(orderId: string) {
   return apiRequest<OrderDetail>(`/v1/orders/${encodeURIComponent(orderId)}`);
 }
 
+export type RefundKind = "TOTAL" | "PARTIAL";
+
+export type RefundInput = {
+  chargeId: string;
+  kind: RefundKind;
+  amountCents?: number;
+  reason: string;
+  idempotencyKey: string;
+};
+
+export type RefundValidationResult = {
+  isValid: boolean;
+  error?: string;
+};
+
+export type RefundResult = {
+  id: string;
+  chargeId: string;
+  amountCents: number;
+  kind: RefundKind;
+  status: "PENDING" | "COMPLETED" | "REJECTED";
+  refundedAt: string;
+};
+
+export type InvoiceStatus = "ISSUED" | "PENDING" | "ERROR";
+
+export type InvoiceDetail = {
+  id: string;
+  chargeId: string;
+  number: string | null;
+  status: InvoiceStatus;
+  pdfUrl: string | null;
+  xmlUrl: string | null;
+  errorMessage: string | null;
+  retryable: boolean;
+  issuedAt: string | null;
+};
+
+export const invoiceStatusLabel: Record<InvoiceStatus, string> = {
+  ISSUED: "Emitida",
+  PENDING: "Processando emissão",
+  ERROR: "Falha na emissão fiscal",
+};
+
+export function validateRefundInput(
+  input: RefundInput,
+  maxRefundableCents: number,
+): RefundValidationResult {
+  if (!input.reason || input.reason.trim().length < 3) {
+    return {
+      isValid: false,
+      error: "Informe o motivo do reembolso (mínimo de 3 caracteres).",
+    };
+  }
+
+  if (input.kind === "PARTIAL") {
+    if (!input.amountCents || input.amountCents <= 0) {
+      return {
+        isValid: false,
+        error: "Informe um valor válido para o reembolso parcial.",
+      };
+    }
+    if (input.amountCents > maxRefundableCents) {
+      return {
+        isValid: false,
+        error:
+          "O valor informado excede o saldo disponível para reembolso desta cobrança.",
+      };
+    }
+  }
+
+  return { isValid: true };
+}
+
+export function getRefundConfirmationMessage(
+  kind: RefundKind,
+  amountFormatted: string,
+): string {
+  if (kind === "TOTAL") {
+    return `Você está prestes a realizar o estorno integral no valor de ${amountFormatted}. O acesso do comprador será revogado e os lançamentos no razão serão estornados proporcionalmente.`;
+  }
+  return `Você está prestes a realizar um estorno parcial de ${amountFormatted}. A memória financeira da cobrança será recalculada mantendo a assinatura/compra ativa.`;
+}
+
+export function createRefund(chargeId: string, input: RefundInput) {
+  return apiRequest<RefundResult>(
+    `/v1/charges/${encodeURIComponent(chargeId)}/refunds`,
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": input.idempotencyKey },
+      body: JSON.stringify({
+        amountCents: input.kind === "PARTIAL" ? input.amountCents : undefined,
+        reason: input.reason.trim(),
+        kind: input.kind,
+      }),
+    },
+  );
+}
+
+export function listInvoices(orderId: string) {
+  return apiRequest<InvoiceDetail[]>(
+    `/v1/orders/${encodeURIComponent(orderId)}/invoices`,
+  );
+}
+
+export function retryInvoice(invoiceId: string) {
+  return apiRequest<InvoiceDetail>(
+    `/v1/invoices/${encodeURIComponent(invoiceId)}/retry`,
+    {
+      method: "POST",
+    },
+  );
+}

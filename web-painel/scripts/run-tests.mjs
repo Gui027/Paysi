@@ -7,29 +7,53 @@ const panelRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const output = join(panelRoot, ".test-dist");
 const tsc = join(panelRoot, "..", "node_modules", "typescript", "bin", "tsc");
 
-const modules = ["produtos", "moeda", "dashboard", "aparencia", "assets", "ofertas", "afiliados", "payout"];
-const modules = ["produtos", "moeda", "dashboard", "aparencia", "assets", "ofertas", "afiliados", "payout", "vendas"];
+const modules = [
+  "produtos",
+  "moeda",
+  "dashboard",
+  "aparencia",
+  "assets",
+  "ofertas",
+  "afiliados",
+  "payout",
+  "vendas",
+];
 
 rmSync(output, { recursive: true, force: true });
 
-const compile = spawnSync(process.execPath, [
-  tsc,
-  join(panelRoot, "lib", "api.ts"),
-  ...modules.flatMap(name => [join(panelRoot, "lib", `${name}.ts`), join(panelRoot, "lib", `${name}.test.ts`)]),
-  "--ignoreConfig",
-  "--outDir", output,
-  "--module", "commonjs",
-  "--target", "es2022",
-  "--types", "node",
-  "--esModuleInterop",
-  "--skipLibCheck",
-], { stdio: "inherit" });
+const compile = spawnSync(
+  process.execPath,
+  [
+    tsc,
+    join(panelRoot, "lib", "api.ts"),
+    ...modules.flatMap((name) => [
+      join(panelRoot, "lib", `${name}.ts`),
+      join(panelRoot, "lib", `${name}.test.ts`),
+    ]),
+    "--ignoreConfig",
+    "--outDir",
+    output,
+    "--module",
+    "commonjs",
+    "--target",
+    "es2022",
+    "--types",
+    "node",
+    "--esModuleInterop",
+    "--skipLibCheck",
+  ],
+  { stdio: "inherit" },
+);
 
 if (compile.status !== 0) {
   rmSync(output, { recursive: true, force: true });
   process.exit(compile.status ?? 1);
 }
 
-const tests = spawnSync(process.execPath, ["--test", ...modules.map(name => join(output, `${name}.test.js`))], { stdio: "inherit" });
+const tests = spawnSync(
+  process.execPath,
+  ["--test", ...modules.map((name) => join(output, `${name}.test.js`))],
+  { stdio: "inherit" },
+);
 rmSync(output, { recursive: true, force: true });
 process.exit(tests.status ?? 1);
