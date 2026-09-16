@@ -26,7 +26,10 @@ import {
   PaymentMethod,
 } from "../../../lib/vendas";
 
-const statusTone: Record<OrderStatus, "neutral" | "success" | "warning" | "danger"> = {
+const statusTone: Record<
+  OrderStatus,
+  "neutral" | "success" | "warning" | "danger"
+> = {
   PENDING: "warning",
   PAID: "success",
   REFUNDED: "neutral",
@@ -109,7 +112,11 @@ export function VendasPage() {
   const filteredOrders = orders.filter((o) => orderMatchesFilters(o, filters));
 
   const tableRows = filteredOrders.map((o) => [
-    <Link key={o.id} href={`/vendas/${o.id}`} className="font-semibold text-primary">
+    <Link
+      key={o.id}
+      href={`/vendas/${o.id}`}
+      className="font-semibold text-primary"
+    >
       {o.id.slice(0, 8)}…
     </Link>,
     <span key="buyer">{o.buyerNameMasked || "—"}</span>,
@@ -145,14 +152,23 @@ export function VendasPage() {
       )}
 
       <Cartao className="vendas-filtros" aria-label="Filtros de vendas">
-        <div className="grid-filtros" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
+        <div
+          className="grid-filtros"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "1rem",
+          }}
+        >
           <label className="ui-field">
             <span>Buscar pedido ou comprador</span>
             <input
               type="search"
               placeholder="Código, produto, comprador..."
               value={filters.query}
-              onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, query: e.target.value }))
+              }
             />
           </label>
 
@@ -160,7 +176,10 @@ export function VendasPage() {
             label="Período"
             value={filters.period}
             onChange={(e) =>
-              setFilters((f) => ({ ...f, period: e.target.value as OrderPeriodPreset }))
+              setFilters((f) => ({
+                ...f,
+                period: e.target.value as OrderPeriodPreset,
+              }))
             }
           >
             {Object.entries(periodLabels).map(([val, label]) => (
@@ -174,7 +193,10 @@ export function VendasPage() {
             label="Status"
             value={filters.status}
             onChange={(e) =>
-              setFilters((f) => ({ ...f, status: e.target.value as "" | OrderStatus }))
+              setFilters((f) => ({
+                ...f,
+                status: e.target.value as "" | OrderStatus,
+              }))
             }
           >
             <option value="">Todos os status</option>
@@ -189,7 +211,10 @@ export function VendasPage() {
             label="Forma de pagamento"
             value={filters.method}
             onChange={(e) =>
-              setFilters((f) => ({ ...f, method: e.target.value as "" | PaymentMethod }))
+              setFilters((f) => ({
+                ...f,
+                method: e.target.value as "" | PaymentMethod,
+              }))
             }
           >
             <option value="">Todas as formas</option>
@@ -203,7 +228,9 @@ export function VendasPage() {
           <Select
             label="Produto"
             value={filters.productId}
-            onChange={(e) => setFilters((f) => ({ ...f, productId: e.target.value }))}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, productId: e.target.value }))
+            }
           >
             <option value="">Todos os produtos</option>
             {products.map((p) => (
@@ -221,16 +248,30 @@ export function VendasPage() {
         <EmptyState
           title="Nenhuma venda encontrada"
           description={
-            filters.query || filters.status || filters.method || filters.productId || filters.period
+            filters.query ||
+            filters.status ||
+            filters.method ||
+            filters.productId ||
+            filters.period
               ? "Nenhum resultado corresponde aos filtros selecionados. Tente limpar ou ajustar a busca."
               : "Suas vendas confirmadas e cobranças geradas aparecerão aqui assim que as primeiras transações ocorrerem."
           }
           action={
-            (filters.query || filters.status || filters.method || filters.productId || filters.period) ? (
+            filters.query ||
+            filters.status ||
+            filters.method ||
+            filters.productId ||
+            filters.period ? (
               <Botao
                 variant="secondary"
                 onClick={() =>
-                  setFilters({ query: "", status: "", method: "", productId: "", period: "" })
+                  setFilters({
+                    query: "",
+                    status: "",
+                    method: "",
+                    productId: "",
+                    period: "",
+                  })
                 }
               >
                 Limpar filtros
@@ -271,4 +312,3 @@ export function VendasPage() {
     </div>
   );
 }
-
