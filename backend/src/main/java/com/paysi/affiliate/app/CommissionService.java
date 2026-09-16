@@ -51,6 +51,12 @@ public class CommissionService {
         return affiliationId;
     }
 
+    /** Cliques e pedidos por afiliação aprovada, para a tela "meus links" do afiliado. */
+    @Transactional(readOnly = true)
+    public List<AffiliateAttributionRepository.LinkStats> myLinks(UUID affiliateId) {
+        return attribution.linkStats(affiliateId);
+    }
+
     /**
      * Resolve a atribuição vigente para o comprador atual. {@code cycleNumber > 1} só conta quando
      * a afiliação foi aprovada como recorrente (ALL_CYCLES); do contrário a comissão vale só a

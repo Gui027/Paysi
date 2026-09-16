@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,5 +48,22 @@ class JdbcAffiliateAttributionRepository implements AffiliateAttributionReposito
                         rs.getObject("affiliate_id", UUID.class), rs.getInt("commission_bps"),
                         rs.getBoolean("recurring")),
                 productId, visitorKey, Timestamp.from(now)).stream().findFirst();
+    }
+
+    @Override
+    public List<LinkStats> linkStats(UUID affiliateId) {
+        return jdbc.query("""
+                SELECT a.id AS affiliation_id, a.product_id, p.name AS product_name,
+                       (SELECT o.slug FROM offers o WHERE o.product_id = p.id AND o.status = 'PUBLISHED'
+                         ORDER BY o.created_at LIMIT 1) AS offer_slug,
+                       (SELECT count(*) FROM affiliate_clicks c WHERE c.affiliation_id = a.id) AS clicks,
+                       (SELECT count(*) FROM orders o WHERE o.affiliation_id = a.id) AS orders
+                  FROM affiliations a
+                  JOIN products p ON p.id = a.product_id
+                 WHERE a.affiliate_id = ? AND a.status = 'APPROVED'
+                 ORDER BY a.created_at DESC
+                """, (rs, row) -> new LinkStats(rs.getObject("affiliation_id", UUID.class),
+                        rs.getObject("product_id", UUID.class), rs.getString("product_name"),
+                        rs.getString("offer_slug"), rs.getLong("clicks"), rs.getLong("orders")), affiliateId);
     }
 }

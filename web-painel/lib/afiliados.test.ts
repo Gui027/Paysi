@@ -1,7 +1,21 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { ApiRequestError } from "./api";
-import { approveAffiliation, endAffiliation, formatCommissionBps, listAffiliateAffiliations, listMarketplace, listSellerAffiliations, parseCommissionPercent, requestAffiliation } from "./afiliados";
+import { LedgerItem } from "./dashboard";
+import {
+  approveAffiliation,
+  buildAffiliateLinkUrl,
+  commissionEntryStatus,
+  endAffiliation,
+  formatCommissionBps,
+  isCommissionEntry,
+  listAffiliateAffiliations,
+  listMarketplace,
+  listMyLinks,
+  listSellerAffiliations,
+  parseCommissionPercent,
+  requestAffiliation,
+} from "./afiliados";
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
@@ -115,4 +129,47 @@ test("não esconde conflito de solicitação repetida", async () => {
   })) as typeof fetch;
   await assert.rejects(() => requestAffiliation("product"),
     (error: unknown) => error instanceof ApiRequestError && error.problem.code === "AFFILIATION_ALREADY_ACTIVE");
+});
+
+test("lista meus links com cliques e pedidos", async () => {
+  let requestedUrl = "";
+  globalThis.fetch = (async (input) => {
+    requestedUrl = String(input);
+    return new Response(JSON.stringify([{ affiliationId: "aff-1", productId: "prod-1", productName: "Curso", offerSlug: "curso-mensal", clicks: 10, orders: 2 }]), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  const links = await listMyLinks();
+  assert.equal(links.length, 1);
+  assert.equal(links[0].clicks, 10);
+  assert.match(requestedUrl, /\/v1\/affiliations\/links$/);
+});
+
+test("gera link opaco pelo slug da oferta publicada", () => {
+  const url = buildAffiliateLinkUrl("https://checkout.paysi.com.br", "curso-mensal", "aff-999");
+  assert.equal(url, "https://checkout.paysi.com.br/checkout/curso-mensal?ref=aff-999");
+});
+
+test("classifica entrada de comissão como a liberar, disponível ou estornada", () => {
+  const base: LedgerItem = {
+    entryId: 1,
+    bucket: "GUARANTEE",
+    direction: "CREDIT",
+    amountCents: 1000,
+    origin: "COMMISSION",
+    reason: "Comissão de afiliado",
+    reference: "CHARGE:abc",
+    availableAt: "2026-12-01T00:00:00Z",
+    createdAt: "2026-09-01T00:00:00Z",
+  };
+  assert.equal(isCommissionEntry(base), true);
+  assert.equal(isCommissionEntry({ ...base, origin: "SALE" }), false);
+
+  const now = new Date("2026-09-10T00:00:00Z");
+  assert.equal(commissionEntryStatus(base, now), "A liberar");
+  assert.equal(commissionEntryStatus({ ...base, bucket: "AVAILABLE" }, now), "Disponível");
+  assert.equal(commissionEntryStatus({ ...base, availableAt: "2026-09-01T00:00:00Z" }, now), "Disponível");
+  assert.equal(commissionEntryStatus({ ...base, direction: "DEBIT" }, now), "Estornada");
 });

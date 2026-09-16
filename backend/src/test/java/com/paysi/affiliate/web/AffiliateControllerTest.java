@@ -3,12 +3,14 @@ package com.paysi.affiliate.web;
 import com.paysi.affiliate.app.AffiliationPage;
 import com.paysi.affiliate.app.AffiliationRole;
 import com.paysi.affiliate.app.AffiliationService;
+import com.paysi.affiliate.app.CommissionService;
 import com.paysi.affiliate.app.MarketplaceItem;
 import com.paysi.affiliate.app.MarketplacePage;
 import com.paysi.affiliate.app.MarketplaceService;
 import com.paysi.affiliate.domain.Affiliation;
 import com.paysi.affiliate.domain.AffiliationRecurrence;
 import com.paysi.affiliate.domain.AffiliationStatus;
+import com.paysi.affiliate.port.AffiliateAttributionRepository.LinkStats;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
 import com.paysi.identity.domain.InitialMode;
@@ -47,6 +49,7 @@ class AffiliateControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean MarketplaceService marketplace;
     @MockitoBean AffiliationService affiliations;
+    @MockitoBean CommissionService commissions;
     @MockitoBean SessionService sessions;
 
     @BeforeEach
@@ -115,6 +118,19 @@ class AffiliateControllerTest {
                         .content("{\"commissionBps\":5001,\"recurrence\":\"FIRST_CHARGE\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("commissionBps"));
+    }
+
+    @Test
+    void listsMyLinksWithClicksAndOrders() throws Exception {
+        when(commissions.myLinks(ACCOUNT)).thenReturn(List.of(
+                new LinkStats(AFFILIATION, PRODUCT, "Curso", "curso-mensal", 42, 3)));
+
+        mvc.perform(get("/v1/affiliations/links").cookie(cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].affiliationId").value(AFFILIATION.toString()))
+                .andExpect(jsonPath("$[0].productName").value("Curso"))
+                .andExpect(jsonPath("$[0].clicks").value(42))
+                .andExpect(jsonPath("$[0].orders").value(3));
     }
 
     private static jakarta.servlet.http.Cookie cookie() {

@@ -2,11 +2,13 @@ package com.paysi.affiliate.web;
 
 import com.paysi.affiliate.app.AffiliationRole;
 import com.paysi.affiliate.app.AffiliationService;
+import com.paysi.affiliate.app.CommissionService;
 import com.paysi.affiliate.web.dto.AffiliationApprovalRequest;
 import com.paysi.affiliate.web.dto.AffiliationEndRequest;
 import com.paysi.affiliate.web.dto.AffiliationPageResponse;
 import com.paysi.affiliate.web.dto.AffiliationRequest;
 import com.paysi.affiliate.web.dto.AffiliationResponse;
+import com.paysi.affiliate.web.dto.LinkStatsResponse;
 import com.paysi.identity.session.app.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,11 +33,21 @@ public class AffiliationController {
     private static final String COOKIE_NAME = "paysi_session";
 
     private final AffiliationService affiliations;
+    private final CommissionService commissions;
     private final SessionService sessions;
 
-    public AffiliationController(AffiliationService affiliations, SessionService sessions) {
+    public AffiliationController(AffiliationService affiliations, CommissionService commissions,
+                                  SessionService sessions) {
         this.affiliations = affiliations;
+        this.commissions = commissions;
         this.sessions = sessions;
+    }
+
+    @GetMapping("/links")
+    @Operation(summary = "Meus links de afiliado com cliques e pedidos")
+    public java.util.List<LinkStatsResponse> myLinks(
+            @CookieValue(name = COOKIE_NAME, required = false) String token) {
+        return commissions.myLinks(accountId(token)).stream().map(LinkStatsResponse::from).toList();
     }
 
     @PostMapping
