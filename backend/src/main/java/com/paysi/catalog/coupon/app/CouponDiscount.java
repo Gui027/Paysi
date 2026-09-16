@@ -6,8 +6,7 @@ import java.util.UUID;
  * Desconto já resolvido pelo servidor. O checkout nunca envia valor: o código do cupom
  * entra, o desconto em centavos sai (RF-027).
  *
- * @param couponId preenchido apenas quando a unidade foi efetivamente reservada; a
- *                 simulação devolve {@code null} porque não consome nada
+ * @param couponId {@code null} quando o comprador não informou cupom
  * @param maxPerBuyer limite carregado junto para que a conferência posterior não
  *                    precise reler o cupom
  */
@@ -18,8 +17,7 @@ public record CouponDiscount(UUID couponId, String code, long discountCents, int
         return new CouponDiscount(null, null, 0, 0);
     }
 
-    /** Verdadeiro somente quando há unidade reservada a confirmar. */
-    public boolean reserved() {
+    public boolean present() {
         return couponId != null;
     }
 }

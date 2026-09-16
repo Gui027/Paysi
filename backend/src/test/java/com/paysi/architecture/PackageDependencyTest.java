@@ -37,4 +37,18 @@ class PackageDependencyTest {
                 .should().dependOnClassesThat().resideInAnyPackage("..catalog..adapter..")
                 .check(classes);
     }
+
+    @Test
+    void checkoutDomainStaysIndependentAndWebDoesNotReachAdapters() {
+        var classes = new ClassFileImporter().importPackages("com.paysi.checkout");
+
+        noClasses().that().resideInAnyPackage("..checkout..domain..")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage("org.springframework..", "jakarta.persistence..")
+                .check(classes);
+
+        noClasses().that().resideInAnyPackage("..checkout..web..")
+                .should().dependOnClassesThat().resideInAnyPackage("..checkout..adapter..")
+                .check(classes);
+    }
 }

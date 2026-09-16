@@ -41,27 +41,25 @@ public class CouponRedemptionService {
         this.clock = clock;
     }
 
-    /** Desconto que o cupom daria agora, sem consumir unidade. Usado pela simulação. */
+    /** Desconto que o cupom daria agora, sem consumir unidade. */
     @Transactional(readOnly = true)
     public CouponDiscount quote(UUID offerId, String code, long grossCents) {
         if (blank(code)) return CouponDiscount.none();
-        return discountOf(applicable(offerId, code), grossCents, false);
+        return discountOf(applicable(offerId, code), grossCents);
     }
 
     /**
-     * Consome uma unidade do cupom. Deve rodar dentro da transação que cria o pedido:
-     * se o pedido falhar depois, o incremento volta atrás junto.
+     * Consome uma unidade. Deve rodar dentro da transação que cria o pedido e
+     * <em>depois</em> que o pedido foi efetivamente gravado: uma requisição repetida
+     * não pode gastar unidade de cupom.
      */
     @Transactional
-    public CouponDiscount reserve(UUID offerId, String code, long grossCents) {
-        if (blank(code)) return CouponDiscount.none();
-        Coupon coupon = applicable(offerId, code);
-        CouponDiscount discount = discountOf(coupon, grossCents, true);
-        if (!coupons.reserve(coupon.id(), clock.instant())) {
-            // Perdeu a corrida para outra requisição entre a leitura e o UPDATE.
+    public void reserveUnit(CouponDiscount discount) {
+        if (!discount.present()) return;
+        if (!coupons.reserve(discount.couponId(), clock.instant())) {
+            // Esgotou, venceu ou perdeu a corrida entre a leitura e o UPDATE.
             throw exhausted();
         }
-        return discount;
     }
 
     /**
@@ -70,7 +68,7 @@ public class CouponRedemptionService {
      */
     @Transactional
     public void confirm(CouponDiscount discount, UUID orderId, UUID buyerId) {
-        if (!discount.reserved()) return;
+        if (!discount.present()) return;
         coupons.recordRedemption(discount.couponId(), orderId, buyerId, discount.discountCents());
         if (coupons.countRedemptionsByBuyer(discount.couponId(), buyerId) > discount.maxPerBuyer()) {
             throw new ConflictException("COUPON_LIMIT_REACHED",
@@ -83,7 +81,7 @@ public class CouponRedemptionService {
                 .orElseThrow(CouponRedemptionService::notFound);
     }
 
-    private CouponDiscount discountOf(Coupon coupon, long grossCents, boolean reserving) {
+    private CouponDiscount discountOf(Coupon coupon, long grossCents) {
         Instant now = clock.instant();
         if (coupon.startsAt() != null && now.isBefore(coupon.startsAt())) {
             throw new ConflictException("COUPON_NOT_STARTED",
@@ -95,7 +93,7 @@ public class CouponRedemptionService {
         if (coupon.maxRedemptions() != null && coupon.redeemedCount() >= coupon.maxRedemptions()) {
             throw exhausted();
         }
-        return new CouponDiscount(reserving ? coupon.id() : null, coupon.code(),
+        return new CouponDiscount(coupon.id(), coupon.code(),
                 coupon.discountCents(grossCents), coupon.maxPerBuyer());
     }
 

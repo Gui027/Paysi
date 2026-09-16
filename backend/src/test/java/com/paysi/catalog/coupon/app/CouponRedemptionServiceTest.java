@@ -18,6 +18,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -43,17 +44,15 @@ class CouponRedemptionServiceTest {
     @Test
     void semCodigoNaoConsultaCupomENaoDaDesconto() {
         assertThat(service.quote(OFFER, null, 17_700).discountCents()).isZero();
-        assertThat(service.reserve(OFFER, "  ", 17_700).discountCents()).isZero();
+        assertThat(service.quote(OFFER, "  ", 17_700).present()).isFalse();
         verify(coupons, never()).findApplicable(any(), any());
-        verify(coupons, never()).reserve(any(), any());
     }
 
     @Test
     void normalizaCodigoParaMaiusculas() {
         stub(coupon(CouponKind.PERCENT, 1_000, null, null, null, 1, 0));
-        when(coupons.reserve(any(), eq(NOW))).thenReturn(true);
 
-        service.reserve(OFFER, " promo10 ", 17_700);
+        service.quote(OFFER, " promo10 ", 17_700);
 
         verify(coupons).findApplicable(OFFER, "PROMO10");
     }
@@ -74,12 +73,11 @@ class CouponRedemptionServiceTest {
     }
 
     @Test
-    void simulacaoNaoConsomeUnidade() {
+    void calcularNaoConsomeUnidade() {
         stub(coupon(CouponKind.PERCENT, 1_000, null, null, 50, 1, 0));
 
-        CouponDiscount discount = service.quote(OFFER, "PROMO10", 17_700);
+        service.quote(OFFER, "PROMO10", 17_700);
 
-        assertThat(discount.reserved()).isFalse();
         verify(coupons, never()).reserve(any(), any());
     }
 
@@ -113,30 +111,36 @@ class CouponRedemptionServiceTest {
     }
 
     @Test
-    void cupomEsgotado() {
+    void cupomEsgotadoJaNoCalculo() {
         stub(coupon(CouponKind.PERCENT, 1_000, null, null, 50, 1, 50));
 
-        assertThatThrownBy(() -> service.reserve(OFFER, "PROMO10", 17_700))
+        assertThatThrownBy(() -> service.quote(OFFER, "PROMO10", 17_700))
                 .isInstanceOfSatisfying(ConflictException.class,
                         error -> assertThat(error.code()).isEqualTo("COUPON_EXHAUSTED"));
-        verify(coupons, never()).reserve(any(), any());
     }
 
     @Test
     void perderACorridaNoUpdateCondicionalTambemEsgota() {
-        stub(coupon(CouponKind.PERCENT, 1_000, null, null, 50, 1, 49));
-        when(coupons.reserve(any(), eq(NOW))).thenReturn(false);
+        CouponDiscount discount = new CouponDiscount(UUID.randomUUID(), "PROMO10", 1_770, 1);
+        when(coupons.reserve(eq(discount.couponId()), eq(NOW))).thenReturn(false);
 
-        assertThatThrownBy(() -> service.reserve(OFFER, "PROMO10", 17_700))
+        assertThatThrownBy(() -> service.reserveUnit(discount))
                 .isInstanceOfSatisfying(ConflictException.class,
                         error -> assertThat(error.code()).isEqualTo("COUPON_EXHAUSTED"));
     }
 
     @Test
+    void semCupomNaoReservaNemRegistraNada() {
+        service.reserveUnit(CouponDiscount.none());
+        service.confirm(CouponDiscount.none(), ORDER, BUYER);
+
+        verify(coupons, never()).reserve(any(), any());
+        verify(coupons, never()).recordRedemption(any(), any(), any(), anyLong());
+    }
+
+    @Test
     void confirmacaoGravaTrilhaAntesDeConferirLimitePorComprador() {
-        stub(coupon(CouponKind.PERCENT, 1_000, null, null, null, 2, 0));
-        when(coupons.reserve(any(), eq(NOW))).thenReturn(true);
-        CouponDiscount discount = service.reserve(OFFER, "PROMO10", 17_700);
+        CouponDiscount discount = new CouponDiscount(UUID.randomUUID(), "PROMO10", 1_770, 2);
         when(coupons.countRedemptionsByBuyer(discount.couponId(), BUYER)).thenReturn(2);
 
         service.confirm(discount, ORDER, BUYER);
@@ -146,21 +150,12 @@ class CouponRedemptionServiceTest {
 
     @Test
     void limitePorCompradorEstouradoDerrubaATransacao() {
-        stub(coupon(CouponKind.PERCENT, 1_000, null, null, null, 1, 0));
-        when(coupons.reserve(any(), eq(NOW))).thenReturn(true);
-        CouponDiscount discount = service.reserve(OFFER, "PROMO10", 17_700);
+        CouponDiscount discount = new CouponDiscount(UUID.randomUUID(), "PROMO10", 1_770, 1);
         when(coupons.countRedemptionsByBuyer(discount.couponId(), BUYER)).thenReturn(2);
 
         assertThatThrownBy(() -> service.confirm(discount, ORDER, BUYER))
                 .isInstanceOfSatisfying(ConflictException.class,
                         error -> assertThat(error.code()).isEqualTo("COUPON_LIMIT_REACHED"));
-    }
-
-    @Test
-    void confirmacaoSemCupomNaoEscreveNada() {
-        service.confirm(CouponDiscount.none(), ORDER, BUYER);
-
-        verify(coupons, never()).recordRedemption(any(), any(), any(), org.mockito.ArgumentMatchers.anyLong());
     }
 
     private void stub(Coupon coupon) {
