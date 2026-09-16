@@ -1,5 +1,6 @@
 package com.paysi.subscription.app;
 
+import com.paysi.affiliate.app.CommissionService;
 import com.paysi.identity.port.PlatformPlanReader;
 import com.paysi.payment.provider.*;
 import com.paysi.subscription.port.SubscriptionRepository;
@@ -84,21 +85,23 @@ class SubscriptionRetryProcessorTest {
         var repository = mock(SubscriptionRepository.class);
         var plans = mock(PlatformPlanReader.class);
         var provider = mock(PaymentProvider.class);
+        var commissions = mock(CommissionService.class);
         when(plans.currentPlan(SELLER)).thenReturn("TRANSACIONAL");
-        var processor = new SubscriptionRetryProcessor(repository, plans, provider,
+        var processor = new SubscriptionRetryProcessor(repository, plans, provider, commissions,
                 Clock.fixed(NOW, ZoneOffset.UTC));
         return new Fixture(processor, repository, provider);
     }
 
     private static SubscriptionRepository.DueRetry retry(int attemptCount) {
         return new SubscriptionRepository.DueRetry(CHARGE, SUBSCRIPTION, UUID.randomUUID(), UUID.randomUUID(),
-                SELLER, 10_000, 2, attemptCount, "MONTHLY", "Comprador", "buyer@example.com", "PF",
-                "52998224725", "tok_1");
+                SELLER, 10_000, 2, attemptCount, "MONTHLY", 7, "Comprador", "buyer@example.com", "PF",
+                "52998224725", "tok_1", null, 0, false);
     }
 
     private static SubscriptionRepository.DueRetry retryWithoutToken() {
         return new SubscriptionRepository.DueRetry(CHARGE, SUBSCRIPTION, UUID.randomUUID(), UUID.randomUUID(),
-                SELLER, 10_000, 2, 1, "MONTHLY", "Comprador", "buyer@example.com", "PF", "52998224725", null);
+                SELLER, 10_000, 2, 1, "MONTHLY", 7, "Comprador", "buyer@example.com", "PF", "52998224725", null,
+                null, 0, false);
     }
 
     private static ProviderPaymentResult result(ProviderChargeStatus status) {

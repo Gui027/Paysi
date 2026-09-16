@@ -1,6 +1,7 @@
 package com.paysi.subscription.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paysi.affiliate.app.CommissionService;
 import com.paysi.catalog.offer.domain.BillingCycle;
 import com.paysi.catalog.offer.domain.Offer;
 import com.paysi.catalog.offer.port.OfferRepository;
@@ -46,21 +47,24 @@ public class SubscriptionService {
     private final OfferRepository offers;
     private final PlatformPlanReader plans;
     private final PaymentProvider provider;
+    private final CommissionService commissions;
     private final ObjectMapper json;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionService(SubscriptionRepository subscriptions, OfferRepository offers,
-                                PlatformPlanReader plans, PaymentProvider provider, ObjectMapper json) {
-        this(subscriptions, offers, plans, provider, json, Clock.systemUTC());
+                                PlatformPlanReader plans, PaymentProvider provider, CommissionService commissions,
+                                ObjectMapper json) {
+        this(subscriptions, offers, plans, provider, commissions, json, Clock.systemUTC());
     }
 
     SubscriptionService(SubscriptionRepository subscriptions, OfferRepository offers, PlatformPlanReader plans,
-                         PaymentProvider provider, ObjectMapper json, Clock clock) {
+                         PaymentProvider provider, CommissionService commissions, ObjectMapper json, Clock clock) {
         this.subscriptions = subscriptions;
         this.offers = offers;
         this.plans = plans;
         this.provider = provider;
+        this.commissions = commissions;
         this.json = json;
         this.clock = clock;
     }
@@ -99,11 +103,16 @@ public class SubscriptionService {
         UUID buyerId = resolveBuyer(command);
         Instant now = clock.instant();
 
+        var attribution = commissions.resolveForCharge(offer.productId(), command.visitorKey(), 1);
+        UUID affiliationId = attribution.map(a -> a.affiliationId()).orElse(null);
+        UUID affiliateId = attribution.map(a -> a.affiliateId()).orElse(null);
+        int commissionBps = attribution.map(a -> a.commissionBps()).orElse(0);
+
         UUID orderId = UUID.randomUUID();
         String snapshot = writeJson(new BuyerSnapshot(command.buyerName(), command.buyerEmail(),
                 command.personType(), command.taxId(), command.legalName(), command.municipalReg()));
-        boolean inserted = subscriptions.insertOrder(orderId, offer.id(), buyerId, snapshot, offer.priceCents(),
-                method, command.idempotencyKey(), requestHash, now);
+        boolean inserted = subscriptions.insertOrder(orderId, offer.id(), buyerId, affiliationId, snapshot,
+                offer.priceCents(), method, command.idempotencyKey(), requestHash, now);
         if (!inserted) {
             // corrida perdida: outra requisição com a mesma chave venceu; devolve o resultado dela.
             var raced = subscriptions.findOrderByIdempotency(offer.id(), command.idempotencyKey())
@@ -124,17 +133,18 @@ public class SubscriptionService {
                 SubscriptionStatus.ACTIVE, 1, null, null, null, command.cardToken(), now));
         var buyer = new ProviderBuyer(command.buyerName(), command.buyerEmail(), command.personType(), command.taxId());
         if ("BOLETO".equals(method)) {
-            issueFirstBoleto(sellerId, offer, orderId, subscriptionId, buyer);
+            issueFirstBoleto(sellerId, offer, orderId, subscriptionId, buyer, commissionBps);
         } else {
-            chargeCycle(sellerId, offer, orderId, subscriptionId, 1, command.cardToken(), buyer);
+            chargeCycle(sellerId, offer, orderId, subscriptionId, 1, command.cardToken(), buyer, commissionBps,
+                    affiliateId);
         }
         return new SubscriptionCreationResult(subscriptionId, false);
     }
 
     private void issueFirstBoleto(UUID sellerId, Offer offer, UUID orderId, UUID subscriptionId,
-                                   ProviderBuyer buyer) {
+                                   ProviderBuyer buyer, int commissionBps) {
         Plan plan = Plan.valueOf(plans.currentPlan(sellerId));
-        Split split = SplitEngine.split(offer.priceCents(), PaymentMethod.BOLETO, plan, 0);
+        Split split = SplitEngine.split(offer.priceCents(), PaymentMethod.BOLETO, plan, commissionBps);
         UUID chargeId = UUID.randomUUID();
         Instant now = clock.instant();
         subscriptions.insertCharge(chargeId, orderId, subscriptionId, 1, offer.priceCents(), plan.name(),
@@ -146,16 +156,18 @@ public class SubscriptionService {
                 new ProviderSplit(split.sellerCents(), split.affiliateCents(), split.sellerFeeCents()),
                 offer.boletoDueDays()));
 
+        // Boleto não confirma na hora: a comissão só é liquidada quando o inbox do provedor
+        // confirmar o pagamento (fora do escopo deste módulo), por isso não chamamos commissions.liquidate aqui.
         subscriptions.saveChargeResult(chargeId, "PENDING", result.providerChargeId(), result.providerFeeCents(),
                 null, null, null);
         subscriptions.updateSubscriptionCycle(subscriptionId, "ACTIVE", nextCharge(now, offer.cycle()));
     }
 
     private void chargeCycle(UUID sellerId, Offer offer, UUID orderId, UUID subscriptionId, int cycleNumber,
-                              String cardToken, ProviderBuyer buyer) {
+                              String cardToken, ProviderBuyer buyer, int commissionBps, UUID affiliateId) {
         Instant nextChargeAt = nextCharge(clock.instant(), offer.cycle());
         Plan plan = Plan.valueOf(plans.currentPlan(sellerId));
-        Split split = SplitEngine.split(offer.priceCents(), PaymentMethod.CARD_1, plan, 0);
+        Split split = SplitEngine.split(offer.priceCents(), PaymentMethod.CARD_1, plan, commissionBps);
         UUID chargeId = UUID.randomUUID();
         Instant now = clock.instant();
         subscriptions.insertCharge(chargeId, orderId, subscriptionId, cycleNumber, offer.priceCents(),
@@ -174,6 +186,9 @@ public class SubscriptionService {
         subscriptions.updateSubscriptionCycle(subscriptionId,
                 (approved ? SubscriptionStatus.ACTIVE : SubscriptionStatus.PAST_DUE).name(),
                 approved ? nextChargeAt : null);
+        if (approved && affiliateId != null && split.affiliateCents() > 0) {
+            commissions.liquidate(affiliateId, split.affiliateCents(), chargeId, now, offer.guaranteeDays());
+        }
     }
 
     private static Instant nextCharge(Instant now, BillingCycle cycle) {

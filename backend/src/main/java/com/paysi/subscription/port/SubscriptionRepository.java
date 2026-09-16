@@ -21,8 +21,8 @@ public interface SubscriptionRepository {
     Optional<OrderReplay> findOrderByIdempotency(UUID offerId, String idempotencyKey);
 
     /** {@code true} se inseriu; {@code false} se colidiu com uma corrida concorrente na mesma chave. */
-    boolean insertOrder(UUID id, UUID offerId, UUID buyerId, String buyerSnapshotJson, long amountCents,
-                         String method, String idempotencyKey, String requestHash, Instant now);
+    boolean insertOrder(UUID id, UUID offerId, UUID buyerId, UUID affiliationId, String buyerSnapshotJson,
+                         long amountCents, String method, String idempotencyKey, String requestHash, Instant now);
 
     void insertSubscription(Subscription subscription);
 
@@ -66,12 +66,14 @@ public interface SubscriptionRepository {
     }
 
     record DueCycle(UUID subscriptionId, UUID orderId, UUID offerId, UUID sellerId, long priceCents,
-                     String cycle, String orderMethod, int boletoDueDays, String buyerName, String buyerEmail,
-                     String personType, String taxId, String providerToken, int nextCycleNumber, boolean fromTrial) {
+                     String cycle, String orderMethod, int boletoDueDays, int guaranteeDays, String buyerName,
+                     String buyerEmail, String personType, String taxId, String providerToken, int nextCycleNumber,
+                     boolean fromTrial, UUID affiliateId, int commissionBps, boolean affiliateAllCycles) {
     }
 
     record DueRetry(UUID chargeId, UUID subscriptionId, UUID orderId, UUID offerId, UUID sellerId,
-                     long amountCents, int cycleNumber, int attemptCount, String cycle, String buyerName,
-                     String buyerEmail, String personType, String taxId, String providerToken) {
+                     long amountCents, int cycleNumber, int attemptCount, String cycle, int guaranteeDays,
+                     String buyerName, String buyerEmail, String personType, String taxId, String providerToken,
+                     UUID affiliateId, int commissionBps, boolean affiliateAllCycles) {
     }
 }

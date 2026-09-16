@@ -1,6 +1,7 @@
 package com.paysi.subscription.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paysi.affiliate.app.CommissionService;
 import com.paysi.catalog.offer.domain.*;
 import com.paysi.catalog.offer.port.OfferRepository;
 import com.paysi.catalog.product.domain.ChargeType;
@@ -90,7 +91,7 @@ class SubscriptionServiceTest {
         assertThat(result.subscriptionId()).isEqualTo(existingSubscription);
         verifyNoInteractions(fixture.provider);
         verify(fixture.repository, never())
-                .insertOrder(any(), any(), any(), any(), anyLong(), any(), any(), any(), any());
+                .insertOrder(any(), any(), any(), any(), any(), anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -122,16 +123,18 @@ class SubscriptionServiceTest {
         var offers = mock(OfferRepository.class);
         var plans = mock(PlatformPlanReader.class);
         var provider = mock(PaymentProvider.class);
+        var commissions = mock(CommissionService.class);
         when(offers.findPublishedBySlug("plano-mensal")).thenReturn(Optional.of(offerValue));
         when(repository.sellerIdForOffer(OFFER)).thenReturn(Optional.of(SELLER));
         when(repository.findOrderByIdempotency(any(), any())).thenReturn(Optional.empty());
-        when(repository.insertOrder(any(), any(), any(), any(), anyLong(), any(), any(), any(), any()))
+        when(repository.insertOrder(any(), any(), any(), any(), any(), anyLong(), any(), any(), any(), any()))
                 .thenReturn(true);
         when(repository.findBuyer(any(), any())).thenReturn(Optional.empty());
         when(repository.insertBuyer(any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(plans.currentPlan(SELLER)).thenReturn("TRANSACIONAL");
-        var service = new SubscriptionService(repository, offers, plans, provider, new ObjectMapper(),
+        when(commissions.resolveForCharge(any(), any(), anyInt())).thenReturn(Optional.empty());
+        var service = new SubscriptionService(repository, offers, plans, provider, commissions, new ObjectMapper(),
                 Clock.fixed(NOW, ZoneOffset.UTC));
         return new Fixture(service, repository, provider);
     }
@@ -144,7 +147,7 @@ class SubscriptionServiceTest {
 
     private static CreateSubscriptionCommand command(String cardToken) {
         return new CreateSubscriptionCommand("plano-mensal", "Comprador Teste", "buyer@example.com", "PF",
-                "52998224725", null, null, null, cardToken, "CARD", "idem-1");
+                "52998224725", null, null, null, cardToken, "CARD", null, "idem-1");
     }
 
     private static ProviderPaymentResult approved() {
