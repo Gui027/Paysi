@@ -8,6 +8,7 @@ import com.paysi.catalog.offer.domain.Offer;
 import com.paysi.catalog.offer.port.OfferRepository;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
+import com.paysi.checkout.pub.domain.RequiredBuyerFields;
 import com.paysi.checkout.pub.port.ProductNameLookup;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.identity.domain.PersonType;
@@ -20,18 +21,12 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class CheckoutContractService {
-    private static final List<String> BASE_FIELDS = List.of("name", "email", "personType", "taxId");
-    private static final List<String> COMPANY_FIELDS = List.of("legalName", "municipalReg",
-            "address.zipCode", "address.street", "address.number", "address.complement",
-            "address.district", "address.city", "address.state");
-
     private final OfferRepository offers;
     private final AppearanceRepository appearances;
     private final AssetRepository assets;
@@ -76,7 +71,7 @@ public class CheckoutContractService {
 
         return new CheckoutContract(product, offer.segment(), offer.chargeType(), offer.priceCents(),
                 offer.cycle(), now, nextChargeAt, offer.paymentMethods(), offer.maxInstallments(),
-                requiredBuyerFields(offer.segment()), appearanceContract(appearance),
+                RequiredBuyerFields.byPersonType(offer.segment()), appearanceContract(appearance),
                 new CheckoutContract.LegalTexts(termsUrl, privacyUrl));
     }
 
@@ -91,18 +86,6 @@ public class CheckoutContractService {
         return assets.findActive(assetId)
                 .map(asset -> assetBaseUrl + "/v1/assets/" + asset.id() + "/content")
                 .orElse(null);
-    }
-
-    private static Map<PersonType, List<String>> requiredBuyerFields(Segment segment) {
-        List<String> pf = segment == Segment.SAAS ? merge(BASE_FIELDS, COMPANY_FIELDS) : BASE_FIELDS;
-        List<String> pj = merge(BASE_FIELDS, COMPANY_FIELDS);
-        return Map.of(PersonType.PF, pf, PersonType.PJ, pj);
-    }
-
-    private static List<String> merge(List<String> first, List<String> second) {
-        List<String> merged = new ArrayList<>(first);
-        merged.addAll(second);
-        return List.copyOf(merged);
     }
 
     private static Instant nextCharge(Instant now, BillingCycle cycle) {

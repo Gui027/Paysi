@@ -62,13 +62,14 @@ public class PriceSimulationService {
     }
 
     /**
-     * Cálculo da criação do pedido: mesma aritmética da simulação, mas com a unidade do
-     * cupom reservada no banco.
+     * Cálculo da criação do pedido: exatamente a mesma aritmética da simulação, com a
+     * comissão do afiliado já resolvida. Continua sem escrever nada — consumir a
+     * unidade do cupom é decisão do serviço de pedido, e só depois que o pedido existe.
      */
-    @Transactional
-    public PriceQuote reserve(Offer offer, OfferPaymentMethod method, int installments,
+    @Transactional(readOnly = true)
+    public PriceQuote priceFor(Offer offer, OfferPaymentMethod method, int installments,
             String couponCode, int commissionBps) {
-        CouponDiscount discount = coupons.reserve(offer.id(), couponCode, offer.priceCents());
+        CouponDiscount discount = coupons.quote(offer.id(), couponCode, offer.priceCents());
         return price(offer, method, installments, discount, commissionBps);
     }
 

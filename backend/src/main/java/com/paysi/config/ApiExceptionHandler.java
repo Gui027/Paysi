@@ -2,6 +2,7 @@ package com.paysi.config;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.paysi.core.error.ConflictException;
+import com.paysi.core.error.DomainException;
 import com.paysi.core.error.ForbiddenException;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.core.error.UnauthorizedException;
@@ -64,6 +65,13 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiError> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        // Um record pode recusar o corpo já na desserialização (campo desconhecido,
+        // invariante do domínio). O código estável não pode virar MALFORMED_JSON.
+        DomainException domain = findCause(ex, DomainException.class);
+        if (domain != null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiError.of(domain.code(), domain.getMessage(), domain.field()));
+        }
         InvalidFormatException invalidFormat = findCause(ex, InvalidFormatException.class);
         if (invalidFormat != null && !invalidFormat.getPath().isEmpty()) {
             String field = invalidFormat.getPath().getLast().getFieldName();

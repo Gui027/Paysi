@@ -55,7 +55,7 @@ class PriceSimulationServiceTest {
         when(sellers.findSellerId(PRODUCT)).thenReturn(Optional.of(SELLER));
         when(plans.currentPlan(SELLER)).thenReturn("TRANSACIONAL");
         when(coupons.quote(any(), any(), anyLong())).thenReturn(CouponDiscount.none());
-        when(coupons.reserve(any(), any(), anyLong())).thenReturn(CouponDiscount.none());
+        
 
         service = new PriceSimulationService(offers, coupons, sellers, plans,
                 Clock.fixed(NOW, ZoneOffset.UTC));
@@ -64,7 +64,7 @@ class PriceSimulationServiceTest {
     @Test
     void reproduzOExemploDoContratoComAfiliado() {
         // Documento 2, §4.3: 17700 fecha em 14670 + 1770 + 682 + 578.
-        PriceQuote quote = service.reserve(offer(17_700), OfferPaymentMethod.CARD, 1, null, 1_000);
+        PriceQuote quote = service.priceFor(offer(17_700), OfferPaymentMethod.CARD, 1, null, 1_000);
 
         assertThat(quote.paidCents()).isEqualTo(17_700);
         assertThat(quote.sellerCents()).isEqualTo(14_670);
@@ -77,19 +77,18 @@ class PriceSimulationServiceTest {
     @Test
     void simulacaoEPedidoDaoOMesmoResultado() {
         when(coupons.quote(OFFER, "PROMO10", 17_700))
-                .thenReturn(new CouponDiscount(null, "PROMO10", 1_770, 1));
-        when(coupons.reserve(OFFER, "PROMO10", 17_700))
                 .thenReturn(new CouponDiscount(UUID.randomUUID(), "PROMO10", 1_770, 1));
 
         PriceQuote simulated = service.simulate(SLUG, OfferPaymentMethod.PIX, 1, "PROMO10");
-        PriceQuote reserved = service.reserve(offer(17_700), OfferPaymentMethod.PIX, 1, "PROMO10", 0);
+        PriceQuote ordered = service.priceFor(offer(17_700), OfferPaymentMethod.PIX, 1, "PROMO10", 0);
 
-        assertThat(reserved.grossCents()).isEqualTo(simulated.grossCents());
-        assertThat(reserved.discountCents()).isEqualTo(simulated.discountCents());
-        assertThat(reserved.paidCents()).isEqualTo(simulated.paidCents());
-        assertThat(reserved.feesCents()).isEqualTo(simulated.feesCents());
-        assertThat(reserved.sellerCents()).isEqualTo(simulated.sellerCents());
-        assertThat(reserved.availableAt()).isEqualTo(simulated.availableAt());
+        assertThat(ordered.grossCents()).isEqualTo(simulated.grossCents());
+        assertThat(ordered.discountCents()).isEqualTo(simulated.discountCents());
+        assertThat(ordered.paidCents()).isEqualTo(simulated.paidCents());
+        assertThat(ordered.feesCents()).isEqualTo(simulated.feesCents());
+        assertThat(ordered.sellerCents()).isEqualTo(simulated.sellerCents());
+        assertThat(ordered.availableAt()).isEqualTo(simulated.availableAt());
+        assertThat(ordered.paidCents()).isEqualTo(15_930);
     }
 
     @Test
