@@ -1,4 +1,5 @@
 import { apiRequest, CursorPage } from "./api";
+import { LedgerItem } from "./dashboard";
 
 export type AffiliationRecurrence = "FIRST_CHARGE" | "ALL_CYCLES";
 export type AffiliationStatus = "PENDING" | "APPROVED" | "ENDED" | "FRAUD_ENDED";
@@ -107,3 +108,42 @@ export function requestAffiliation(productId: string) {
     body: JSON.stringify({ productId }),
   });
 }
+
+export type AffiliateLink = {
+  affiliationId: string;
+  productId: string;
+  productName: string;
+  offerSlug: string | null;
+  clicks: number;
+  orders: number;
+};
+
+export function listMyLinks() {
+  return apiRequest<AffiliateLink[]>("/v1/affiliations/links");
+}
+
+/** Link opaco: o comprador não vê o id do afiliado em texto, só um parâmetro de rastreio. */
+export function buildAffiliateLinkUrl(checkoutBaseUrl: string, offerSlug: string, affiliateId: string): string {
+  const url = new URL(checkoutBaseUrl.replace(/\/$/, "") + `/checkout/${encodeURIComponent(offerSlug)}`);
+  url.searchParams.set("ref", affiliateId);
+  return url.toString();
+}
+
+export function isCommissionEntry(entry: LedgerItem): boolean {
+  return entry.origin === "COMMISSION";
+}
+
+export type CommissionEntryStatus = "A liberar" | "Disponível" | "Estornada";
+
+export function commissionEntryStatus(entry: LedgerItem, now = new Date()): CommissionEntryStatus {
+  if (entry.direction === "DEBIT") return "Estornada";
+  if (entry.bucket === "AVAILABLE") return "Disponível";
+  if (entry.availableAt && new Date(entry.availableAt) <= now) return "Disponível";
+  return "A liberar";
+}
+
+export const commissionStatusTone: Record<CommissionEntryStatus, "neutral" | "success" | "warning" | "danger"> = {
+  "A liberar": "warning",
+  "Disponível": "success",
+  "Estornada": "danger",
+};
