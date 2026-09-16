@@ -135,6 +135,7 @@ class CouponServiceTest {
     private static final class InMemoryCoupons implements CouponRepository {
         private final List<Coupon> rows = new ArrayList<>();
         private final Map<UUID, UUID> owners = new HashMap<>();
+        private final Map<String, Integer> redemptions = new HashMap<>();
         public void insert(Coupon coupon) { rows.add(coupon); owners.put(coupon.id(), coupon.sellerId()); }
         public List<Coupon> listActiveOwned(UUID sellerId) {
             return rows.stream().filter(c -> c.sellerId().equals(sellerId) && c.archivedAt() == null).toList();
@@ -142,6 +143,27 @@ class CouponServiceTest {
         public Optional<Coupon> findActiveOwned(UUID sellerId, UUID couponId) {
             return rows.stream().filter(c -> c.id().equals(couponId) && c.archivedAt() == null)
                     .filter(c -> c.sellerId().equals(sellerId)).findFirst();
+        }
+        public Optional<Coupon> findApplicable(UUID offerId, String code) {
+            return rows.stream().filter(c -> c.archivedAt() == null && c.code().equals(code)
+                    && c.offerIds().contains(offerId)).findFirst();
+        }
+        public boolean reserve(UUID couponId, Instant now) {
+            for (int i = 0; i < rows.size(); i++) {
+                Coupon c = rows.get(i);
+                if (!c.id().equals(couponId) || !c.activeAt(now) || c.archivedAt() != null) continue;
+                rows.set(i, new Coupon(c.id(), c.sellerId(), c.code(), c.kind(), c.value(),
+                        c.startsAt(), c.expiresAt(), c.maxRedemptions(), c.maxPerBuyer(),
+                        c.redeemedCount() + 1, c.offerIds(), c.archivedAt(), c.createdAt()));
+                return true;
+            }
+            return false;
+        }
+        public void recordRedemption(UUID couponId, UUID orderId, UUID buyerId, long amountCents) {
+            redemptions.merge(couponId + ":" + buyerId, 1, Integer::sum);
+        }
+        public int countRedemptionsByBuyer(UUID couponId, UUID buyerId) {
+            return redemptions.getOrDefault(couponId + ":" + buyerId, 0);
         }
         public void update(Coupon coupon) { rows.replaceAll(c -> c.id().equals(coupon.id()) ? coupon : c); }
         public boolean archive(UUID sellerId, UUID couponId, Instant archivedAt) {

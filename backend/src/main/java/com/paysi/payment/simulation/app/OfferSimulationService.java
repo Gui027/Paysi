@@ -8,12 +8,11 @@ import com.paysi.catalog.offer.domain.OfferPaymentMethod;
 import com.paysi.catalog.offer.port.OfferRepository;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.core.error.ValidationException;
+import com.paysi.checkout.pricing.app.PriceMath;
 import com.paysi.identity.port.PlatformPlanReader;
 import com.paysi.payment.simulation.web.dto.OfferSimulationRequest;
-import com.paysi.payment.split.PaymentMethod;
 import com.paysi.payment.split.Plan;
 import com.paysi.payment.split.Split;
-import com.paysi.payment.split.SplitEngine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,7 +58,7 @@ public class OfferSimulationService {
                     "O valor pago não pode ser menor que R$ 5,00", "couponCode");
         }
 
-        Split split = SplitEngine.split(paidCents, paymentMethod(request),
+        Split split = PriceMath.split(paidCents, request.method(), request.installments(),
                 Plan.valueOf(plans.currentPlan(sellerId)), 0);
         return new OfferSimulation(grossCents, discountCents, paidCents,
                 split.sellerFeeCents(), split.providerCostCents(), split.affiliateCents(),
@@ -94,15 +93,6 @@ public class OfferSimulationService {
             throw new ValidationException("OFFER_INSTALLMENTS_INVALID",
                     "O parcelamento não é compatível com a oferta", "installments");
         }
-    }
-
-    private static PaymentMethod paymentMethod(OfferSimulationRequest request) {
-        return switch (request.method()) {
-            case PIX -> PaymentMethod.PIX;
-            case BOLETO -> PaymentMethod.BOLETO;
-            case CARD -> request.installments() == 1 ? PaymentMethod.CARD_1
-                    : request.installments() <= 6 ? PaymentMethod.CARD_6 : PaymentMethod.CARD_12;
-        };
     }
 
     public record OfferSimulation(long grossCents, long discountCents, long paidCents,

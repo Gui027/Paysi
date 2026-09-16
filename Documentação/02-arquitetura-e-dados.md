@@ -735,6 +735,7 @@ REST sobre JSON. Autenticação por token de sessão no painel e por chave de AP
 | POST | `/v1/products` | Criar produto |
 | POST | `/v1/products/{id}/offers` | Criar oferta |
 | GET | `/v1/offers/{slug}/checkout` | Dados públicos, incluindo campos exigidos pelo segmento |
+| POST | `/v1/checkout/{slug}/simulation` | Simular preço público com cupom, sem consumir unidade |
 | POST | `/v1/checkout/{slug}/orders` | Criar pedido e cobrança |
 | GET | `/v1/orders/{id}` | Consultar pedido, com estado consolidado |
 | POST | `/v1/charges/{id}/refunds` | Reembolsar, total ou parcial |
