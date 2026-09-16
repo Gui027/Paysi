@@ -72,8 +72,16 @@ public class SubscriptionService {
             throw new ValidationException("OFFER_NOT_SUBSCRIPTION", "Esta oferta não é uma assinatura", "offerSlug");
         }
         requireBuyerFields(command);
+        String method = command.normalizedMethod();
+        if ("BOLETO".equals(method)) {
+            if (!offer.paymentMethods().contains(com.paysi.catalog.offer.domain.OfferPaymentMethod.BOLETO)) {
+                throw new ValidationException("METHOD_NOT_AVAILABLE", "Boleto não está habilitado para esta oferta", "method");
+            }
+        } else if (!"CARD".equals(method)) {
+            throw new ValidationException("METHOD_INVALID", "Método de pagamento inválido para assinatura", "method");
+        }
         boolean trial = offer.trialDays() > 0;
-        if ((!trial || offer.trialRequiresCard()) && blank(command.cardToken())) {
+        if ("CARD".equals(method) && (!trial || offer.trialRequiresCard()) && blank(command.cardToken())) {
             throw new ValidationException("CARD_TOKEN_REQUIRED", "Token do cartão é obrigatório", "cardToken");
         }
 
@@ -95,7 +103,7 @@ public class SubscriptionService {
         String snapshot = writeJson(new BuyerSnapshot(command.buyerName(), command.buyerEmail(),
                 command.personType(), command.taxId(), command.legalName(), command.municipalReg()));
         boolean inserted = subscriptions.insertOrder(orderId, offer.id(), buyerId, snapshot, offer.priceCents(),
-                command.idempotencyKey(), requestHash, now);
+                method, command.idempotencyKey(), requestHash, now);
         if (!inserted) {
             // corrida perdida: outra requisição com a mesma chave venceu; devolve o resultado dela.
             var raced = subscriptions.findOrderByIdempotency(offer.id(), command.idempotencyKey())
@@ -114,9 +122,33 @@ public class SubscriptionService {
 
         subscriptions.insertSubscription(new Subscription(subscriptionId, orderId, offer.id(),
                 SubscriptionStatus.ACTIVE, 1, null, null, null, command.cardToken(), now));
-        chargeCycle(sellerId, offer, orderId, subscriptionId, 1, command.cardToken(),
-                new ProviderBuyer(command.buyerName(), command.buyerEmail(), command.personType(), command.taxId()));
+        var buyer = new ProviderBuyer(command.buyerName(), command.buyerEmail(), command.personType(), command.taxId());
+        if ("BOLETO".equals(method)) {
+            issueFirstBoleto(sellerId, offer, orderId, subscriptionId, buyer);
+        } else {
+            chargeCycle(sellerId, offer, orderId, subscriptionId, 1, command.cardToken(), buyer);
+        }
         return new SubscriptionCreationResult(subscriptionId, false);
+    }
+
+    private void issueFirstBoleto(UUID sellerId, Offer offer, UUID orderId, UUID subscriptionId,
+                                   ProviderBuyer buyer) {
+        Plan plan = Plan.valueOf(plans.currentPlan(sellerId));
+        Split split = SplitEngine.split(offer.priceCents(), PaymentMethod.BOLETO, plan, 0);
+        UUID chargeId = UUID.randomUUID();
+        Instant now = clock.instant();
+        subscriptions.insertCharge(chargeId, orderId, subscriptionId, 1, offer.priceCents(), plan.name(),
+                PaymentMethod.BOLETO.feeBps(plan), 200, split.sellerFeeCents(), split.affiliateCents(),
+                split.sellerCents(), "PENDING", now);
+
+        var result = provider.charge(new ProviderPaymentRequest(orderId, offer.priceCents(),
+                ProviderPaymentMethod.BOLETO, 1, null, buyer,
+                new ProviderSplit(split.sellerCents(), split.affiliateCents(), split.sellerFeeCents()),
+                offer.boletoDueDays()));
+
+        subscriptions.saveChargeResult(chargeId, "PENDING", result.providerChargeId(), result.providerFeeCents(),
+                null, null, null);
+        subscriptions.updateSubscriptionCycle(subscriptionId, "ACTIVE", nextCharge(now, offer.cycle()));
     }
 
     private void chargeCycle(UUID sellerId, Offer offer, UUID orderId, UUID subscriptionId, int cycleNumber,
@@ -136,7 +168,8 @@ public class SubscriptionService {
 
         boolean approved = result.status() == ProviderChargeStatus.APPROVED;
         subscriptions.saveChargeResult(chargeId, approved ? "PAID" : "FAILED", result.providerChargeId(),
-                result.providerFeeCents(), approved ? now : null, approved ? now : null);
+                result.providerFeeCents(), approved ? now : null, approved ? now : null,
+                approved ? null : now.plus(DunningSchedule.FIRST_RETRY_DELAY));
         subscriptions.markOrderStatus(orderId, approved ? "PAID" : "FAILED", approved ? now : null);
         subscriptions.updateSubscriptionCycle(subscriptionId,
                 (approved ? SubscriptionStatus.ACTIVE : SubscriptionStatus.PAST_DUE).name(),
@@ -144,7 +177,11 @@ public class SubscriptionService {
     }
 
     private static Instant nextCharge(Instant now, BillingCycle cycle) {
-        int months = switch (cycle) {
+        return nextCharge(now, cycle.name());
+    }
+
+    static Instant nextCharge(Instant now, String cycle) {
+        int months = switch (BillingCycle.valueOf(cycle)) {
             case MONTHLY -> 1;
             case QUARTERLY -> 3;
             case SEMIANNUAL -> 6;
@@ -228,7 +265,8 @@ public class SubscriptionService {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             String payload = String.join("|", command.offerSlug(), command.buyerName(), command.buyerEmail(),
                     command.personType(), command.taxId(), String.valueOf(command.legalName()),
-                    String.valueOf(command.municipalReg()), String.valueOf(command.cardToken()));
+                    String.valueOf(command.municipalReg()), String.valueOf(command.cardToken()),
+                    command.normalizedMethod());
             return HexFormat.of().formatHex(digest.digest(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException error) {
             throw new IllegalStateException(error);

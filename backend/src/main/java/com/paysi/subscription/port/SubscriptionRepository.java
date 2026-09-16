@@ -21,8 +21,8 @@ public interface SubscriptionRepository {
     Optional<OrderReplay> findOrderByIdempotency(UUID offerId, String idempotencyKey);
 
     /** {@code true} se inseriu; {@code false} se colidiu com uma corrida concorrente na mesma chave. */
-    boolean insertOrder(UUID id, UUID offerId, UUID buyerId, String buyerSnapshotJson,
-                         long amountCents, String idempotencyKey, String requestHash, Instant now);
+    boolean insertOrder(UUID id, UUID offerId, UUID buyerId, String buyerSnapshotJson, long amountCents,
+                         String method, String idempotencyKey, String requestHash, Instant now);
 
     void insertSubscription(Subscription subscription);
 
@@ -31,7 +31,7 @@ public interface SubscriptionRepository {
                        long affiliateFeeCents, long sellerAmountCents, String status, Instant now);
 
     void saveChargeResult(UUID chargeId, String status, String providerChargeId, long providerFeeCents,
-                           Instant paidAt, Instant confirmedAt);
+                           Instant paidAt, Instant confirmedAt, Instant nextRetryAt);
 
     void markOrderStatus(UUID orderId, String status, Instant confirmedAt);
 
@@ -47,6 +47,31 @@ public interface SubscriptionRepository {
 
     boolean requestCancelAtPeriodEnd(UUID sellerId, UUID subscriptionId, Instant now);
 
+    /** Assinaturas TRIAL cujo teste acabou, ou ACTIVE/PAST_DUE cujo ciclo vigente venceu (sem cancelamento pendente). */
+    Optional<DueCycle> claimDueCycle(Instant now);
+
+    /** Assinaturas com cancelamento pedido cujo ciclo vigente já terminou: viram CANCELED sem gerar nova cobrança. */
+    Optional<UUID> claimDueCancellation(Instant now);
+
+    void applyCancellation(UUID subscriptionId);
+
+    /** Cobranças de ciclo (subscription_id preenchido) com status FAILED e retentativa vencida. */
+    Optional<DueRetry> claimDueRetry(Instant now);
+
+    void scheduleRetry(UUID chargeId, int attemptCount, Instant nextRetryAt);
+
+    void exhaustRetry(UUID chargeId, UUID subscriptionId);
+
     record OrderReplay(UUID orderId, UUID subscriptionId, String requestHash) {
+    }
+
+    record DueCycle(UUID subscriptionId, UUID orderId, UUID offerId, UUID sellerId, long priceCents,
+                     String cycle, String orderMethod, int boletoDueDays, String buyerName, String buyerEmail,
+                     String personType, String taxId, String providerToken, int nextCycleNumber, boolean fromTrial) {
+    }
+
+    record DueRetry(UUID chargeId, UUID subscriptionId, UUID orderId, UUID offerId, UUID sellerId,
+                     long amountCents, int cycleNumber, int attemptCount, String cycle, String buyerName,
+                     String buyerEmail, String personType, String taxId, String providerToken) {
     }
 }
