@@ -60,15 +60,15 @@ class JdbcSubscriptionRepository implements SubscriptionRepository {
     }
 
     @Override
-    public boolean insertOrder(UUID id, UUID offerId, UUID buyerId, String buyerSnapshotJson,
-                                long amountCents, String idempotencyKey, String requestHash, Instant now) {
+    public boolean insertOrder(UUID id, UUID offerId, UUID buyerId, String buyerSnapshotJson, long amountCents,
+                                String method, String idempotencyKey, String requestHash, Instant now) {
         try {
             jdbc.update("""
                     INSERT INTO orders
                       (id, offer_id, buyer_id, buyer_snapshot, gross_cents, discount_cents, paid_cents,
                        method, installments, status, idempotency_key, request_hash, created_at)
-                    VALUES (?, ?, ?, cast(? as jsonb), ?, 0, ?, 'CARD', 1, 'PENDING', ?, ?, ?)
-                    """, id, offerId, buyerId, buyerSnapshotJson, amountCents, amountCents,
+                    VALUES (?, ?, ?, cast(? as jsonb), ?, 0, ?, ?, 1, 'PENDING', ?, ?, ?)
+                    """, id, offerId, buyerId, buyerSnapshotJson, amountCents, amountCents, method,
                     idempotencyKey, requestHash, Timestamp.from(now));
             return true;
         } catch (DataIntegrityViolationException collision) {
@@ -110,12 +110,14 @@ class JdbcSubscriptionRepository implements SubscriptionRepository {
 
     @Override
     public void saveChargeResult(UUID chargeId, String status, String providerChargeId, long providerFeeCents,
-                                  Instant paidAt, Instant confirmedAt) {
+                                  Instant paidAt, Instant confirmedAt, Instant nextRetryAt) {
         jdbc.update("""
                 UPDATE charges
-                   SET status = ?, provider_charge_id = ?, provider_fee_cents = ?, paid_at = ?, confirmed_at = ?
+                   SET status = ?, provider_charge_id = ?, provider_fee_cents = ?, paid_at = ?, confirmed_at = ?,
+                       next_retry_at = ?
                  WHERE id = ?
-                """, status, providerChargeId, providerFeeCents, timestamp(paidAt), timestamp(confirmedAt), chargeId);
+                """, status, providerChargeId, providerFeeCents, timestamp(paidAt), timestamp(confirmedAt),
+                timestamp(nextRetryAt), chargeId);
     }
 
     @Override
@@ -172,6 +174,88 @@ class JdbcSubscriptionRepository implements SubscriptionRepository {
                  WHERE s.id = ? AND s.order_id = o.id AND o.offer_id = of.id AND of.product_id = p.id
                    AND p.seller_id = ? AND s.status <> 'CANCELED' AND s.canceled_at IS NULL
                 """, Timestamp.from(now), subscriptionId, sellerId) == 1;
+    }
+
+    @Override
+    public Optional<DueCycle> claimDueCycle(Instant now) {
+        return jdbc.query("""
+                SELECT s.id AS subscription_id, s.order_id, of.id AS offer_id, p.seller_id,
+                       of.amount_cents, of.cycle, o.method AS order_method, of.boleto_due_days,
+                       o.buyer_snapshot ->> 'name' AS buyer_name, o.buyer_snapshot ->> 'email' AS buyer_email,
+                       o.buyer_snapshot ->> 'personType' AS person_type, o.buyer_snapshot ->> 'taxId' AS tax_id,
+                       s.provider_token, s.cycle_number, s.status
+                  FROM subscriptions s
+                  JOIN orders o ON o.id = s.order_id
+                  JOIN offers of ON of.id = o.offer_id
+                  JOIN products p ON p.id = of.product_id
+                 WHERE s.canceled_at IS NULL AND s.status IN ('TRIAL', 'ACTIVE', 'PAST_DUE')
+                   AND s.next_charge_at IS NOT NULL AND s.next_charge_at <= ?
+                 ORDER BY s.next_charge_at
+                 LIMIT 1 FOR UPDATE OF s SKIP LOCKED
+                """, (rs, row) -> {
+                    boolean fromTrial = "TRIAL".equals(rs.getString("status"));
+                    return new DueCycle(rs.getObject("subscription_id", UUID.class),
+                            rs.getObject("order_id", UUID.class), rs.getObject("offer_id", UUID.class),
+                            rs.getObject("seller_id", UUID.class), rs.getLong("amount_cents"),
+                            rs.getString("cycle"), rs.getString("order_method"), rs.getInt("boleto_due_days"),
+                            rs.getString("buyer_name"), rs.getString("buyer_email"), rs.getString("person_type"),
+                            rs.getString("tax_id"), rs.getString("provider_token"),
+                            fromTrial ? 1 : rs.getInt("cycle_number") + 1, fromTrial);
+                }, Timestamp.from(now)).stream().findFirst();
+    }
+
+    @Override
+    public Optional<UUID> claimDueCancellation(Instant now) {
+        return jdbc.query("""
+                SELECT id FROM subscriptions
+                 WHERE canceled_at IS NOT NULL AND status <> 'CANCELED'
+                   AND next_charge_at IS NOT NULL AND next_charge_at <= ?
+                 ORDER BY next_charge_at
+                 LIMIT 1 FOR UPDATE SKIP LOCKED
+                """, (rs, row) -> rs.getObject("id", UUID.class), Timestamp.from(now)).stream().findFirst();
+    }
+
+    @Override
+    public void applyCancellation(UUID subscriptionId) {
+        jdbc.update("UPDATE subscriptions SET status = 'CANCELED' WHERE id = ?", subscriptionId);
+    }
+
+    @Override
+    public Optional<DueRetry> claimDueRetry(Instant now) {
+        return jdbc.query("""
+                SELECT c.id AS charge_id, c.subscription_id, c.order_id, o.offer_id, p.seller_id,
+                       c.amount_cents, c.cycle_number, c.attempt_count, of.cycle,
+                       o.buyer_snapshot ->> 'name' AS buyer_name, o.buyer_snapshot ->> 'email' AS buyer_email,
+                       o.buyer_snapshot ->> 'personType' AS person_type, o.buyer_snapshot ->> 'taxId' AS tax_id,
+                       s.provider_token
+                  FROM charges c
+                  JOIN subscriptions s ON s.id = c.subscription_id
+                  JOIN orders o ON o.id = c.order_id
+                  JOIN offers of ON of.id = o.offer_id
+                  JOIN products p ON p.id = of.product_id
+                 WHERE c.status = 'FAILED' AND c.subscription_id IS NOT NULL
+                   AND c.next_retry_at IS NOT NULL AND c.next_retry_at <= ?
+                 ORDER BY c.next_retry_at
+                 LIMIT 1 FOR UPDATE OF c SKIP LOCKED
+                """, (rs, row) -> new DueRetry(rs.getObject("charge_id", UUID.class),
+                        rs.getObject("subscription_id", UUID.class), rs.getObject("order_id", UUID.class),
+                        rs.getObject("offer_id", UUID.class), rs.getObject("seller_id", UUID.class),
+                        rs.getLong("amount_cents"), rs.getInt("cycle_number"), rs.getInt("attempt_count"),
+                        rs.getString("cycle"), rs.getString("buyer_name"), rs.getString("buyer_email"),
+                        rs.getString("person_type"), rs.getString("tax_id"), rs.getString("provider_token")),
+                Timestamp.from(now)).stream().findFirst();
+    }
+
+    @Override
+    public void scheduleRetry(UUID chargeId, int attemptCount, Instant nextRetryAt) {
+        jdbc.update("UPDATE charges SET attempt_count = ?, next_retry_at = ? WHERE id = ?",
+                attemptCount, timestamp(nextRetryAt), chargeId);
+    }
+
+    @Override
+    public void exhaustRetry(UUID chargeId, UUID subscriptionId) {
+        jdbc.update("UPDATE charges SET next_retry_at = NULL WHERE id = ?", chargeId);
+        jdbc.update("UPDATE subscriptions SET status = 'CANCELED' WHERE id = ?", subscriptionId);
     }
 
     private static final String SELECT = """

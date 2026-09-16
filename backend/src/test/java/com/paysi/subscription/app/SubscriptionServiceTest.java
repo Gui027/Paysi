@@ -89,7 +89,8 @@ class SubscriptionServiceTest {
         assertThat(result.idempotentReplay()).isTrue();
         assertThat(result.subscriptionId()).isEqualTo(existingSubscription);
         verifyNoInteractions(fixture.provider);
-        verify(fixture.repository, never()).insertOrder(any(), any(), any(), any(), anyLong(), any(), any(), any());
+        verify(fixture.repository, never())
+                .insertOrder(any(), any(), any(), any(), anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -124,7 +125,8 @@ class SubscriptionServiceTest {
         when(offers.findPublishedBySlug("plano-mensal")).thenReturn(Optional.of(offerValue));
         when(repository.sellerIdForOffer(OFFER)).thenReturn(Optional.of(SELLER));
         when(repository.findOrderByIdempotency(any(), any())).thenReturn(Optional.empty());
-        when(repository.insertOrder(any(), any(), any(), any(), anyLong(), any(), any(), any())).thenReturn(true);
+        when(repository.insertOrder(any(), any(), any(), any(), anyLong(), any(), any(), any(), any()))
+                .thenReturn(true);
         when(repository.findBuyer(any(), any())).thenReturn(Optional.empty());
         when(repository.insertBuyer(any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -142,7 +144,7 @@ class SubscriptionServiceTest {
 
     private static CreateSubscriptionCommand command(String cardToken) {
         return new CreateSubscriptionCommand("plano-mensal", "Comprador Teste", "buyer@example.com", "PF",
-                "52998224725", null, null, null, cardToken, "idem-1");
+                "52998224725", null, null, null, cardToken, "CARD", "idem-1");
     }
 
     private static ProviderPaymentResult approved() {

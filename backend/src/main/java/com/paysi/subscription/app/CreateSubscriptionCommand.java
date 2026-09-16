@@ -10,6 +10,10 @@ public record CreateSubscriptionCommand(
         String municipalReg,
         String addressJson,
         String cardToken,
+        String method,
         String idempotencyKey
 ) {
+    public String normalizedMethod() {
+        return method == null || method.isBlank() ? "CARD" : method.toUpperCase(java.util.Locale.ROOT);
+    }
 }
