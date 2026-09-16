@@ -60,15 +60,16 @@ class JdbcSubscriptionRepository implements SubscriptionRepository {
     }
 
     @Override
-    public boolean insertOrder(UUID id, UUID offerId, UUID buyerId, String buyerSnapshotJson, long amountCents,
-                                String method, String idempotencyKey, String requestHash, Instant now) {
+    public boolean insertOrder(UUID id, UUID offerId, UUID buyerId, UUID affiliationId, String buyerSnapshotJson,
+                                long amountCents, String method, String idempotencyKey, String requestHash,
+                                Instant now) {
         try {
             jdbc.update("""
                     INSERT INTO orders
-                      (id, offer_id, buyer_id, buyer_snapshot, gross_cents, discount_cents, paid_cents,
-                       method, installments, status, idempotency_key, request_hash, created_at)
-                    VALUES (?, ?, ?, cast(? as jsonb), ?, 0, ?, ?, 1, 'PENDING', ?, ?, ?)
-                    """, id, offerId, buyerId, buyerSnapshotJson, amountCents, amountCents, method,
+                      (id, offer_id, buyer_id, affiliation_id, buyer_snapshot, gross_cents, discount_cents,
+                       paid_cents, method, installments, status, idempotency_key, request_hash, created_at)
+                    VALUES (?, ?, ?, ?, cast(? as jsonb), ?, 0, ?, ?, 1, 'PENDING', ?, ?, ?)
+                    """, id, offerId, buyerId, affiliationId, buyerSnapshotJson, amountCents, amountCents, method,
                     idempotencyKey, requestHash, Timestamp.from(now));
             return true;
         } catch (DataIntegrityViolationException collision) {
@@ -180,27 +181,34 @@ class JdbcSubscriptionRepository implements SubscriptionRepository {
     public Optional<DueCycle> claimDueCycle(Instant now) {
         return jdbc.query("""
                 SELECT s.id AS subscription_id, s.order_id, of.id AS offer_id, p.seller_id,
-                       of.amount_cents, of.cycle, o.method AS order_method, of.boleto_due_days,
+                       of.amount_cents, of.cycle, o.method AS order_method, of.boleto_due_days, of.guarantee_days,
                        o.buyer_snapshot ->> 'name' AS buyer_name, o.buyer_snapshot ->> 'email' AS buyer_email,
                        o.buyer_snapshot ->> 'personType' AS person_type, o.buyer_snapshot ->> 'taxId' AS tax_id,
-                       s.provider_token, s.cycle_number, s.status
+                       s.provider_token, s.cycle_number, s.status,
+                       a.affiliate_id, a.commission_bps, a.recurring
                   FROM subscriptions s
                   JOIN orders o ON o.id = s.order_id
                   JOIN offers of ON of.id = o.offer_id
                   JOIN products p ON p.id = of.product_id
+                  LEFT JOIN affiliations a ON a.id = o.affiliation_id AND a.status = 'APPROVED'
                  WHERE s.canceled_at IS NULL AND s.status IN ('TRIAL', 'ACTIVE', 'PAST_DUE')
                    AND s.next_charge_at IS NOT NULL AND s.next_charge_at <= ?
                  ORDER BY s.next_charge_at
                  LIMIT 1 FOR UPDATE OF s SKIP LOCKED
                 """, (rs, row) -> {
                     boolean fromTrial = "TRIAL".equals(rs.getString("status"));
+                    int nextCycleNumber = fromTrial ? 1 : rs.getInt("cycle_number") + 1;
+                    UUID affiliateId = rs.getObject("affiliate_id", UUID.class);
+                    boolean allCycles = rs.getBoolean("recurring");
+                    boolean commissionApplies = affiliateId != null && (nextCycleNumber == 1 || allCycles);
                     return new DueCycle(rs.getObject("subscription_id", UUID.class),
                             rs.getObject("order_id", UUID.class), rs.getObject("offer_id", UUID.class),
                             rs.getObject("seller_id", UUID.class), rs.getLong("amount_cents"),
                             rs.getString("cycle"), rs.getString("order_method"), rs.getInt("boleto_due_days"),
-                            rs.getString("buyer_name"), rs.getString("buyer_email"), rs.getString("person_type"),
-                            rs.getString("tax_id"), rs.getString("provider_token"),
-                            fromTrial ? 1 : rs.getInt("cycle_number") + 1, fromTrial);
+                            rs.getInt("guarantee_days"), rs.getString("buyer_name"), rs.getString("buyer_email"),
+                            rs.getString("person_type"), rs.getString("tax_id"), rs.getString("provider_token"),
+                            nextCycleNumber, fromTrial, commissionApplies ? affiliateId : null,
+                            commissionApplies ? rs.getInt("commission_bps") : 0, allCycles);
                 }, Timestamp.from(now)).stream().findFirst();
     }
 
@@ -224,26 +232,34 @@ class JdbcSubscriptionRepository implements SubscriptionRepository {
     public Optional<DueRetry> claimDueRetry(Instant now) {
         return jdbc.query("""
                 SELECT c.id AS charge_id, c.subscription_id, c.order_id, o.offer_id, p.seller_id,
-                       c.amount_cents, c.cycle_number, c.attempt_count, of.cycle,
+                       c.amount_cents, c.cycle_number, c.attempt_count, of.cycle, of.guarantee_days,
                        o.buyer_snapshot ->> 'name' AS buyer_name, o.buyer_snapshot ->> 'email' AS buyer_email,
                        o.buyer_snapshot ->> 'personType' AS person_type, o.buyer_snapshot ->> 'taxId' AS tax_id,
-                       s.provider_token
+                       s.provider_token, a.affiliate_id, a.commission_bps, a.recurring
                   FROM charges c
                   JOIN subscriptions s ON s.id = c.subscription_id
                   JOIN orders o ON o.id = c.order_id
                   JOIN offers of ON of.id = o.offer_id
                   JOIN products p ON p.id = of.product_id
+                  LEFT JOIN affiliations a ON a.id = o.affiliation_id AND a.status = 'APPROVED'
                  WHERE c.status = 'FAILED' AND c.subscription_id IS NOT NULL
                    AND c.next_retry_at IS NOT NULL AND c.next_retry_at <= ?
                  ORDER BY c.next_retry_at
                  LIMIT 1 FOR UPDATE OF c SKIP LOCKED
-                """, (rs, row) -> new DueRetry(rs.getObject("charge_id", UUID.class),
-                        rs.getObject("subscription_id", UUID.class), rs.getObject("order_id", UUID.class),
-                        rs.getObject("offer_id", UUID.class), rs.getObject("seller_id", UUID.class),
-                        rs.getLong("amount_cents"), rs.getInt("cycle_number"), rs.getInt("attempt_count"),
-                        rs.getString("cycle"), rs.getString("buyer_name"), rs.getString("buyer_email"),
-                        rs.getString("person_type"), rs.getString("tax_id"), rs.getString("provider_token")),
-                Timestamp.from(now)).stream().findFirst();
+                """, (rs, row) -> {
+                    UUID affiliateId = rs.getObject("affiliate_id", UUID.class);
+                    boolean allCycles = rs.getBoolean("recurring");
+                    int cycleNumber = rs.getInt("cycle_number");
+                    boolean commissionApplies = affiliateId != null && (cycleNumber == 1 || allCycles);
+                    return new DueRetry(rs.getObject("charge_id", UUID.class),
+                            rs.getObject("subscription_id", UUID.class), rs.getObject("order_id", UUID.class),
+                            rs.getObject("offer_id", UUID.class), rs.getObject("seller_id", UUID.class),
+                            rs.getLong("amount_cents"), cycleNumber, rs.getInt("attempt_count"),
+                            rs.getString("cycle"), rs.getInt("guarantee_days"), rs.getString("buyer_name"),
+                            rs.getString("buyer_email"), rs.getString("person_type"), rs.getString("tax_id"),
+                            rs.getString("provider_token"), commissionApplies ? affiliateId : null,
+                            commissionApplies ? rs.getInt("commission_bps") : 0, allCycles);
+                }, Timestamp.from(now)).stream().findFirst();
     }
 
     @Override

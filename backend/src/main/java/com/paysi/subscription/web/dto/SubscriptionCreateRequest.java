@@ -12,10 +12,11 @@ public record SubscriptionCreateRequest(
         String municipalReg,
         String addressJson,
         String cardToken,
-        String method
+        String method,
+        String visitorKey
 ) {
     public CreateSubscriptionCommand toCommand(String offerSlug, String idempotencyKey) {
         return new CreateSubscriptionCommand(offerSlug, buyerName, buyerEmail, personType, taxId,
-                legalName, municipalReg, addressJson, cardToken, method, idempotencyKey);
+                legalName, municipalReg, addressJson, cardToken, method, visitorKey, idempotencyKey);
     }
 }

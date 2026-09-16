@@ -1,5 +1,6 @@
 package com.paysi.subscription.app;
 
+import com.paysi.affiliate.app.CommissionService;
 import com.paysi.identity.port.PlatformPlanReader;
 import com.paysi.payment.provider.*;
 import com.paysi.payment.split.PaymentMethod;
@@ -20,19 +21,21 @@ public class SubscriptionRetryProcessor {
     private final SubscriptionRepository subscriptions;
     private final PlatformPlanReader plans;
     private final PaymentProvider provider;
+    private final CommissionService commissions;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionRetryProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                       PaymentProvider provider) {
-        this(subscriptions, plans, provider, Clock.systemUTC());
+                                       PaymentProvider provider, CommissionService commissions) {
+        this(subscriptions, plans, provider, commissions, Clock.systemUTC());
     }
 
     SubscriptionRetryProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                PaymentProvider provider, Clock clock) {
+                                PaymentProvider provider, CommissionService commissions, Clock clock) {
         this.subscriptions = subscriptions;
         this.plans = plans;
         this.provider = provider;
+        this.commissions = commissions;
         this.clock = clock;
     }
 
@@ -49,7 +52,7 @@ public class SubscriptionRetryProcessor {
         }
 
         Plan plan = Plan.valueOf(plans.currentPlan(retry.sellerId()));
-        Split split = SplitEngine.split(retry.amountCents(), PaymentMethod.CARD_1, plan, 0);
+        Split split = SplitEngine.split(retry.amountCents(), PaymentMethod.CARD_1, plan, retry.commissionBps());
         var buyer = new ProviderBuyer(retry.buyerName(), retry.buyerEmail(), retry.personType(), retry.taxId());
         var result = provider.charge(new ProviderPaymentRequest(retry.orderId(), retry.amountCents(),
                 ProviderPaymentMethod.CARD, 1, retry.providerToken(), buyer,
@@ -62,6 +65,10 @@ public class SubscriptionRetryProcessor {
             subscriptions.markOrderStatus(retry.orderId(), "PAID", now);
             subscriptions.updateSubscriptionCycle(retry.subscriptionId(), "ACTIVE",
                     SubscriptionService.nextCharge(now, retry.cycle()));
+            if (retry.affiliateId() != null && split.affiliateCents() > 0) {
+                commissions.liquidate(retry.affiliateId(), split.affiliateCents(), retry.chargeId(), now,
+                        retry.guaranteeDays());
+            }
             return true;
         }
 

@@ -1,5 +1,6 @@
 package com.paysi.subscription.app;
 
+import com.paysi.affiliate.app.CommissionService;
 import com.paysi.identity.port.PlatformPlanReader;
 import com.paysi.payment.provider.*;
 import com.paysi.payment.split.PaymentMethod;
@@ -26,19 +27,21 @@ public class SubscriptionCycleProcessor {
     private final SubscriptionRepository subscriptions;
     private final PlatformPlanReader plans;
     private final PaymentProvider provider;
+    private final CommissionService commissions;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionCycleProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                       PaymentProvider provider) {
-        this(subscriptions, plans, provider, Clock.systemUTC());
+                                       PaymentProvider provider, CommissionService commissions) {
+        this(subscriptions, plans, provider, commissions, Clock.systemUTC());
     }
 
     SubscriptionCycleProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                PaymentProvider provider, Clock clock) {
+                                PaymentProvider provider, CommissionService commissions, Clock clock) {
         this.subscriptions = subscriptions;
         this.plans = plans;
         this.provider = provider;
+        this.commissions = commissions;
         this.clock = clock;
     }
 
@@ -71,7 +74,7 @@ public class SubscriptionCycleProcessor {
 
     private void chargeCard(DueCycle cycle, Instant now) {
         Plan plan = Plan.valueOf(plans.currentPlan(cycle.sellerId()));
-        Split split = SplitEngine.split(cycle.priceCents(), PaymentMethod.CARD_1, plan, 0);
+        Split split = SplitEngine.split(cycle.priceCents(), PaymentMethod.CARD_1, plan, cycle.commissionBps());
         UUID chargeId = UUID.randomUUID();
         subscriptions.insertCharge(chargeId, cycle.orderId(), cycle.subscriptionId(), cycle.nextCycleNumber(),
                 cycle.priceCents(), plan.name(), PaymentMethod.CARD_1.feeBps(plan), 200, split.sellerFeeCents(),
@@ -90,11 +93,14 @@ public class SubscriptionCycleProcessor {
         subscriptions.updateSubscriptionCycle(cycle.subscriptionId(),
                 approved ? "ACTIVE" : "PAST_DUE",
                 approved ? SubscriptionService.nextCharge(now, cycle.cycle()) : null);
+        if (approved && cycle.affiliateId() != null && split.affiliateCents() > 0) {
+            commissions.liquidate(cycle.affiliateId(), split.affiliateCents(), chargeId, now, cycle.guaranteeDays());
+        }
     }
 
     private void issueBoleto(DueCycle cycle, Instant now) {
         Plan plan = Plan.valueOf(plans.currentPlan(cycle.sellerId()));
-        Split split = SplitEngine.split(cycle.priceCents(), PaymentMethod.BOLETO, plan, 0);
+        Split split = SplitEngine.split(cycle.priceCents(), PaymentMethod.BOLETO, plan, cycle.commissionBps());
         UUID chargeId = UUID.randomUUID();
         subscriptions.insertCharge(chargeId, cycle.orderId(), cycle.subscriptionId(), cycle.nextCycleNumber(),
                 cycle.priceCents(), plan.name(), PaymentMethod.BOLETO.feeBps(plan), 200, split.sellerFeeCents(),

@@ -11,6 +11,7 @@ public record CreateSubscriptionCommand(
         String addressJson,
         String cardToken,
         String method,
+        String visitorKey,
         String idempotencyKey
 ) {
     public String normalizedMethod() {
