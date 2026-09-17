@@ -6,6 +6,7 @@ import com.paysi.checkout.refund.port.RefundRepository.StoredRefund;
 import com.paysi.core.error.ConflictException;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.core.error.ValidationException;
+import com.paysi.fiscal.app.InvoiceCancellationService;
 import com.paysi.ledger.app.LedgerService;
 import com.paysi.ledger.domain.*;
 import com.paysi.payment.provider.PaymentProvider;
@@ -42,20 +43,22 @@ public class RefundService {
     private final LedgerService ledger;
     private final PaymentProvider provider;
     private final OutboxService outbox;
+    private final InvoiceCancellationService invoiceCancellation;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public RefundService(RefundRepository repository, LedgerService ledger, PaymentProvider provider,
-                          OutboxService outbox) {
-        this(repository, ledger, provider, outbox, Clock.systemUTC());
+                          OutboxService outbox, InvoiceCancellationService invoiceCancellation) {
+        this(repository, ledger, provider, outbox, invoiceCancellation, Clock.systemUTC());
     }
 
     RefundService(RefundRepository repository, LedgerService ledger, PaymentProvider provider,
-                  OutboxService outbox, Clock clock) {
+                  OutboxService outbox, InvoiceCancellationService invoiceCancellation, Clock clock) {
         this.repository = repository;
         this.ledger = ledger;
         this.provider = provider;
         this.outbox = outbox;
+        this.invoiceCancellation = invoiceCancellation;
         this.clock = clock;
     }
 
@@ -120,6 +123,7 @@ public class RefundService {
         String newChargeStatus = newRefundedCents >= charge.paidCents() ? "REFUNDED" : "PARTIALLY_REFUNDED";
         repository.applyChargeRefund(chargeId, newRefundedCents, newChargeStatus);
         emitEvent(charge.sellerId(), chargeId, newChargeStatus, newRefundedCents, charge.paidCents() - newRefundedCents);
+        invoiceCancellation.requestCancellationForRefund(chargeId);
 
         return new RefundResult(refundId, status, part.sellerCents(), part.affiliateCents(), part.platformCents(),
                 part.providerCents(), newRefundedCents, newChargeStatus, false);

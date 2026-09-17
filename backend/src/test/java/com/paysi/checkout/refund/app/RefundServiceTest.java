@@ -6,6 +6,7 @@ import com.paysi.checkout.refund.port.RefundRepository.StoredRefund;
 import com.paysi.core.error.ConflictException;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.core.error.ValidationException;
+import com.paysi.fiscal.app.InvoiceCancellationService;
 import com.paysi.ledger.app.LedgerService;
 import com.paysi.ledger.app.LedgerWriteResult;
 import com.paysi.payment.provider.PaymentProvider;
@@ -61,6 +62,7 @@ class RefundServiceTest {
         verify(fixture.repository).applyChargeRefund(CHARGE, PAID, "REFUNDED");
         verify(fixture.outbox).append(eq(SELLER), eq("payment.refunded"), any());
         verify(fixture.outbox, never()).append(any(), eq("payment.partially_refunded"), any());
+        verify(fixture.invoiceCancellation).requestCancellationForRefund(CHARGE);
     }
 
     @Test
@@ -108,9 +110,10 @@ class RefundServiceTest {
         var ledger = mock(LedgerService.class);
         var provider = mock(PaymentProvider.class);
         var outbox = mock(OutboxService.class);
+        var invoiceCancellation = mock(InvoiceCancellationService.class);
         when(repository.findByIdempotencyKey(CHARGE, "idem-5")).thenReturn(Optional.empty());
         when(repository.lockChargeForRefund(SELLER, CHARGE)).thenReturn(Optional.empty());
-        var service = new RefundService(repository, ledger, provider, outbox, Clock.fixed(NOW, ZoneOffset.UTC));
+        var service = new RefundService(repository, ledger, provider, outbox, invoiceCancellation, Clock.fixed(NOW, ZoneOffset.UTC));
 
         assertThatThrownBy(() -> service.refund(SELLER, CHARGE, new RefundCommand(null, "x", "idem-5")))
                 .isInstanceOf(NotFoundException.class);
@@ -131,10 +134,11 @@ class RefundServiceTest {
         var ledger = mock(LedgerService.class);
         var provider = mock(PaymentProvider.class);
         var outbox = mock(OutboxService.class);
+        var invoiceCancellation = mock(InvoiceCancellationService.class);
         var stored = new StoredRefund(UUID.randomUUID(), PAID, SELLER_AMOUNT, AFFILIATE_FEE,
                 PLATFORM_FEE - PROVIDER_FEE, PROVIDER_FEE, "SUCCEEDED", PAID, "REFUNDED");
         when(repository.findByIdempotencyKey(CHARGE, "idem-7")).thenReturn(Optional.of(stored));
-        var service = new RefundService(repository, ledger, provider, outbox, Clock.fixed(NOW, ZoneOffset.UTC));
+        var service = new RefundService(repository, ledger, provider, outbox, invoiceCancellation, Clock.fixed(NOW, ZoneOffset.UTC));
 
         var result = service.refund(SELLER, CHARGE, new RefundCommand(null, "x", "idem-7"));
 
@@ -150,10 +154,11 @@ class RefundServiceTest {
         var ledger = mock(LedgerService.class);
         var provider = mock(PaymentProvider.class);
         var outbox = mock(OutboxService.class);
+        var invoiceCancellation = mock(InvoiceCancellationService.class);
         var stored = new StoredRefund(UUID.randomUUID(), 8_850, 7_335, 885, 341, 289, "SUCCEEDED", 8_850,
                 "PARTIALLY_REFUNDED");
         when(repository.findByIdempotencyKey(CHARGE, "idem-8")).thenReturn(Optional.of(stored));
-        var service = new RefundService(repository, ledger, provider, outbox, Clock.fixed(NOW, ZoneOffset.UTC));
+        var service = new RefundService(repository, ledger, provider, outbox, invoiceCancellation, Clock.fixed(NOW, ZoneOffset.UTC));
 
         assertThatThrownBy(() -> service.refund(SELLER, CHARGE, new RefundCommand(17_700L, "x", "idem-8")))
                 .isInstanceOf(ConflictException.class);
@@ -170,12 +175,13 @@ class RefundServiceTest {
         var ledger = mock(LedgerService.class);
         var provider = mock(PaymentProvider.class);
         var outbox = mock(OutboxService.class);
+        var invoiceCancellation = mock(InvoiceCancellationService.class);
         when(repository.findByIdempotencyKey(eq(CHARGE), any())).thenReturn(Optional.empty());
         when(repository.lockChargeForRefund(SELLER, CHARGE)).thenReturn(Optional.of(context));
         when(ledger.writeCascadeDebit(any(), any(), any(), any(), anyLong(), any(), any()))
                 .thenReturn(new LedgerWriteResult(UUID.randomUUID(), false));
-        var service = new RefundService(repository, ledger, provider, outbox, Clock.fixed(NOW, ZoneOffset.UTC));
-        return new Fixture(service, repository, ledger, provider, outbox);
+        var service = new RefundService(repository, ledger, provider, outbox, invoiceCancellation, Clock.fixed(NOW, ZoneOffset.UTC));
+        return new Fixture(service, repository, ledger, provider, outbox, invoiceCancellation);
     }
 
     private static Fixture fixtureWithStatus(String status) {
@@ -189,6 +195,7 @@ class RefundServiceTest {
     }
 
     private record Fixture(RefundService service, RefundRepository repository, LedgerService ledger,
-                           PaymentProvider provider, OutboxService outbox) {
+                           PaymentProvider provider, OutboxService outbox,
+                           InvoiceCancellationService invoiceCancellation) {
     }
 }
