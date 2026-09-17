@@ -14,6 +14,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class LedgerService {
+    /** RF-122: reembolso/estorno cai em cascata, sem tocar a reserva (imposta por contestação, não escolha do vendedor). */
+    private static final Bucket[] REFUND_CASCADE = {Bucket.GUARANTEE, Bucket.PENDING, Bucket.AVAILABLE};
+
     private final LedgerRepository repository;
     public LedgerService(LedgerRepository repository) { this.repository = repository; }
 
@@ -33,6 +36,50 @@ public class LedgerService {
         if (inserted.isEmpty()) return replay(repository.find(command.type(), command.reference()).orElseThrow(), hash);
         repository.insertEntries(inserted.get(), command.entries());
         return new LedgerWriteResult(inserted.get(), false);
+    }
+
+    /**
+     * BE-12.1: debita uma conta em cascata GUARANTEE→PENDING→AVAILABLE, e o que sobrar
+     * vira dívida (DEBT), sem tocar RESERVE (RF-122). A alocação por bucket depende do
+     * saldo no momento do lock, então a idempotência natural-key aqui não reconfere
+     * conteúdo por hash como em write() — a chave natural (type+reference) já nasce de
+     * uma operação de negócio idempotente na camada acima (ex.: refundId determinístico).
+     */
+    @Transactional
+    public LedgerWriteResult writeCascadeDebit(TransactionType type, LedgerReference reference, String description,
+            UUID debitAccountId, long totalDebitCents, Origin origin, List<LedgerEntry> counterEntries) {
+        if (totalDebitCents <= 0) throw new IllegalArgumentException("valor do débito em cascata deve ser positivo");
+        Set<UUID> users = new TreeSet<>();
+        users.add(debitAccountId);
+        for (LedgerEntry entry : counterEntries) if (entry.bucket().userBucket()) users.add(entry.accountId());
+        return repository.withAccountLocks(users, () -> {
+            var existing = repository.find(type, reference);
+            if (existing.isPresent()) return new LedgerWriteResult(existing.get().id(), true);
+
+            List<LedgerEntry> entries = new java.util.ArrayList<>();
+            long remaining = totalDebitCents;
+            for (Bucket bucket : REFUND_CASCADE) {
+                if (remaining <= 0) break;
+                long available = Math.max(0, repository.rawBalance(debitAccountId, bucket));
+                long take = Math.min(available, remaining);
+                if (take > 0) {
+                    entries.add(new LedgerEntry(debitAccountId, bucket, Direction.DEBIT, take, origin, null));
+                    remaining -= take;
+                }
+            }
+            if (remaining > 0) {
+                entries.add(new LedgerEntry(debitAccountId, Bucket.DEBT, Direction.DEBIT, remaining, origin, null));
+            }
+            entries.addAll(counterEntries);
+
+            var command = new LedgerCommand(type, reference, description, entries);
+            validateBalances(entries, users);
+            String hash = hash(command);
+            var inserted = repository.tryInsertTransaction(command, hash);
+            if (inserted.isEmpty()) return new LedgerWriteResult(repository.find(type, reference).orElseThrow().id(), true);
+            repository.insertEntries(inserted.get(), entries);
+            return new LedgerWriteResult(inserted.get(), false);
+        });
     }
 
     private void validateBalances(List<LedgerEntry> entries, Set<UUID> users) {

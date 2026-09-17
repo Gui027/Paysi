@@ -60,6 +60,14 @@ public class FakePaymentProvider implements PaymentProvider {
         return approved;
     }
 
+    @Override
+    public ProviderRefundResult refund(ProviderRefundRequest request) {
+        if (outcome == FakeProviderOutcome.ERROR || outcome == FakeProviderOutcome.TIMEOUT) {
+            return new ProviderRefundResult(null, false, "PROVIDER_REFUND_UNAVAILABLE");
+        }
+        return new ProviderRefundResult("fake_refund_" + request.refundId(), true, null);
+    }
+
     private ProviderPaymentResult create(ProviderPaymentRequest request) {
         String chargeId = "fake_charge_" + request.orderId();
         Instant now = clock.instant();
