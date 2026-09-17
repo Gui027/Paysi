@@ -1,7 +1,7 @@
 package com.paysi.subscription.app;
 
-import com.paysi.affiliate.app.CommissionService;
 import com.paysi.identity.port.PlatformPlanReader;
+import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.provider.*;
 import com.paysi.payment.split.PaymentMethod;
 import com.paysi.payment.split.Plan;
@@ -27,21 +27,21 @@ public class SubscriptionCycleProcessor {
     private final SubscriptionRepository subscriptions;
     private final PlatformPlanReader plans;
     private final PaymentProvider provider;
-    private final CommissionService commissions;
+    private final SaleLedgerService saleLedger;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionCycleProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                       PaymentProvider provider, CommissionService commissions) {
-        this(subscriptions, plans, provider, commissions, Clock.systemUTC());
+                                       PaymentProvider provider, SaleLedgerService saleLedger) {
+        this(subscriptions, plans, provider, saleLedger, Clock.systemUTC());
     }
 
     SubscriptionCycleProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                PaymentProvider provider, CommissionService commissions, Clock clock) {
+                                PaymentProvider provider, SaleLedgerService saleLedger, Clock clock) {
         this.subscriptions = subscriptions;
         this.plans = plans;
         this.provider = provider;
-        this.commissions = commissions;
+        this.saleLedger = saleLedger;
         this.clock = clock;
     }
 
@@ -93,8 +93,8 @@ public class SubscriptionCycleProcessor {
         subscriptions.updateSubscriptionCycle(cycle.subscriptionId(),
                 approved ? "ACTIVE" : "PAST_DUE",
                 approved ? SubscriptionService.nextCharge(now, cycle.cycle()) : null);
-        if (approved && cycle.affiliateId() != null && split.affiliateCents() > 0) {
-            commissions.liquidate(cycle.affiliateId(), split.affiliateCents(), chargeId, now, cycle.guaranteeDays());
+        if (approved) {
+            saleLedger.creditForCharge(chargeId, now);
         }
     }
 

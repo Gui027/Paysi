@@ -1,7 +1,7 @@
 package com.paysi.subscription.app;
 
-import com.paysi.affiliate.app.CommissionService;
 import com.paysi.identity.port.PlatformPlanReader;
+import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.provider.*;
 import com.paysi.subscription.port.SubscriptionRepository;
 import org.junit.jupiter.api.Test;
@@ -85,9 +85,9 @@ class SubscriptionRetryProcessorTest {
         var repository = mock(SubscriptionRepository.class);
         var plans = mock(PlatformPlanReader.class);
         var provider = mock(PaymentProvider.class);
-        var commissions = mock(CommissionService.class);
+        var saleLedger = mock(SaleLedgerService.class);
         when(plans.currentPlan(SELLER)).thenReturn("TRANSACIONAL");
-        var processor = new SubscriptionRetryProcessor(repository, plans, provider, commissions,
+        var processor = new SubscriptionRetryProcessor(repository, plans, provider, saleLedger,
                 Clock.fixed(NOW, ZoneOffset.UTC));
         return new Fixture(processor, repository, provider);
     }

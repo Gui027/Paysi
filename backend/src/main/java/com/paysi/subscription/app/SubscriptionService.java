@@ -10,6 +10,7 @@ import com.paysi.core.error.ConflictException;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.core.error.ValidationException;
 import com.paysi.identity.port.PlatformPlanReader;
+import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.provider.*;
 import com.paysi.payment.split.PaymentMethod;
 import com.paysi.payment.split.Plan;
@@ -48,23 +49,26 @@ public class SubscriptionService {
     private final PlatformPlanReader plans;
     private final PaymentProvider provider;
     private final CommissionService commissions;
+    private final SaleLedgerService saleLedger;
     private final ObjectMapper json;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionService(SubscriptionRepository subscriptions, OfferRepository offers,
                                 PlatformPlanReader plans, PaymentProvider provider, CommissionService commissions,
-                                ObjectMapper json) {
-        this(subscriptions, offers, plans, provider, commissions, json, Clock.systemUTC());
+                                SaleLedgerService saleLedger, ObjectMapper json) {
+        this(subscriptions, offers, plans, provider, commissions, saleLedger, json, Clock.systemUTC());
     }
 
     SubscriptionService(SubscriptionRepository subscriptions, OfferRepository offers, PlatformPlanReader plans,
-                         PaymentProvider provider, CommissionService commissions, ObjectMapper json, Clock clock) {
+                         PaymentProvider provider, CommissionService commissions, SaleLedgerService saleLedger,
+                         ObjectMapper json, Clock clock) {
         this.subscriptions = subscriptions;
         this.offers = offers;
         this.plans = plans;
         this.provider = provider;
         this.commissions = commissions;
+        this.saleLedger = saleLedger;
         this.json = json;
         this.clock = clock;
     }
@@ -156,8 +160,8 @@ public class SubscriptionService {
                 new ProviderSplit(split.sellerCents(), split.affiliateCents(), split.sellerFeeCents()),
                 offer.boletoDueDays()));
 
-        // Boleto não confirma na hora: a comissão só é liquidada quando o inbox do provedor
-        // confirmar o pagamento (fora do escopo deste módulo), por isso não chamamos commissions.liquidate aqui.
+        // Boleto não confirma na hora: o razão só é creditado quando o inbox do provedor
+        // confirmar o pagamento (ProviderEventService), por isso não chamamos saleLedger aqui.
         subscriptions.saveChargeResult(chargeId, "PENDING", result.providerChargeId(), result.providerFeeCents(),
                 null, null, null);
         subscriptions.updateSubscriptionCycle(subscriptionId, "ACTIVE", nextCharge(now, offer.cycle()));
@@ -186,8 +190,8 @@ public class SubscriptionService {
         subscriptions.updateSubscriptionCycle(subscriptionId,
                 (approved ? SubscriptionStatus.ACTIVE : SubscriptionStatus.PAST_DUE).name(),
                 approved ? nextChargeAt : null);
-        if (approved && affiliateId != null && split.affiliateCents() > 0) {
-            commissions.liquidate(affiliateId, split.affiliateCents(), chargeId, now, offer.guaranteeDays());
+        if (approved) {
+            saleLedger.creditForCharge(chargeId, now);
         }
     }
 

@@ -3,6 +3,7 @@ package com.paysi.payment.inbox.app;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paysi.core.error.ValidationException;
+import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.inbox.domain.*;
 import com.paysi.payment.inbox.port.*;
 import org.springframework.stereotype.Service;
@@ -21,19 +22,21 @@ public class ProviderEventService {
     private final ObjectMapper json;
     private final PaymentEventSignatureVerifier signatures;
     private final ProviderEventRepository repository;
+    private final SaleLedgerService saleLedger;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public ProviderEventService(ObjectMapper json, PaymentEventSignatureVerifier signatures,
-                                ProviderEventRepository repository) {
-        this(json, signatures, repository, Clock.systemUTC());
+                                ProviderEventRepository repository, SaleLedgerService saleLedger) {
+        this(json, signatures, repository, saleLedger, Clock.systemUTC());
     }
 
     ProviderEventService(ObjectMapper json, PaymentEventSignatureVerifier signatures,
-                         ProviderEventRepository repository, Clock clock) {
+                         ProviderEventRepository repository, SaleLedgerService saleLedger, Clock clock) {
         this.json = json;
         this.signatures = signatures;
         this.repository = repository;
+        this.saleLedger = saleLedger;
         this.clock = clock;
     }
 
@@ -61,6 +64,9 @@ public class ProviderEventService {
         try {
             boolean applied = repository.applyEffect(stored);
             if (applied) {
+                if ("PAYMENT_CONFIRMED".equals(stored.event().eventType())) {
+                    saleLedger.creditForCharge(stored.event().chargeId(), stored.event().occurredAt());
+                }
                 repository.markProcessed(stored.provider(), stored.event().providerEventId(), clock.instant());
                 return new ProviderEventResult("PROCESSED", false);
             }
