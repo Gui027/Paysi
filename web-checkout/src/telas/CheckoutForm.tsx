@@ -3,12 +3,19 @@ import { CheckoutContract, PaymentMethod, PersonType } from "../lib/checkout";
 import { ApiRequestError } from "../lib/api";
 import { ChaveCampo, comoChaveCampo, validarCampo } from "../lib/camposComprador";
 import { CamposComprador } from "../componentes/CamposComprador";
+import { CampoDeCartao } from "../componentes/CampoDeCartao";
+import { DesafioTresDS } from "../componentes/DesafioTresDS";
 import { Metodo, SeletorDeMetodo } from "../componentes/SeletorDeMetodo";
 import { criarPedido } from "../lib/pedido";
 import { calcularTermosHash } from "../lib/termos";
 import { obterChaveDeIdempotencia } from "../lib/idempotencia";
 import { formatarCentavos } from "../lib/formato";
 import { SimulacaoCheckout, simularCheckout } from "../lib/simulacao";
+import { CobrancaIniciada, cobrancaAprovada, cobrancaRecusada, confirmarTresDs, exigeDesafioTresDs, iniciarCobranca, obterChaveDeDispositivo } from "../lib/cobranca";
+import { Aprovado } from "./Aprovado";
+import { Recusado } from "./Recusado";
+import { PixAguardando } from "./PixAguardando";
+import { BoletoEmitido } from "./BoletoEmitido";
 
 const METHOD_TO_METODO: Record<PaymentMethod, Metodo> = { CARD: "cartao", PIX: "pix", BOLETO: "boleto" };
 const METODO_TO_METHOD: Record<Metodo, PaymentMethod> = { cartao: "CARD", pix: "PIX", boleto: "BOLETO" };
@@ -29,6 +36,10 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
   const [submitting, setSubmitting] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [cardToken, setCardToken] = useState<string | null>(null);
+  const [cobranca, setCobranca] = useState<CobrancaIniciada | null>(null);
+  const [confirmandoTresDs, setConfirmandoTresDs] = useState(false);
+  const termsHashRef = useRef<string | null>(null);
   const simulationVersion = useRef(0);
 
   const disponiveis = contract.methods.map(method => METHOD_TO_METODO[method]);
@@ -93,11 +104,12 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
     }
     const hasTermsError = !termsAccepted;
     const hasCouponError = couponVisible && Boolean(coupon.trim()) && !simulacao;
+    const hasCardError = metodo === "cartao" && !cardToken;
     setErrors(nextErrors);
     setTermsError(hasTermsError ? "É preciso aceitar os termos para continuar." : null);
     setCouponError(hasCouponError ? "Valide o cupom antes de continuar." : null);
-    if (Object.values(nextErrors).some(Boolean) || hasTermsError || hasCouponError) {
-      setGeneralError("Revise os campos destacados.");
+    if (Object.values(nextErrors).some(Boolean) || hasTermsError || hasCouponError || hasCardError) {
+      setGeneralError(hasCardError ? "Preencha os dados do cartão corretamente." : "Revise os campos destacados.");
       return;
     }
 
@@ -105,13 +117,22 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
     setGeneralError(null);
     try {
       const termsHash = await calcularTermosHash(contract.legalTexts.termsUrl);
-      await criarPedido(slug, {
+      termsHashRef.current = termsHash;
+      const pedido = await criarPedido(slug, {
         buyer: montarComprador(values, personType, campos),
         method: paymentMethod,
         installments: selectedInstallments,
         coupon: couponVisible && coupon.trim() ? coupon.trim() : null,
         termsHash,
       }, obterChaveDeIdempotencia());
+
+      const resultado = await iniciarCobranca(pedido.orderId, {
+        cardToken: metodo === "cartao" ? cardToken : null,
+        deviceKey: obterChaveDeDispositivo(),
+        termsHash,
+        termsAcceptedAt: new Date().toISOString(),
+      });
+      setCobranca(resultado);
       setSubmitted(true);
     } catch (error) {
       setGeneralError(error instanceof ApiRequestError ? error.message : "Não foi possível concluir a compra. Tente novamente.");
@@ -120,7 +141,61 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
     }
   }
 
-  if (submitted) {
+  async function confirmarDesafio(challengeToken: string) {
+    if (!cobranca || !termsHashRef.current) return;
+    setConfirmandoTresDs(true);
+    try {
+      const resultado = await confirmarTresDs(cobranca.chargeId, {
+        challengeToken,
+        deviceKey: obterChaveDeDispositivo(),
+        termsHash: termsHashRef.current,
+        termsAcceptedAt: new Date().toISOString(),
+      });
+      setCobranca(resultado);
+    } catch (error) {
+      setGeneralError(error instanceof ApiRequestError ? error.message : "Não foi possível confirmar o desafio 3DS.");
+    } finally {
+      setConfirmandoTresDs(false);
+    }
+  }
+
+  function tentarNovamenteComPix() {
+    setSubmitted(false);
+    setCobranca(null);
+    setCardToken(null);
+    setMetodo("pix");
+    setGeneralError(null);
+  }
+
+  if (submitted && cobranca) {
+    if (cobranca.method === "CARD") {
+      if (exigeDesafioTresDs(cobranca) && cobranca.threeDs?.challengeUrl) {
+        return (
+          <DesafioTresDS
+            challengeUrl={cobranca.threeDs.challengeUrl}
+            confirmando={confirmandoTresDs}
+            onConfirmar={challengeToken => void confirmarDesafio(challengeToken)}
+          />
+        );
+      }
+      if (cobrancaAprovada(cobranca)) return <Aprovado />;
+      if (cobrancaRecusada(cobranca)) {
+        return <Recusado onTentarPix={disponiveis.includes("pix") ? tentarNovamenteComPix : undefined} />;
+      }
+    }
+    if (cobranca.method === "PIX" && cobranca.pixQrCode) {
+      return <PixAguardando chargeId={cobranca.chargeId} qrCode={cobranca.pixQrCode} expiresAt={cobranca.expiresAt} />;
+    }
+    if (cobranca.method === "BOLETO" && cobranca.boletoBarcode && cobranca.boletoUrl) {
+      return (
+        <BoletoEmitido
+          chargeId={cobranca.chargeId}
+          barcode={cobranca.boletoBarcode}
+          boletoUrl={cobranca.boletoUrl}
+          dueAt={cobranca.expiresAt}
+        />
+      );
+    }
     return (
       <div className="success-panel" role="status">
         <h2>Pedido recebido</h2>
@@ -171,7 +246,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
       )}
 
       <div className="section-title"><span className="step">3</span><h2>Pagamento</h2></div>
-      <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); }} disponiveis={disponiveis} />
+      <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); setCardToken(null); }} disponiveis={disponiveis} />
       {metodo === "cartao" && (
         <>
           {contract.installments > 1 && (
@@ -183,10 +258,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
               </select>
             </label>
           )}
-          <div className="provider-frame" role="group" aria-label="Dados do cartão">
-            <p>O campo seguro do provedor de pagamento será carregado aqui.</p>
-            <small>A Paysi nunca recebe os dados do seu cartão.</small>
-          </div>
+          <CampoDeCartao onToken={setCardToken} />
         </>
       )}
 

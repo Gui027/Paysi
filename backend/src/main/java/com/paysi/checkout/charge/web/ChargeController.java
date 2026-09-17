@@ -4,6 +4,7 @@ import com.paysi.checkout.charge.app.ChargeCreationService;
 import com.paysi.checkout.charge.app.StartChargeCommand;
 import com.paysi.checkout.charge.web.dto.ChargeStartRequest;
 import com.paysi.checkout.charge.web.dto.ChargeStartResponse;
+import com.paysi.checkout.charge.web.dto.ChargeStatusResponse;
 import com.paysi.checkout.charge.web.dto.ThreeDsConfirmRequest;
 import com.paysi.payment.card.app.CardPaymentService;
 import com.paysi.payment.card.domain.SaleEvidenceCommand;
@@ -49,5 +50,11 @@ public class ChargeController {
                 request.deviceKey(), request.termsHash(), request.termsAcceptedAt());
         var result = cardPayments.confirmThreeDs(chargeId, request.challengeToken(), evidence);
         return ChargeStartResponse.fromCard(chargeId, result);
+    }
+
+    @GetMapping("/v1/charges/{chargeId}")
+    @Operation(summary = "Consultar status da cobrança (uso: polling de Pix/boleto)")
+    public ChargeStatusResponse status(@PathVariable UUID chargeId) {
+        return ChargeStatusResponse.from(charges.view(chargeId));
     }
 }
