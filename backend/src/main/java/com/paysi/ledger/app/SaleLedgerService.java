@@ -1,5 +1,6 @@
 package com.paysi.ledger.app;
 
+import com.paysi.fiscal.app.InvoiceQueueService;
 import com.paysi.ledger.domain.*;
 import com.paysi.ledger.port.ChargeSaleRepository;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,12 @@ import java.util.UUID;
  * que também deixava o reembolso (BE-12.1) sem ter o que reverter. Chamado tanto
  * pela aprovação síncrona do cartão quanto pela confirmação assíncrona (inbox do
  * provedor), e é seguro reprocessar o mesmo chargeId (replay, corrida).
+ *
+ * <p>BE-14.1: é também o único lugar que sabe, de forma unificada, "uma venda foi
+ * confirmada" — os quatro chamadores (cartão síncrono, inbox Pix/boleto, ciclo e
+ * retentativa de assinatura) não precisam duplicar a decisão de enfileirar a nota
+ * fiscal (RF-113). {@link InvoiceQueueService#enqueueAfterSale} é um INSERT local
+ * que nunca lança: não pode derrubar a confirmação do pagamento.
  */
 @Service
 public class SaleLedgerService {
@@ -27,10 +34,13 @@ public class SaleLedgerService {
 
     private final ChargeSaleRepository repository;
     private final LedgerService ledger;
+    private final InvoiceQueueService invoiceQueue;
 
-    public SaleLedgerService(ChargeSaleRepository repository, LedgerService ledger) {
+    public SaleLedgerService(ChargeSaleRepository repository, LedgerService ledger,
+                              InvoiceQueueService invoiceQueue) {
         this.repository = repository;
         this.ledger = ledger;
+        this.invoiceQueue = invoiceQueue;
     }
 
     @Transactional
@@ -66,5 +76,7 @@ public class SaleLedgerService {
                     new LedgerReference(ReferenceType.CHARGE, chargeId + ":commission"), "Comissão de afiliado",
                     entries));
         }
+
+        invoiceQueue.enqueueAfterSale(chargeId, sale.sellerId());
     }
 }

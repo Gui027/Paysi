@@ -77,6 +77,8 @@ paysi:
     encryption-key: ${MFA_ENCRYPTION_KEY_BASE64:}
   payout:
     mfa-threshold-cents: ${PAYOUT_MFA_THRESHOLD_CENTS:100000}
+  fiscal:
+    issuer: ${PAYSI_FISCAL_ISSUER:fake}
   payment:
     fake-outcome: ${PAYMENT_FAKE_OUTCOME:APPROVED}
     webhook-secret: ${PAYMENT_WEBHOOK_SECRET:dev-payment-webhook-secret}

@@ -1,5 +1,6 @@
 package com.paysi.ledger.app;
 
+import com.paysi.fiscal.app.InvoiceQueueService;
 import com.paysi.ledger.domain.*;
 import com.paysi.ledger.port.ChargeSaleRepository;
 import com.paysi.ledger.port.ChargeSaleRepository.ChargeSale;
@@ -27,7 +28,8 @@ class SaleLedgerServiceTest {
         var ledger = mock(LedgerService.class);
         when(repository.findChargeSale(CHARGE)).thenReturn(Optional.of(
                 new ChargeSale(SELLER, 9_000, 1_000, null, 0, 7)));
-        var service = new SaleLedgerService(repository, ledger);
+        var invoiceQueue = mock(InvoiceQueueService.class);
+        var service = new SaleLedgerService(repository, ledger, invoiceQueue);
 
         service.creditForCharge(CHARGE, NOW);
 
@@ -44,6 +46,7 @@ class SaleLedgerServiceTest {
             assertThat(entry.amountCents()).isEqualTo(9_000);
             assertThat(entry.releaseAt()).isEqualTo(NOW.plus(Duration.ofDays(7)));
         });
+        verify(invoiceQueue).enqueueAfterSale(CHARGE, SELLER);
     }
 
     @Test
@@ -52,7 +55,7 @@ class SaleLedgerServiceTest {
         var ledger = mock(LedgerService.class);
         when(repository.findChargeSale(CHARGE)).thenReturn(Optional.of(
                 new ChargeSale(SELLER, 8_500, 1_000, AFFILIATE, 500, 7)));
-        var service = new SaleLedgerService(repository, ledger);
+        var service = new SaleLedgerService(repository, ledger, mock(InvoiceQueueService.class));
 
         service.creditForCharge(CHARGE, NOW);
 
@@ -75,7 +78,7 @@ class SaleLedgerServiceTest {
         var ledger = mock(LedgerService.class);
         when(repository.findChargeSale(CHARGE)).thenReturn(Optional.of(
                 new ChargeSale(SELLER, 9_000, 1_000, null, 0, 7)));
-        var service = new SaleLedgerService(repository, ledger);
+        var service = new SaleLedgerService(repository, ledger, mock(InvoiceQueueService.class));
 
         service.creditForCharge(CHARGE, NOW);
 
@@ -87,7 +90,7 @@ class SaleLedgerServiceTest {
         var repository = mock(ChargeSaleRepository.class);
         var ledger = mock(LedgerService.class);
         when(repository.findChargeSale(CHARGE)).thenReturn(Optional.empty());
-        var service = new SaleLedgerService(repository, ledger);
+        var service = new SaleLedgerService(repository, ledger, mock(InvoiceQueueService.class));
 
         assertThatThrownBy(() -> service.creditForCharge(CHARGE, NOW))
                 .isInstanceOf(IllegalStateException.class);
