@@ -1,12 +1,12 @@
 package com.paysi.checkout.charge.app;
 
-import com.paysi.affiliate.app.CommissionService;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
 import com.paysi.checkout.charge.port.ChargeCreationRepository;
 import com.paysi.checkout.charge.port.ChargeCreationRepository.OrderContext;
 import com.paysi.checkout.pricing.app.PriceMath;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.identity.port.PlatformPlanReader;
+import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.boleto.app.BoletoPaymentService;
 import com.paysi.payment.card.app.CardPaymentService;
 import com.paysi.payment.card.domain.CardPaymentCommand;
@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -30,7 +29,7 @@ import java.util.UUID;
 public class ChargeCreationService {
     private final ChargeCreationRepository repository;
     private final PlatformPlanReader plans;
-    private final CommissionService commissions;
+    private final SaleLedgerService saleLedger;
     private final CardPaymentService cardPayments;
     private final BoletoPaymentService boletoPayments;
     private final PixPaymentService pixPayments;
@@ -38,17 +37,17 @@ public class ChargeCreationService {
 
     @org.springframework.beans.factory.annotation.Autowired
     public ChargeCreationService(ChargeCreationRepository repository, PlatformPlanReader plans,
-                                  CommissionService commissions, CardPaymentService cardPayments,
+                                  SaleLedgerService saleLedger, CardPaymentService cardPayments,
                                   BoletoPaymentService boletoPayments, PixPaymentService pixPayments) {
-        this(repository, plans, commissions, cardPayments, boletoPayments, pixPayments, Clock.systemUTC());
+        this(repository, plans, saleLedger, cardPayments, boletoPayments, pixPayments, Clock.systemUTC());
     }
 
     ChargeCreationService(ChargeCreationRepository repository, PlatformPlanReader plans,
-                          CommissionService commissions, CardPaymentService cardPayments,
+                          SaleLedgerService saleLedger, CardPaymentService cardPayments,
                           BoletoPaymentService boletoPayments, PixPaymentService pixPayments, Clock clock) {
         this.repository = repository;
         this.plans = plans;
-        this.commissions = commissions;
+        this.saleLedger = saleLedger;
         this.cardPayments = cardPayments;
         this.boletoPayments = boletoPayments;
         this.pixPayments = pixPayments;
@@ -69,8 +68,8 @@ public class ChargeCreationService {
                         command.termsHash(), command.termsAcceptedAt());
                 var result = cardPayments.start(chargeId,
                         new CardPaymentCommand(command.cardToken(), ctx.installments(), evidence));
-                if ("approved".equals(result.status()) && ctx.affiliateId() != null) {
-                    liquidateAffiliateCommission(chargeId, ctx);
+                if ("approved".equals(result.status())) {
+                    saleLedger.creditForCharge(chargeId, clock.instant());
                 }
                 yield ChargeStartResult.card(chargeId, result);
             }
@@ -93,15 +92,5 @@ public class ChargeCreationService {
         repository.insertCharge(chargeId, orderId, ctx.paidCents(), plan.name(), feeBps, 200,
                 split.sellerFeeCents(), split.affiliateCents(), split.sellerCents(), "PENDING", clock.instant());
         return chargeId;
-    }
-
-    /** Recalcula a mesma divisão só para saber quanto do afiliado liquidar — a cobrança já está congelada. */
-    private void liquidateAffiliateCommission(UUID chargeId, OrderContext ctx) {
-        Plan plan = Plan.valueOf(plans.currentPlan(ctx.sellerId()));
-        OfferPaymentMethod method = OfferPaymentMethod.valueOf(ctx.method());
-        Split split = PriceMath.split(ctx.paidCents(), method, ctx.installments(), plan, ctx.commissionBps());
-        if (split.affiliateCents() <= 0) return;
-        Instant now = clock.instant();
-        commissions.liquidate(ctx.affiliateId(), split.affiliateCents(), chargeId, now, ctx.guaranteeDays());
     }
 }

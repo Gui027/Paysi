@@ -2,6 +2,7 @@ package com.paysi.subscription.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paysi.affiliate.app.CommissionService;
+import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.catalog.offer.domain.*;
 import com.paysi.catalog.offer.port.OfferRepository;
 import com.paysi.catalog.product.domain.ChargeType;
@@ -124,6 +125,7 @@ class SubscriptionServiceTest {
         var plans = mock(PlatformPlanReader.class);
         var provider = mock(PaymentProvider.class);
         var commissions = mock(CommissionService.class);
+        var saleLedger = mock(SaleLedgerService.class);
         when(offers.findPublishedBySlug("plano-mensal")).thenReturn(Optional.of(offerValue));
         when(repository.sellerIdForOffer(OFFER)).thenReturn(Optional.of(SELLER));
         when(repository.findOrderByIdempotency(any(), any())).thenReturn(Optional.empty());
@@ -134,8 +136,8 @@ class SubscriptionServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(plans.currentPlan(SELLER)).thenReturn("TRANSACIONAL");
         when(commissions.resolveForCharge(any(), any(), anyInt())).thenReturn(Optional.empty());
-        var service = new SubscriptionService(repository, offers, plans, provider, commissions, new ObjectMapper(),
-                Clock.fixed(NOW, ZoneOffset.UTC));
+        var service = new SubscriptionService(repository, offers, plans, provider, commissions, saleLedger,
+                new ObjectMapper(), Clock.fixed(NOW, ZoneOffset.UTC));
         return new Fixture(service, repository, provider);
     }
 

@@ -1,7 +1,7 @@
 package com.paysi.subscription.app;
 
-import com.paysi.affiliate.app.CommissionService;
 import com.paysi.identity.port.PlatformPlanReader;
+import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.provider.*;
 import com.paysi.payment.split.PaymentMethod;
 import com.paysi.payment.split.Plan;
@@ -21,21 +21,21 @@ public class SubscriptionRetryProcessor {
     private final SubscriptionRepository subscriptions;
     private final PlatformPlanReader plans;
     private final PaymentProvider provider;
-    private final CommissionService commissions;
+    private final SaleLedgerService saleLedger;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionRetryProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                       PaymentProvider provider, CommissionService commissions) {
-        this(subscriptions, plans, provider, commissions, Clock.systemUTC());
+                                       PaymentProvider provider, SaleLedgerService saleLedger) {
+        this(subscriptions, plans, provider, saleLedger, Clock.systemUTC());
     }
 
     SubscriptionRetryProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                PaymentProvider provider, CommissionService commissions, Clock clock) {
+                                PaymentProvider provider, SaleLedgerService saleLedger, Clock clock) {
         this.subscriptions = subscriptions;
         this.plans = plans;
         this.provider = provider;
-        this.commissions = commissions;
+        this.saleLedger = saleLedger;
         this.clock = clock;
     }
 
@@ -65,10 +65,7 @@ public class SubscriptionRetryProcessor {
             subscriptions.markOrderStatus(retry.orderId(), "PAID", now);
             subscriptions.updateSubscriptionCycle(retry.subscriptionId(), "ACTIVE",
                     SubscriptionService.nextCharge(now, retry.cycle()));
-            if (retry.affiliateId() != null && split.affiliateCents() > 0) {
-                commissions.liquidate(retry.affiliateId(), split.affiliateCents(), retry.chargeId(), now,
-                        retry.guaranteeDays());
-            }
+            saleLedger.creditForCharge(retry.chargeId(), now);
             return true;
         }
 

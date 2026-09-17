@@ -1,9 +1,9 @@
 package com.paysi.checkout.charge.app;
 
-import com.paysi.affiliate.app.CommissionService;
 import com.paysi.checkout.charge.port.ChargeCreationRepository;
 import com.paysi.checkout.charge.port.ChargeCreationRepository.OrderContext;
 import com.paysi.core.error.NotFoundException;
+import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.boleto.app.BoletoPaymentService;
 import com.paysi.payment.boleto.domain.BoletoResult;
 import com.paysi.payment.card.app.CardPaymentService;
@@ -43,7 +43,7 @@ class ChargeCreationServiceTest {
         assertThat(result.card().status()).isEqualTo("approved");
         verify(fixture.repository).insertCharge(any(), eq(ORDER), eq(10_000L), any(), anyInt(), eq(200L),
                 anyLong(), anyLong(), anyLong(), eq("PENDING"), eq(NOW));
-        verifyNoInteractions(fixture.commissions);
+        verify(fixture.saleLedger).creditForCharge(any(), eq(NOW));
     }
 
     @Test
@@ -60,17 +60,17 @@ class ChargeCreationServiceTest {
     }
 
     @Test
-    void liquidatesAffiliateCommissionOnlyWhenCardIsApproved() {
+    void creditsSaleLedgerOnlyWhenCardIsApproved() {
         var fixture = fixture(context("CARD", AFFILIATE, 1_000));
         when(fixture.repository.findChargeForOrder(ORDER)).thenReturn(Optional.of(CHARGE));
         when(fixture.cardPayments.start(eq(CHARGE), any())).thenReturn(cardResult("declined", false));
 
         fixture.service.start(ORDER, command("tok_1"));
-        verifyNoInteractions(fixture.commissions);
+        verifyNoInteractions(fixture.saleLedger);
 
         when(fixture.cardPayments.start(eq(CHARGE), any())).thenReturn(cardResult("approved", false));
         fixture.service.start(ORDER, command("tok_1"));
-        verify(fixture.commissions).liquidate(eq(AFFILIATE), anyLong(), eq(CHARGE), eq(NOW), eq(7));
+        verify(fixture.saleLedger).creditForCharge(eq(CHARGE), eq(NOW));
     }
 
     @Test
@@ -131,15 +131,15 @@ class ChargeCreationServiceTest {
     private static Fixture fixture(OrderContext context) {
         var repository = mock(ChargeCreationRepository.class);
         var plans = mock(com.paysi.identity.port.PlatformPlanReader.class);
-        var commissions = mock(CommissionService.class);
+        var saleLedger = mock(SaleLedgerService.class);
         var cardPayments = mock(CardPaymentService.class);
         var boletoPayments = mock(BoletoPaymentService.class);
         var pixPayments = mock(PixPaymentService.class);
         when(repository.findOrderContext(ORDER)).thenReturn(Optional.of(context));
         when(plans.currentPlan(SELLER)).thenReturn("TRANSACIONAL");
-        var service = new ChargeCreationService(repository, plans, commissions, cardPayments, boletoPayments,
+        var service = new ChargeCreationService(repository, plans, saleLedger, cardPayments, boletoPayments,
                 pixPayments, Clock.fixed(NOW, ZoneOffset.UTC));
-        return new Fixture(service, repository, commissions, cardPayments, boletoPayments, pixPayments);
+        return new Fixture(service, repository, saleLedger, cardPayments, boletoPayments, pixPayments);
     }
 
     private static OrderContext context(String method, UUID affiliateId, int commissionBps) {
@@ -157,7 +157,7 @@ class ChargeCreationServiceTest {
     }
 
     private record Fixture(ChargeCreationService service, ChargeCreationRepository repository,
-                           CommissionService commissions, CardPaymentService cardPayments,
+                           SaleLedgerService saleLedger, CardPaymentService cardPayments,
                            BoletoPaymentService boletoPayments, PixPaymentService pixPayments) {
     }
 }

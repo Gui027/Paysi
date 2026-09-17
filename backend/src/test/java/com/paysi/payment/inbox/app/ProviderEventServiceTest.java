@@ -1,6 +1,7 @@
 package com.paysi.payment.inbox.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.inbox.domain.ProviderEventPayload;
 import com.paysi.payment.inbox.port.*;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,8 @@ class ProviderEventServiceTest {
         when(repository.receive(eq("fake"), any(), eq(RAW), eq(true)))
                 .thenAnswer(call -> first.compareAndSet(true, false));
         when(repository.applyEffect(any())).thenReturn(true);
-        var service = service(signatures, repository);
+        var saleLedger = mock(SaleLedgerService.class);
+        var service = service(signatures, repository, saleLedger);
 
         try (var executor = Executors.newFixedThreadPool(8)) {
             var calls = java.util.stream.IntStream.range(0, 40)
@@ -51,6 +53,9 @@ class ProviderEventServiceTest {
         }
         verify(repository, times(1)).applyEffect(any());
         verify(repository, times(1)).markProcessed("fake", "evt-1", NOW);
+        verify(saleLedger, times(1)).creditForCharge(
+                java.util.UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                Instant.parse("2026-08-28T11:59:00Z"));
     }
 
     @Test
@@ -60,7 +65,7 @@ class ProviderEventServiceTest {
         when(signatures.valid(any(), any(), any())).thenReturn(false);
         when(repository.receive(eq("fake"), any(), eq(RAW), eq(false))).thenReturn(true);
 
-        assertThat(service(signatures, repository).handle("fake", RAW, "invalid").status())
+        assertThat(service(signatures, repository, mock(SaleLedgerService.class)).handle("fake", RAW, "invalid").status())
                 .isEqualTo("IGNORED");
         verify(repository).receive(eq("fake"), any(), eq(RAW), eq(false));
         verify(repository, never()).applyEffect(any());
@@ -73,7 +78,7 @@ class ProviderEventServiceTest {
         when(signatures.valid(any(), any(), any())).thenReturn(true);
         when(repository.receive(any(), any(), any(), eq(true))).thenReturn(true);
         when(repository.applyEffect(any())).thenThrow(new IllegalStateException()).thenReturn(true);
-        var service = service(signatures, repository);
+        var service = service(signatures, repository, mock(SaleLedgerService.class));
 
         assertThat(service.handle("fake", RAW, "signature").status()).isEqualTo("FAILED");
         verify(repository).markFailed("fake", "evt-1", "IllegalStateException", 1,
@@ -87,8 +92,8 @@ class ProviderEventServiceTest {
     }
 
     private static ProviderEventService service(PaymentEventSignatureVerifier signatures,
-                                                 ProviderEventRepository repository) {
+                                                 ProviderEventRepository repository, SaleLedgerService saleLedger) {
         return new ProviderEventService(new ObjectMapper().findAndRegisterModules(), signatures, repository,
-                Clock.fixed(NOW, ZoneOffset.UTC));
+                saleLedger, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 }
