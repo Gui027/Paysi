@@ -15,8 +15,15 @@ public interface ChargeCreationRepository {
                        long platformFeeFixedCents, long platformFeeCents, long affiliateFeeCents,
                        long sellerAmountCents, String status, Instant now);
 
+    /** Leitura sem lock, para o front consultar o status enquanto aguarda Pix/boleto confirmar. */
+    Optional<ChargeView> findChargeView(UUID chargeId);
+
     record OrderContext(UUID sellerId, UUID affiliateId, int commissionBps, long paidCents, String method,
                          int installments, String buyerName, String buyerEmail, String personType,
                          String taxId, int boletoDueDays, int guaranteeDays) {
+    }
+
+    record ChargeView(UUID chargeId, String method, String status, String boletoBarcode, String boletoUrl,
+                       String pixQrCode, Instant expiresAt) {
     }
 }

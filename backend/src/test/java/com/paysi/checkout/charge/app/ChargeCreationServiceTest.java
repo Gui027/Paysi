@@ -100,6 +100,26 @@ class ChargeCreationServiceTest {
     }
 
     @Test
+    void viewReturnsChargeStatusForPolling() {
+        var fixture = fixture(context("PIX", null, 0));
+        when(fixture.repository.findChargeView(CHARGE)).thenReturn(Optional.of(
+                new ChargeCreationRepository.ChargeView(CHARGE, "PIX", "PENDING", null, null, "000201", NOW)));
+
+        var view = fixture.service.view(CHARGE);
+
+        assertThat(view.status()).isEqualTo("PENDING");
+        assertThat(view.pixQrCode()).isEqualTo("000201");
+    }
+
+    @Test
+    void viewFailsFastWhenChargeDoesNotExist() {
+        var fixture = fixture(context("PIX", null, 0));
+        when(fixture.repository.findChargeView(CHARGE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> fixture.service.view(CHARGE)).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
     void ordersThatDoNotExistFailFast() {
         var fixture = fixture(context("CARD", null, 0));
         when(fixture.repository.findOrderContext(ORDER)).thenReturn(Optional.empty());

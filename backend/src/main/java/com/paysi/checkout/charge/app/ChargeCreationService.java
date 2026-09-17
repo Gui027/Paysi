@@ -79,6 +79,12 @@ public class ChargeCreationService {
         };
     }
 
+    @Transactional(readOnly = true)
+    public ChargeCreationRepository.ChargeView view(UUID chargeId) {
+        return repository.findChargeView(chargeId)
+                .orElseThrow(() -> new NotFoundException("CHARGE_NOT_FOUND", "Cobrança não encontrada"));
+    }
+
     private UUID create(UUID orderId, OrderContext ctx, OfferPaymentMethod method) {
         Plan plan = Plan.valueOf(plans.currentPlan(ctx.sellerId()));
         Split split = PriceMath.split(ctx.paidCents(), method, ctx.installments(), plan, ctx.commissionBps());
