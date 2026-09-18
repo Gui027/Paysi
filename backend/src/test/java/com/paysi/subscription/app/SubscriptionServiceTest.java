@@ -8,6 +8,7 @@ import com.paysi.catalog.offer.port.OfferRepository;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
 import com.paysi.core.error.ConflictException;
+import com.paysi.core.error.NotFoundException;
 import com.paysi.core.error.ValidationException;
 import com.paysi.identity.port.PlatformPlanReader;
 import com.paysi.payment.provider.*;
@@ -117,6 +118,38 @@ class SubscriptionServiceTest {
         fixture.service.cancelAtPeriodEnd(SELLER, subscriptionId);
 
         verify(fixture.repository).requestCancelAtPeriodEnd(SELLER, subscriptionId, NOW);
+    }
+
+    /**
+     * AM-12 / checklist #14: cancelar a assinatura de outro vendedor não pode
+     * nem parecer bem-sucedido nem vazar o estado dela — precisa devolver o
+     * mesmo 404 de "não existe", porque {@code requestCancelAtPeriodEnd} já é
+     * escopado por {@code sellerId} no {@code WHERE} e por isso não muda nada
+     * quando a assinatura pertence a outra conta.
+     */
+    @Test
+    void cancelingAnotherSellersSubscriptionIsNotFoundNotForbidden() {
+        var fixture = fixture(offer(0, true));
+        UUID subscriptionId = UUID.randomUUID();
+        UUID otherSeller = UUID.randomUUID();
+        when(fixture.repository.requestCancelAtPeriodEnd(otherSeller, subscriptionId, NOW)).thenReturn(false);
+        when(fixture.repository.findOwned(otherSeller, subscriptionId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> fixture.service.cancelAtPeriodEnd(otherSeller, subscriptionId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    /** Mesma garantia da leitura: consultar detalhe de assinatura alheia é 404. */
+    @Test
+    void readingAnotherSellersSubscriptionDetailIsNotFound() {
+        var fixture = fixture(offer(0, true));
+        UUID subscriptionId = UUID.randomUUID();
+        UUID otherSeller = UUID.randomUUID();
+        when(fixture.repository.findOwned(otherSeller, subscriptionId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> fixture.service.detail(otherSeller, subscriptionId))
+                .isInstanceOf(NotFoundException.class);
+        verify(fixture.repository, never()).listCharges(any());
     }
 
     private static Fixture fixture(Offer offerValue) {

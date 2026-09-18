@@ -7,7 +7,9 @@ import com.paysi.checkout.order.app.OrderResult;
 import com.paysi.checkout.order.domain.Order;
 import com.paysi.checkout.order.domain.OrderStatus;
 import com.paysi.core.error.ConflictException;
+import com.paysi.core.error.TooManyRequestsException;
 import com.paysi.core.error.ValidationException;
+import com.paysi.security.ratelimit.app.CheckoutRateLimitGuard;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -41,6 +43,7 @@ class CheckoutOrderControllerTest {
 
     @Autowired private MockMvc mvc;
     @MockitoBean private CreateOrderService orders;
+    @MockitoBean private CheckoutRateLimitGuard rateLimit;
 
     @Test
     void criaPedidoComDuzentosEUm() throws Exception {
@@ -125,6 +128,20 @@ class CheckoutOrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(semEmail))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        verify(orders, never()).create(any(), any(), any());
+    }
+
+    @Test
+    void limiteDeTentativasExcedidoDaQuatrocentosENove() throws Exception {
+        org.mockito.Mockito.doThrow(new TooManyRequestsException("RATE_LIMITED",
+                        "Muitas tentativas de pedido em pouco tempo por este endereço IP", null))
+                .when(rateLimit).checkOrderAttempt(any(), any(), any());
+
+        mvc.perform(post("/v1/checkout/{slug}/orders", SLUG)
+                        .header("Idempotency-Key", KEY)
+                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("RATE_LIMITED"));
         verify(orders, never()).create(any(), any(), any());
     }
 
