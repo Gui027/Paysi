@@ -52,6 +52,25 @@ class JdbcBuyerRepository implements BuyerRepository {
                 new IllegalStateException("Comprador desapareceu logo após a gravação"));
     }
 
+    @Override
+    public boolean exists(UUID id) {
+        return !jdbc.query("SELECT 1 FROM buyers WHERE id = ?", (rs, row) -> 1, id).isEmpty();
+    }
+
+    @Override
+    public boolean anonymize(UUID id, Instant anonymizedAt) {
+        // Idempotente: anonymized_at IS NULL na condição faz a segunda chamada não
+        // sobrescrever o carimbo original nem gerar linhas afetadas de novo.
+        int rows = jdbc.update("""
+                UPDATE buyers
+                   SET name = 'Titular anonimizado', email = ('anon-' || id || '@anonimizado.paysi')::citext,
+                       tax_id = '00000000000', legal_name = NULL, municipal_reg = NULL, address = NULL,
+                       anonymized_at = ?
+                 WHERE id = ? AND anonymized_at IS NULL
+                """, Timestamp.from(anonymizedAt), id);
+        return rows > 0;
+    }
+
     private Buyer map(ResultSet rs) throws SQLException {
         return new Buyer(rs.getObject("id", UUID.class), rs.getString("name"),
                 rs.getString("email"), PersonType.valueOf(rs.getString("person_type")),
