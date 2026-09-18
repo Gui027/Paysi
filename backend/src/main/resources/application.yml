@@ -45,6 +45,12 @@ management:
         enabled: true
       show-details: when_authorized
 
+# Correlação (RNF-028): o mesmo identificador de com.paysi.config.CorrelationIdFilter
+# aparece em toda linha de log da requisição, do checkout até a chamada ao provedor.
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [%X{correlationId}] [%15.15t] %-40.40logger{39} : %m%n%wEx"
+
 server:
   shutdown: graceful
   error:

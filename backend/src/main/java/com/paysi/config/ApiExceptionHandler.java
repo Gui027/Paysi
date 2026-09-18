@@ -5,6 +5,7 @@ import com.paysi.core.error.ConflictException;
 import com.paysi.core.error.DomainException;
 import com.paysi.core.error.ForbiddenException;
 import com.paysi.core.error.NotFoundException;
+import com.paysi.core.error.TooManyRequestsException;
 import com.paysi.core.error.UnauthorizedException;
 import com.paysi.core.error.ValidationException;
 import org.springframework.http.HttpStatus;
@@ -61,6 +62,12 @@ class ApiExceptionHandler {
     ResponseEntity<ApiError> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiError.of(ex.code(), ex.getMessage(), (String) null));
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    ResponseEntity<ApiError> handleTooManyRequests(TooManyRequestsException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiError.of(ex.code(), ex.getMessage(), ex.field()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
