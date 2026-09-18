@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 public class LedgerService {
     /** RF-122: reembolso/estorno cai em cascata, sem tocar a reserva (imposta por contestação, não escolha do vendedor). */
     private static final Bucket[] REFUND_CASCADE = {Bucket.GUARANTEE, Bucket.PENDING, Bucket.AVAILABLE};
+    /** RF-073/BE-12.2: contestação debita a reserva primeiro — é dela o risco que a reserva cobre. */
+    private static final Bucket[] DISPUTE_CASCADE = {Bucket.RESERVE, Bucket.GUARANTEE, Bucket.PENDING, Bucket.AVAILABLE};
 
     private final LedgerRepository repository;
     public LedgerService(LedgerRepository repository) { this.repository = repository; }
@@ -48,6 +50,27 @@ public class LedgerService {
     @Transactional
     public LedgerWriteResult writeCascadeDebit(TransactionType type, LedgerReference reference, String description,
             UUID debitAccountId, long totalDebitCents, Origin origin, List<LedgerEntry> counterEntries) {
+        return writeCascadeDebit(type, reference, description, debitAccountId, totalDebitCents, origin,
+                counterEntries, REFUND_CASCADE);
+    }
+
+    /**
+     * BE-12.2 / RF-073: debita uma conta em cascata RESERVE→GUARANTEE→PENDING→AVAILABLE, e o que
+     * sobrar vira dívida (DEBT). Diferente de {@link #writeCascadeDebit}, a contestação É a razão
+     * de existir da reserva — risco imposto pelo comprador, não devolução escolhida pelo vendedor —
+     * então ela é a primeira fonte, não a última.
+     */
+    @Transactional
+    public LedgerWriteResult writeDisputeCascadeDebit(TransactionType type, LedgerReference reference,
+            String description, UUID debitAccountId, long totalDebitCents, Origin origin,
+            List<LedgerEntry> counterEntries) {
+        return writeCascadeDebit(type, reference, description, debitAccountId, totalDebitCents, origin,
+                counterEntries, DISPUTE_CASCADE);
+    }
+
+    private LedgerWriteResult writeCascadeDebit(TransactionType type, LedgerReference reference, String description,
+            UUID debitAccountId, long totalDebitCents, Origin origin, List<LedgerEntry> counterEntries,
+            Bucket[] cascadeOrder) {
         if (totalDebitCents <= 0) throw new IllegalArgumentException("valor do débito em cascata deve ser positivo");
         Set<UUID> users = new TreeSet<>();
         users.add(debitAccountId);
@@ -58,7 +81,7 @@ public class LedgerService {
 
             List<LedgerEntry> entries = new java.util.ArrayList<>();
             long remaining = totalDebitCents;
-            for (Bucket bucket : REFUND_CASCADE) {
+            for (Bucket bucket : cascadeOrder) {
                 if (remaining <= 0) break;
                 long available = Math.max(0, repository.rawBalance(debitAccountId, bucket));
                 long take = Math.min(available, remaining);

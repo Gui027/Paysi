@@ -84,6 +84,57 @@ class LedgerServiceTest {
         assertThat(repo.rawBalance(USER,Bucket.AVAILABLE)).isEqualTo(60L);
     }
 
+    @Test void disputeCascadeDrainsReserveFirstThenGuaranteePendingAvailableThenDebt() {
+        var repo=new MemoryRepository();
+        repo.balances.put(key(USER,Bucket.RESERVE),20L);
+        repo.balances.put(key(USER,Bucket.GUARANTEE),15L);
+        repo.balances.put(key(USER,Bucket.PENDING),10L);
+        repo.balances.put(key(USER,Bucket.AVAILABLE),5L);
+        var service=new LedgerService(repo);
+
+        var result=service.writeDisputeCascadeDebit(TransactionType.CHARGEBACK,
+                new LedgerReference(ReferenceType.DISPUTE,"dispute-1"),"Contestação",USER,90,Origin.OTHER,
+                List.of(new LedgerEntry(SYSTEM,Bucket.SYSTEM,Direction.CREDIT,90,Origin.OTHER,null)));
+
+        assertThat(result.idempotentReplay()).isFalse();
+        assertThat(repo.rawBalance(USER,Bucket.RESERVE)).isZero();
+        assertThat(repo.rawBalance(USER,Bucket.GUARANTEE)).isZero();
+        assertThat(repo.rawBalance(USER,Bucket.PENDING)).isZero();
+        assertThat(repo.rawBalance(USER,Bucket.AVAILABLE)).isZero();
+        assertThat(repo.rawBalance(USER,Bucket.DEBT)).isEqualTo(-40L);
+    }
+
+    @Test void disputeCascadeTouchesReserveButRefundCascadeStillDoesNot() {
+        var repo=new MemoryRepository();
+        repo.balances.put(key(USER,Bucket.RESERVE),100L);
+        var disputeService=new LedgerService(repo);
+
+        disputeService.writeDisputeCascadeDebit(TransactionType.CHARGEBACK,
+                new LedgerReference(ReferenceType.DISPUTE,"dispute-2"),"Contestação",USER,30,Origin.OTHER,
+                List.of(new LedgerEntry(SYSTEM,Bucket.SYSTEM,Direction.CREDIT,30,Origin.OTHER,null)));
+
+        assertThat(repo.rawBalance(USER,Bucket.RESERVE)).isEqualTo(70L);
+        assertThat(repo.rawBalance(USER,Bucket.DEBT)).isZero();
+    }
+
+    @Test void disputeCascadeReplaysIdempotentlyOnSameNaturalKey() {
+        var repo=new MemoryRepository();
+        repo.balances.put(key(USER,Bucket.RESERVE),100L);
+        var service=new LedgerService(repo);
+        var reference=new LedgerReference(ReferenceType.DISPUTE,"dispute-3");
+        var counter=List.of(new LedgerEntry(SYSTEM,Bucket.SYSTEM,Direction.CREDIT,40,Origin.OTHER,null));
+
+        var first=service.writeDisputeCascadeDebit(TransactionType.CHARGEBACK,reference,"Contestação",USER,40,
+                Origin.OTHER,counter);
+        var replay=service.writeDisputeCascadeDebit(TransactionType.CHARGEBACK,reference,"Contestação",USER,40,
+                Origin.OTHER,counter);
+
+        assertThat(first.idempotentReplay()).isFalse();
+        assertThat(replay.idempotentReplay()).isTrue();
+        assertThat(replay.transactionId()).isEqualTo(first.transactionId());
+        assertThat(repo.rawBalance(USER,Bucket.RESERVE)).isEqualTo(60L);
+    }
+
     private static LedgerCommand credit(String ref,long amount){return new LedgerCommand(TransactionType.SALE,new LedgerReference(ReferenceType.CHARGE,ref),"Venda",List.of(new LedgerEntry(SYSTEM,Bucket.SYSTEM,Direction.DEBIT,amount,Origin.SALE,null),new LedgerEntry(USER,Bucket.GUARANTEE,Direction.CREDIT,amount,Origin.SALE,null)));}
     private static LedgerCommand debit(String ref,long amount){return new LedgerCommand(TransactionType.PAYOUT,new LedgerReference(ReferenceType.PAYOUT,ref),"Saque",List.of(new LedgerEntry(USER,Bucket.AVAILABLE,Direction.DEBIT,amount,Origin.OTHER,null),new LedgerEntry(SYSTEM,Bucket.SYSTEM,Direction.CREDIT,amount,Origin.OTHER,null)));}
     private static String key(UUID account,Bucket bucket){return account+":"+bucket;}
