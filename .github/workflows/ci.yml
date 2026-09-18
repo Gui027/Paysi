@@ -59,3 +59,29 @@ jobs:
       - run: npm run test
       - run: npm run lint
       - run: npm run build
+      - name: Detector de aritmética monetária no cliente
+        run: node scripts/check-aritmetica-monetaria.mjs
+      - name: Guarda de PII/segredos em logs e analytics
+        run: node scripts/check-pii-logs.mjs
+      - name: Orçamento de bundle do checkout (gzip < 180KB)
+        run: node scripts/check-bundle-size.mjs
+      - name: Instalar navegador do Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+      - name: E2E + acessibilidade — web-checkout (Pix, cartão, boleto, teclado, axe)
+        working-directory: web-checkout
+        run: npm run test:e2e
+      - name: E2E + acessibilidade — web-painel (cadastro, produto, saque, afiliação, assinaturas)
+        working-directory: web-painel
+        run: npm run test:e2e
+      - name: Evidência de E2E/a11y/orçamento (artefato do PR)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fe-15-1-evidencias
+          path: |
+            web-checkout/playwright-report
+            web-checkout/test-results
+            web-painel/playwright-report
+            web-painel/test-results
+          if-no-files-found: ignore
+          retention-days: 14
