@@ -23,7 +23,7 @@ export function ConversionTabs() {
   const [slide, setSlide] = useState(0);
 
   return (
-    <section className="tabs-section">
+    <section className="tabs-section" id="como-funciona">
       <div className="site-container">
         <Reveal className="section-head-center">
           <span className="section-eyebrow-pill">Como funciona</span>
@@ -120,9 +120,9 @@ export function ConversionTabs() {
                   <span className="phone-field-label">Endereço</span>
                   <div className="phone-field" />
                 </div>
-                <button className="phone-cta" type="button">
+                <span className="phone-cta" aria-hidden="true">
                   Continuar
-                </button>
+                </span>
               </div>
             </div>
           </Reveal>

@@ -1,3 +1,5 @@
+import { PAINEL_BASE_URL } from "@/lib/urls";
+
 export function Footer() {
   return (
     <footer className="site-footer">
@@ -12,15 +14,15 @@ export function Footer() {
             <ul>
               <li><a href="#recursos">Recursos</a></li>
               <li><a href="#contato">Contato</a></li>
-              <li><a href="https://app.paysi.com.br">Painel</a></li>
+              <li><a href={`${PAINEL_BASE_URL}/entrar`}>Painel</a></li>
               <li><a href="https://checkout.paysi.com.br">Checkout</a></li>
             </ul>
           </div>
           <div className="footer-col">
             <h4>Siga nas redes</h4>
             <ul>
-              <li><a href="#">Instagram</a></li>
-              <li><a href="#">LinkedIn</a></li>
+              <li><span>Instagram — em breve</span></li>
+              <li><span>LinkedIn — em breve</span></li>
             </ul>
           </div>
           <div className="footer-col">

@@ -32,12 +32,12 @@ export function Hero() {
               <a className="btn btn-primaria" href="#contato">
                 Fale com nossa equipe
               </a>
-              <button className="btn-play" type="button">
+              <a className="btn-play" href="#como-funciona">
                 <span className="play-circle">
                   <IconPlay size={16} />
                 </span>
-                Assista ao vídeo
-              </button>
+                Veja como funciona
+              </a>
             </div>
           </motion.div>
 
@@ -82,9 +82,9 @@ export function Hero() {
                       <span className="phone-field-label">Endereço de entrega</span>
                       <div className="phone-field" />
                     </div>
-                    <button className="phone-cta" type="button">
+                    <span className="phone-cta" aria-hidden="true">
                       Continuar
-                    </button>
+                    </span>
                   </div>
                 </div>
 

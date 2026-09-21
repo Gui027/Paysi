@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PAINEL_BASE_URL } from "@/lib/urls";
 import { IconUser } from "./icons";
-
-const PAINEL_BASE_URL = (process.env.NEXT_PUBLIC_PAINEL_BASE_URL ?? "https://painel.paysi.com.br").replace(/\/$/, "");
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
