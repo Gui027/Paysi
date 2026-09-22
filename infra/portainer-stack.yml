@@ -81,12 +81,15 @@ services:
       PAYSI_ASSET_STORAGE_PATH: /var/lib/paysi/assets
       PAYSI_MAIL_FROM: nao-responda@paysi.local
       SESSION_COOKIE_SECURE: "true"
-      PAYSI_PROVIDER: fake
+      PAYSI_PROVIDER: ${PAYSI_PROVIDER:-fake}
       PAYSI_FISCAL: fake
       PAYMENT_FAKE_OUTCOME: APPROVED
       KYC_WEBHOOK_SECRET: ${KYC_WEBHOOK_SECRET}
       PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
       MFA_ENCRYPTION_KEY_BASE64: ${MFA_ENCRYPTION_KEY_BASE64}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_BASE_URL: ${ASAAS_BASE_URL:-https://api-sandbox.asaas.com/v3}
+      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
     volumes:
       - paysi_assets:/var/lib/paysi/assets
     healthcheck:
