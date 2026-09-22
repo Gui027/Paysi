@@ -88,3 +88,7 @@ paysi:
   payment:
     fake-outcome: ${PAYMENT_FAKE_OUTCOME:APPROVED}
     webhook-secret: ${PAYMENT_WEBHOOK_SECRET:dev-payment-webhook-secret}
+  asaas:
+    api-key: ${ASAAS_API_KEY:}
+    base-url: ${ASAAS_BASE_URL:https://api-sandbox.asaas.com/v3}
+    webhook-token: ${ASAAS_WEBHOOK_TOKEN:}

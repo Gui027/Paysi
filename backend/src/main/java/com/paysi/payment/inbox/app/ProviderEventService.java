@@ -21,20 +21,24 @@ public class ProviderEventService {
 
     private final ObjectMapper json;
     private final PaymentEventSignatureVerifier signatures;
+    private final ProviderEventNormalizer normalizer;
     private final ProviderEventRepository repository;
     private final SaleLedgerService saleLedger;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public ProviderEventService(ObjectMapper json, PaymentEventSignatureVerifier signatures,
-                                ProviderEventRepository repository, SaleLedgerService saleLedger) {
-        this(json, signatures, repository, saleLedger, Clock.systemUTC());
+                                ProviderEventNormalizer normalizer, ProviderEventRepository repository,
+                                SaleLedgerService saleLedger) {
+        this(json, signatures, normalizer, repository, saleLedger, Clock.systemUTC());
     }
 
     ProviderEventService(ObjectMapper json, PaymentEventSignatureVerifier signatures,
-                         ProviderEventRepository repository, SaleLedgerService saleLedger, Clock clock) {
+                         ProviderEventNormalizer normalizer, ProviderEventRepository repository,
+                         SaleLedgerService saleLedger, Clock clock) {
         this.json = json;
         this.signatures = signatures;
+        this.normalizer = normalizer;
         this.repository = repository;
         this.saleLedger = saleLedger;
         this.clock = clock;
@@ -42,13 +46,17 @@ public class ProviderEventService {
 
     @Transactional
     public ProviderEventResult handle(String provider, String rawPayload, String signature) {
-        var event = parse(rawPayload);
+        var event = parse(provider, rawPayload);
         boolean valid = signatures.valid(provider, rawPayload, signature);
-        if (!repository.receive(provider, event, rawPayload, valid)) {
+        // Guarda o payload já traduzido (não os bytes originais do provedor): o retry em
+        // JdbcProviderEventRepository.lockFailed relê essa coluna direto como ProviderEventPayload,
+        // e só o formato canônico bate com isso — ver DispatchingProviderEventNormalizer.
+        String canonicalPayload = serialize(event);
+        if (!repository.receive(provider, event, canonicalPayload, valid)) {
             return new ProviderEventResult("DUPLICATE", true);
         }
         if (!valid) return new ProviderEventResult("IGNORED", false);
-        return process(new ProviderEventRepository.StoredProviderEvent(provider, event, rawPayload, 0));
+        return process(new ProviderEventRepository.StoredProviderEvent(provider, event, canonicalPayload, 0));
     }
 
     @Transactional
@@ -81,10 +89,18 @@ public class ProviderEventService {
         }
     }
 
-    private ProviderEventPayload parse(String rawPayload) {
+    private ProviderEventPayload parse(String provider, String rawPayload) {
         try {
-            return json.readValue(rawPayload, ProviderEventPayload.class);
+            return normalizer.normalize(provider, rawPayload);
         } catch (JsonProcessingException | IllegalArgumentException exception) {
+            throw new ValidationException("PROVIDER_EVENT_INVALID", "Evento do provedor inválido", "payload");
+        }
+    }
+
+    private String serialize(ProviderEventPayload event) {
+        try {
+            return json.writeValueAsString(event);
+        } catch (JsonProcessingException exception) {
             throw new ValidationException("PROVIDER_EVENT_INVALID", "Evento do provedor inválido", "payload");
         }
     }

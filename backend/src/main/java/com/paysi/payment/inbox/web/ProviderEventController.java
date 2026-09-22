@@ -18,7 +18,10 @@ public class ProviderEventController {
     public ResponseEntity<ProviderEventResult> receive(@PathVariable String provider,
                                                         @RequestHeader(value = "X-Provider-Signature",
                                                                 required = false) String signature,
+                                                        @RequestHeader(value = "asaas-access-token",
+                                                                required = false) String asaasAccessToken,
                                                         @RequestBody String payload) {
-        return ResponseEntity.accepted().body(service.handle(provider, payload, signature));
+        String token = asaasAccessToken != null ? asaasAccessToken : signature;
+        return ResponseEntity.accepted().body(service.handle(provider, payload, token));
     }
 }

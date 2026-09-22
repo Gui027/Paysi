@@ -2,6 +2,7 @@ package com.paysi.payment.inbox.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paysi.ledger.app.SaleLedgerService;
+import com.paysi.payment.inbox.adapter.DispatchingProviderEventNormalizer;
 import com.paysi.payment.inbox.domain.ProviderEventPayload;
 import com.paysi.payment.inbox.port.*;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ class ProviderEventServiceTest {
         var signatures = mock(PaymentEventSignatureVerifier.class);
         when(signatures.valid("fake", RAW, "signature")).thenReturn(true);
         var first = new AtomicBoolean(true);
-        when(repository.receive(eq("fake"), any(), eq(RAW), eq(true)))
+        when(repository.receive(eq("fake"), any(), any(), eq(true)))
                 .thenAnswer(call -> first.compareAndSet(true, false));
         when(repository.applyEffect(any())).thenReturn(true);
         var saleLedger = mock(SaleLedgerService.class);
@@ -63,11 +64,11 @@ class ProviderEventServiceTest {
         var repository = mock(ProviderEventRepository.class);
         var signatures = mock(PaymentEventSignatureVerifier.class);
         when(signatures.valid(any(), any(), any())).thenReturn(false);
-        when(repository.receive(eq("fake"), any(), eq(RAW), eq(false))).thenReturn(true);
+        when(repository.receive(eq("fake"), any(), any(), eq(false))).thenReturn(true);
 
         assertThat(service(signatures, repository, mock(SaleLedgerService.class)).handle("fake", RAW, "invalid").status())
                 .isEqualTo("IGNORED");
-        verify(repository).receive(eq("fake"), any(), eq(RAW), eq(false));
+        verify(repository).receive(eq("fake"), any(), any(), eq(false));
         verify(repository, never()).applyEffect(any());
     }
 
@@ -93,7 +94,8 @@ class ProviderEventServiceTest {
 
     private static ProviderEventService service(PaymentEventSignatureVerifier signatures,
                                                  ProviderEventRepository repository, SaleLedgerService saleLedger) {
-        return new ProviderEventService(new ObjectMapper().findAndRegisterModules(), signatures, repository,
-                saleLedger, Clock.fixed(NOW, ZoneOffset.UTC));
+        var json = new ObjectMapper().findAndRegisterModules();
+        return new ProviderEventService(json, signatures, new DispatchingProviderEventNormalizer(json),
+                repository, saleLedger, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 }
