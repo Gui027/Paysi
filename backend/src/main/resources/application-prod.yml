@@ -23,4 +23,4 @@ paysi:
   asaas:
     api-key: ${ASAAS_API_KEY:}
     base-url: ${ASAAS_BASE_URL:https://api.asaas.com/v3}
-    webhook-token: ${ASAAS_WEBHOOK_TOKEN}
+    webhook-token: ${ASAAS_WEBHOOK_TOKEN:}
