@@ -20,7 +20,9 @@ export class ApiRequestError extends Error {
   }
 }
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? "http://localhost:8080").replace(/\/+$/, "");
+// "||" e não "??": um VITE_API_URL definido mas vazio (build arg ausente vira string vazia,
+// não undefined) precisa cair no padrão também — "??" não trata string vazia como ausente.
+const API_BASE_URL = (import.meta.env?.VITE_API_URL || "http://localhost:8080").replace(/\/+$/, "");
 
 export function fieldErrors(problem: ApiProblem): Record<string, string> {
   const entries = problem.fieldErrors ?? (problem.field && problem.message
