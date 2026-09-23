@@ -4,6 +4,7 @@ import com.paysi.identity.kyc.domain.KycProcess;
 import com.paysi.identity.kyc.domain.KycRequirement;
 import com.paysi.identity.kyc.port.KycProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Duration;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
+@ConditionalOnProperty(name = "paysi.kyc.provider", havingValue = "configured", matchIfMissing = true)
 public class ConfiguredKycProvider implements KycProvider {
     private final String baseUrl;
     private final Clock clock = Clock.systemUTC();

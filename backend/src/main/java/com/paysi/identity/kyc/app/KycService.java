@@ -40,7 +40,10 @@ public class KycService {
         if (account.kycStatus() == KycStatus.APPROVED) return current(accountId);
         var process = store.findProcess(accountId).filter(existing -> existing.activeAt(clock.instant()))
                 .orElseGet(() -> { var created = provider.createProcess(accountId); store.saveStarted(accountId, created); return created; });
-        return new KycView(accountId, KycStatus.SUBMITTED, process.providerUrl(), process.requirements());
+        // Com um provedor que aprova na hora (ex.: FakeKycProvider em staging), o status já pode
+        // ter virado APPROVED durante o createProcess acima; relê em vez de assumir SUBMITTED.
+        var refreshed = accounts.findById(accountId).orElseThrow(() -> unavailable());
+        return new KycView(accountId, refreshed.kycStatus(), process.providerUrl(), process.requirements());
     }
 
     private static ForbiddenException unavailable() { return new ForbiddenException("ACCOUNT_UNAVAILABLE", "Conta indisponível"); }

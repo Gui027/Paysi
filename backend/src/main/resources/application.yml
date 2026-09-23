@@ -77,6 +77,7 @@ paysi:
   session:
     cookie-secure: ${SESSION_COOKIE_SECURE:false}
   kyc:
+    provider: ${KYC_PROVIDER:configured}
     provider-base-url: ${KYC_PROVIDER_BASE_URL:https://kyc.local/process}
     webhook-secret: ${KYC_WEBHOOK_SECRET:}
   mfa:
