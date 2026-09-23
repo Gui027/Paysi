@@ -116,7 +116,7 @@ services:
 
   painel:
     build:
-      context: https://github.com/Gui027/Paysi.git#main
+      context: https://github.com/Gui027/Paysi.git#2aa2f9528dd65118eccf62acf68b9ae3b405b846
       dockerfile: web-painel/Dockerfile
     image: paysi-painel:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
