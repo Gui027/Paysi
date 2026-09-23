@@ -140,6 +140,8 @@ services:
     build:
       context: https://github.com/Gui027/Paysi.git#main
       dockerfile: web-checkout/Dockerfile
+      args:
+        VITE_API_URL: https://${PAYSI_API_DOMAIN}
     image: paysi-checkout:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
     healthcheck:

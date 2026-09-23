@@ -8,6 +8,11 @@ RUN npm ci
 
 COPY web-checkout web-checkout
 COPY shared shared
+# Vite embute VITE_API_URL no bundle em tempo de build (é um app estático servido pelo
+# nginx abaixo, sem servidor Node em runtime) — por isso precisa vir como build arg, não
+# como variável de ambiente do container.
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build --workspace web-checkout
 
 FROM nginx:1.27-alpine
