@@ -4,8 +4,13 @@ import { mockDashboardVazio } from "./fixtures";
 
 test.describe("cadastro (criar conta)", () => {
   test("cria conta com sucesso e navega para o início", async ({ page }) => {
+    let loginPayload: Record<string, string> | null = null;
     await page.route("**/api/v1/accounts", async (route) => {
       await route.fulfill({ json: { accountId: "acc_new_1", activeMode: "SELLER" } });
+    });
+    await page.route("**/api/v1/sessions", async (route) => {
+      loginPayload = route.request().postDataJSON() as Record<string, string>;
+      await route.fulfill({ json: { accountId: "acc_new_1", activeMode: "SELLER", expiresAt: "2026-09-18T00:00:00Z" } });
     });
     // O redirecionamento pós-cadastro chama SessionGuard -> currentSession.
     await page.route("**/api/v1/sessions/current", async (route) => {
@@ -24,6 +29,11 @@ test.describe("cadastro (criar conta)", () => {
     await page.getByRole("button", { name: /criar conta/i }).click();
 
     await expect(page).toHaveURL(/\/inicio/);
+    expect(loginPayload).toEqual({
+      email: "maria.vendedora@example.com",
+      password: "SenhaForte123",
+      initialMode: "SELLER",
+    });
   });
 
   test("bloqueia envio com senhas diferentes e sem aceitar os termos", async ({ page }) => {
@@ -70,6 +80,9 @@ test.describe("cadastro (criar conta)", () => {
   test("é possível preencher e enviar o formulário só com teclado", async ({ page }) => {
     await page.route("**/api/v1/accounts", async (route) => {
       await route.fulfill({ json: { accountId: "acc_new_2", activeMode: "SELLER" } });
+    });
+    await page.route("**/api/v1/sessions", async (route) => {
+      await route.fulfill({ json: { accountId: "acc_new_2", activeMode: "SELLER", expiresAt: "2026-09-18T00:00:00Z" } });
     });
     await page.route("**/api/v1/sessions/current", async (route) => {
       await route.fulfill({ json: { accountId: "acc_new_2", activeMode: "SELLER", expiresAt: "2026-09-18T00:00:00Z" } });

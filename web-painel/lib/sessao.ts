@@ -6,10 +6,10 @@ export type SessionCreated = {
   expiresAt: string;
 };
 
-export function login(email: string, password: string) {
+export function login(email: string, password: string, initialMode?: SessionCreated["activeMode"]) {
   return apiRequest<SessionCreated>("/v1/sessions", {
     method: "POST",
-    body: JSON.stringify({ email: email.trim(), password }),
+    body: JSON.stringify({ email: email.trim(), password, ...(initialMode ? { initialMode } : {}) }),
   });
 }
 

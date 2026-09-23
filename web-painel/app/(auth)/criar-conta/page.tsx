@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { AuthBrand } from "../../../components/AuthBrand";
 import { ApiRequestError, apiRequest } from "../../../lib/api";
+import { login } from "../../../lib/sessao";
 
 type PersonType = "PF" | "PJ";
 type InitialMode = "SELLER" | "AFFILIATE";
@@ -76,11 +77,12 @@ export default function CriarContaPage() {
     setFormError("");
 
     try {
+      const email = String(form.get("email") ?? "").trim();
       const created = await apiRequest<AccountCreated>("/v1/accounts", {
         method: "POST",
         body: JSON.stringify({
           fullName: String(form.get("fullName") ?? "").trim(),
-          email: String(form.get("email") ?? "").trim(),
+          email,
           password,
           personType,
           taxId: onlyDigits(taxId),
@@ -88,7 +90,9 @@ export default function CriarContaPage() {
           termsHash: await termsHash(),
         }),
       });
-      router.replace(`/inicio?modo=${created.activeMode.toLowerCase()}`);
+      const session = await login(email, password, created.activeMode);
+      router.replace(`/inicio?modo=${session.activeMode.toLowerCase()}`);
+      router.refresh();
     } catch (error) {
       if (error instanceof ApiRequestError) {
         const apiErrors: FieldErrors = {};
