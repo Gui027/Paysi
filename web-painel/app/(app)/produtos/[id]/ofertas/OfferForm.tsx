@@ -158,7 +158,14 @@ export function OfferForm({ productId, offerId }: { productId: string; offerId?:
       if (!result.published && result.actionUrl) {
         const needsKyc = result.requiredAction === "COMPLETE_KYC";
         setGeneralError(needsKyc ? "Conclua a verificação de identidade para publicar." : "Configure o perfil fiscal para publicar.");
-        setPublicationAction({ label: needsKyc ? "Continuar verificação" : "Configurar perfil fiscal", url: result.actionUrl });
+        // result.actionUrl aponta para o destino externo do provedor (KYC) ou para o recurso
+        // de API (fiscal) — nenhum dos dois é uma página navegável no painel. Levamos o
+        // vendedor pra tela interna certa e voltamos pra cá (?next=) quando concluir.
+        const nextUrl = `/produtos/${product?.id}/ofertas/${offer.id}`;
+        const internalPath = needsKyc
+          ? `/verificacao?next=${encodeURIComponent(nextUrl)}`
+          : `/perfil-fiscal?next=${encodeURIComponent(nextUrl)}`;
+        setPublicationAction({ label: needsKyc ? "Continuar verificação" : "Configurar perfil fiscal", url: internalPath });
       }
       else setSaved(true);
     } catch (error) {
@@ -206,7 +213,7 @@ export function OfferForm({ productId, offerId }: { productId: string; offerId?:
     <header className="content-header"><div><h1>{offerId ? "Editar oferta" : "Nova oferta"}</h1><p>Configure as condições comerciais sem calcular taxas no navegador.</p></div></header>
     <form className="ui-card offer-form" onSubmit={event => void save(event)} noValidate>
       {generalError && <Toast tone="danger">{generalError}</Toast>}
-      {publicationAction && <a className="ui-button ui-button-secondary publication-action" href={publicationAction.url}>{publicationAction.label}</a>}
+      {publicationAction && <Link className="ui-button ui-button-secondary publication-action" href={publicationAction.url}>{publicationAction.label}</Link>}
       {saved && !generalError && <Toast tone="success">Rascunho salvo.</Toast>}
       <section aria-labelledby="commercial-title"><h2 id="commercial-title">Condições comerciais</h2><div className="offer-form-grid">
         <Campo label="Preço" value={priceText} inputMode="decimal" placeholder="20,00" error={errors.price} onChange={event => { setPriceText(event.target.value); setSaved(false); }} required />
