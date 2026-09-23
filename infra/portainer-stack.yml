@@ -50,7 +50,11 @@ services:
 
   backend:
     build:
-      context: https://github.com/Gui027/Paysi.git#main
+      # Fixado no commit (em vez de #main) para contornar cache de build do
+      # Docker que estava reaproveitando um checkout antigo do git como
+      # contexto. Depois de confirmar que o deploy pegou este commit, pode
+      # voltar para #main.
+      context: https://github.com/Gui027/Paysi.git#56bad822d55c763baf7aa19963acafdd57f97a76
       dockerfile: backend/Dockerfile
     image: paysi-backend:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
