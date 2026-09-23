@@ -65,6 +65,8 @@ springdoc:
 paysi:
   provider: ${PAYSI_PROVIDER:fake}
   web-base-url: ${PAYSI_WEB_BASE_URL:http://localhost:3000}
+  security:
+    allowed-origins: ${PAYSI_ALLOWED_ORIGINS:http://localhost:5173}
   asset:
     storage-path: ${PAYSI_ASSET_STORAGE_PATH:./data/assets}
     public-base-url: ${PAYSI_PUBLIC_API_URL:http://localhost:8080}

@@ -11,6 +11,8 @@ logging:
 
 paysi:
   provider: ${PAYSI_PROVIDER}
+  security:
+    allowed-origins: ${PAYSI_ALLOWED_ORIGINS:http://localhost:5173}
   kyc:
     provider: ${KYC_PROVIDER:configured}
     webhook-secret: ${KYC_WEBHOOK_SECRET}
