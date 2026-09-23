@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.web.client.RestTemplateAutoConfigu
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AsaasConfigurationTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(RestTemplateAutoConfiguration.class, JacksonAutoConfiguration.class))
-            .withUserConfiguration(AnotherRestTemplateBean.class, AsaasConfiguration.class, AsaasClient.class)
+            .withUserConfiguration(AnotherRestTemplateBean.class, UnqualifiedRestTemplateConsumer.class,
+                    AsaasConfiguration.class, AsaasClient.class)
             .withPropertyValues("paysi.provider=asaas", "paysi.asaas.api-key=test-key",
                     "paysi.asaas.base-url=https://api-sandbox.asaas.com/v3");
 
@@ -31,6 +33,17 @@ class AsaasConfigurationTest {
             assertThat(context).hasNotFailed();
             assertThat(context.getBeansOfType(RestTemplate.class)).hasSize(2);
             assertThat(context.getBean(AsaasClient.class)).isNotNull();
+        });
+    }
+
+    @Test
+    void beanThatInjectsPlainRestTemplateStillResolvesUnambiguously() {
+        // Reproduz o bug real: SlackAlertChannel (e qualquer outro consumidor sem @Qualifier)
+        // quebrava a subida inteira quando paysi.provider=asaas, porque dois RestTemplate
+        // existiam sem nenhum marcado como @Primary.
+        runner.run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(UnqualifiedRestTemplateConsumer.class)).isNotNull();
         });
     }
 
@@ -47,8 +60,14 @@ class AsaasConfigurationTest {
     @Configuration
     static class AnotherRestTemplateBean {
         @Bean
+        @Primary
         RestTemplate restTemplate() {
             return new RestTemplate();
+        }
+    }
+
+    static class UnqualifiedRestTemplateConsumer {
+        UnqualifiedRestTemplateConsumer(RestTemplate http) {
         }
     }
 }
