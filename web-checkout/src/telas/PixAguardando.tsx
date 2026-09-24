@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { qrCodeDataUrl } from "../lib/qrPix";
 import { usePollingStatus } from "../lib/usePollingStatus";
 import { statusFinalFalhou, statusFinalPago } from "../lib/statusCobranca";
 import { Aprovado } from "./Aprovado";
@@ -25,11 +26,7 @@ export function PixAguardando({ chargeId, qrCode, expiresAt }: {
     <div className="success-panel" role="status" aria-live="polite">
       <h2>Aguardando pagamento do Pix</h2>
       <p>Abra o app do seu banco, escaneie o QR code ou copie o código abaixo.</p>
-      <img
-        alt="QR code do Pix"
-        aria-hidden={false}
-        src={`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><rect width="180" height="180" fill="#fff"/><text x="50%" y="50%" text-anchor="middle" font-size="10">${qrCode}</text></svg>`)}`}
-      />
+      <img alt="QR code do Pix" width={220} height={220} src={qrCodeDataUrl(qrCode)} style={{ imageRendering: "pixelated" }} />
       <textarea readOnly aria-label="Código Pix copia e cola" value={qrCode} rows={3} />
       <button type="button" className="pay-button" onClick={() => void copiar()}>
         {copiado ? "Copiado!" : "Copiar código"}
