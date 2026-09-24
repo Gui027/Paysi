@@ -99,10 +99,8 @@ public class CreateOrderService {
             throw new ValidationException("TERMS_NOT_ACCEPTED",
                     "É necessário aceitar os termos e a política de reembolso", "termsHash");
         }
-        if (command.method() != null && requiresCardToken(command)) {
-            throw new ValidationException("CARD_TOKEN_REQUIRED",
-                    "Informe o token do cartão gerado pelo provedor", "cardToken");
-        }
+        // Sem exigir cardToken aqui: o token do cartão nasce depois do pedido (POST
+        // /v1/orders/{id}/card-token, que precisa do comprador do pedido) e é exigido na cobrança.
 
         Buyer buyer = buyers.insertOrRead(newBuyer(offer, command), clock.instant());
         AffiliationClickLookup.Attribution attribution = attribution(offer, command);
@@ -167,11 +165,6 @@ public class CreateOrderService {
         } catch (JsonProcessingException error) {
             throw new IllegalStateException("Não foi possível gravar o retrato do comprador", error);
         }
-    }
-
-    private static boolean requiresCardToken(CreateOrderCommand command) {
-        return command.method() == com.paysi.catalog.offer.domain.OfferPaymentMethod.CARD
-                && (command.cardToken() == null || command.cardToken().isBlank());
     }
 
     private static ConflictException reused() {

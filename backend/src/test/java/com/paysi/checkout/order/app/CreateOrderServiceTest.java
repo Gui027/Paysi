@@ -213,17 +213,6 @@ class CreateOrderServiceTest {
     }
 
     @Test
-    void cartaoSemTokenEhRecusado() {
-        CreateOrderCommand semToken = new CreateOrderCommand("Ana", "ana@example.com",
-                PersonType.PF, CPF, null, null, null, OfferPaymentMethod.CARD, 1, null, null, null,
-                "hash-dos-termos");
-
-        assertThatThrownBy(() -> service.create(SLUG, KEY, semToken))
-                .isInstanceOfSatisfying(ValidationException.class,
-                        error -> assertThat(error.code()).isEqualTo("CARD_TOKEN_REQUIRED"));
-    }
-
-    @Test
     void compradorPjExigeRazaoSocialEEndereco() {
         CreateOrderCommand pjIncompleto = command(PersonType.PJ, CNPJ, null, null);
 
