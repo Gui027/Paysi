@@ -11,7 +11,8 @@ import { calcularTermosHash } from "../lib/termos";
 import { obterChaveDeIdempotencia } from "../lib/idempotencia";
 import { formatarCentavos } from "../lib/formato";
 import { SimulacaoCheckout, simularCheckout } from "../lib/simulacao";
-import { CobrancaIniciada, cobrancaAprovada, cobrancaRecusada, confirmarTresDs, exigeDesafioTresDs, iniciarCobranca, obterChaveDeDispositivo } from "../lib/cobranca";
+import { CobrancaIniciada, cobrancaAprovada, cobrancaRecusada, confirmarTresDs, exigeDesafioTresDs, iniciarCobranca, obterChaveDeDispositivo, tokenizarCartao } from "../lib/cobranca";
+import { DadosCartao } from "../lib/cartao";
 import { Aprovado } from "./Aprovado";
 import { Recusado } from "./Recusado";
 import { PixAguardando } from "./PixAguardando";
@@ -36,7 +37,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
   const [submitting, setSubmitting] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [cardToken, setCardToken] = useState<string | null>(null);
+  const [dadosCartao, setDadosCartao] = useState<DadosCartao | null>(null);
   const [cobranca, setCobranca] = useState<CobrancaIniciada | null>(null);
   const [confirmandoTresDs, setConfirmandoTresDs] = useState(false);
   const termsHashRef = useRef<string | null>(null);
@@ -104,7 +105,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
     }
     const hasTermsError = !termsAccepted;
     const hasCouponError = couponVisible && Boolean(coupon.trim()) && !simulacao;
-    const hasCardError = metodo === "cartao" && !cardToken;
+    const hasCardError = metodo === "cartao" && !dadosCartao;
     setErrors(nextErrors);
     setTermsError(hasTermsError ? "É preciso aceitar os termos para continuar." : null);
     setCouponError(hasCouponError ? "Valide o cupom antes de continuar." : null);
@@ -127,8 +128,13 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
       };
       const pedido = await criarPedido(slug, payload, obterChaveDeIdempotencia(`${slug}:${JSON.stringify(payload)}`));
 
+      // O cartão só sai do navegador agora, com o pedido já criado: o backend troca por um token
+      // do provedor (vinculado ao comprador do pedido) e a cobrança usa só o token.
+      const cardToken = metodo === "cartao" && dadosCartao
+        ? (await tokenizarCartao(pedido.orderId, dadosCartao)).cardToken
+        : null;
       const resultado = await iniciarCobranca(pedido.orderId, {
-        cardToken: metodo === "cartao" ? cardToken : null,
+        cardToken,
         deviceKey: obterChaveDeDispositivo(),
         termsHash,
         termsAcceptedAt: new Date().toISOString(),
@@ -163,7 +169,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
   function tentarNovamenteComPix() {
     setSubmitted(false);
     setCobranca(null);
-    setCardToken(null);
+    setDadosCartao(null);
     setMetodo("pix");
     setGeneralError(null);
   }
@@ -247,7 +253,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
       )}
 
       <div className="section-title"><span className="step">3</span><h2>Pagamento</h2></div>
-      <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); setCardToken(null); }} disponiveis={disponiveis} />
+      <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); setDadosCartao(null); }} disponiveis={disponiveis} />
       {metodo === "cartao" && (
         <>
           {contract.installments > 1 && (
@@ -259,7 +265,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
               </select>
             </label>
           )}
-          <CampoDeCartao onToken={setCardToken} />
+          <CampoDeCartao onDados={setDadosCartao} />
         </>
       )}
 

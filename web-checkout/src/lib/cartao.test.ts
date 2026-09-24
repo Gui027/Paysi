@@ -4,7 +4,11 @@ import {
   cvvValido,
   formatarNumeroCartao,
   formatarValidade,
-  gerarTokenCartao,
+  cartaoCompleto,
+  cepValido,
+  formatarCep,
+  montarDadosCartao,
+  telefoneValido,
   numeroCartaoValido,
   validadeValida,
 } from "./cartao.js";
@@ -40,7 +44,43 @@ test("aceita CVV de 3 ou 4 dígitos, recusa o resto", () => {
   assert.equal(cvvValido("12"), false);
 });
 
-test("gera token opaco sem nenhum dígito do cartão", () => {
-  const token = gerarTokenCartao();
-  assert.match(token, /^tok_[0-9a-f-]{36}$/);
+const digitado = {
+  nome: "  Ana Souza ",
+  numero: "4111 1111 1111 1111",
+  validade: "12/30",
+  cvv: "123",
+  cep: "01310-100",
+  numeroEndereco: "10",
+  telefone: "(11) 99999-8888",
+};
+
+test("valida e formata CEP e telefone", () => {
+  assert.equal(formatarCep("01310100"), "01310-100");
+  assert.equal(cepValido("01310-100"), true);
+  assert.equal(cepValido("0131"), false);
+  assert.equal(telefoneValido("(11) 99999-8888"), true);
+  assert.equal(telefoneValido("1133334444"), true);
+  assert.equal(telefoneValido("123"), false);
+});
+
+test("cartão só está completo com endereço e telefone do titular (exigidos pelo provedor)", () => {
+  const agora = new Date(2026, 5, 15);
+  assert.equal(cartaoCompleto(digitado, agora), true);
+  assert.equal(cartaoCompleto({ ...digitado, cep: "" }, agora), false);
+  assert.equal(cartaoCompleto({ ...digitado, telefone: "12" }, agora), false);
+  assert.equal(cartaoCompleto({ ...digitado, numeroEndereco: " " }, agora), false);
+});
+
+test("monta os dados do cartão só com dígitos e validade em mês e ano de 4 dígitos", () => {
+  assert.deepEqual(montarDadosCartao(digitado), {
+    holderName: "Ana Souza",
+    number: "4111111111111111",
+    expiryMonth: "12",
+    expiryYear: "2030",
+    ccv: "123",
+    postalCode: "01310100",
+    addressNumber: "10",
+    phone: "11999998888",
+  });
+  assert.equal(montarDadosCartao({ ...digitado, validade: "03/29" }).expiryMonth, "3");
 });

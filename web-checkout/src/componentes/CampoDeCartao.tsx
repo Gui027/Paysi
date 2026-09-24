@@ -1,59 +1,68 @@
 import { useState } from "react";
 import { Campo } from "./Campo";
 import {
+  CartaoDigitado,
+  cartaoCompleto,
+  cepValido,
   cvvValido,
+  DadosCartao,
+  formatarCep,
   formatarNumeroCartao,
   formatarValidade,
-  gerarTokenCartao,
+  montarDadosCartao,
   numeroCartaoValido,
+  telefoneValido,
   validadeValida,
 } from "../lib/cartao";
 
+const vazio: CartaoDigitado = { nome: "", numero: "", validade: "", cvv: "", cep: "", numeroEndereco: "", telefone: "" };
+
 /**
- * Sem SDK real do provedor de pagamento neste ambiente: estes campos simulam o que
- * o iframe/JS do provedor faria — número e CVV nunca saem deste componente. Só o
- * token opaco resultante (onToken) chega ao restante do formulário e ao backend.
+ * Coleta os dados do cartão e do titular. Ficam só em memória: quando o formulário está
+ * completo entregam {@link DadosCartao} ao pai, que os envia ao backend para tokenizar
+ * (depois do pedido criado). Nada disso é guardado no navegador nem persistido pelo Paysi.
  */
-export function CampoDeCartao({ onToken }: { onToken: (token: string | null) => void }) {
-  const [numero, setNumero] = useState("");
-  const [validade, setValidade] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [nome, setNome] = useState("");
+export function CampoDeCartao({ onDados }: { onDados: (dados: DadosCartao | null) => void }) {
+  const [c, setC] = useState<CartaoDigitado>(vazio);
   const [tocado, setTocado] = useState(false);
 
-  function atualizar(campo: "numero" | "validade" | "cvv" | "nome", valor: string) {
-    const proximos = {
-      numero: campo === "numero" ? formatarNumeroCartao(valor) : numero,
-      validade: campo === "validade" ? formatarValidade(valor) : validade,
-      cvv: campo === "cvv" ? valor.replace(/\D/g, "").slice(0, 4) : cvv,
-      nome: campo === "nome" ? valor : nome,
-    };
-    setNumero(proximos.numero);
-    setValidade(proximos.validade);
-    setCvv(proximos.cvv);
-    setNome(proximos.nome);
+  function atualizar(campo: keyof CartaoDigitado, valor: string) {
+    const proximo: CartaoDigitado = { ...c, [campo]:
+      campo === "numero" ? formatarNumeroCartao(valor)
+        : campo === "validade" ? formatarValidade(valor)
+          : campo === "cvv" ? valor.replace(/\D/g, "").slice(0, 4)
+            : campo === "cep" ? formatarCep(valor)
+              : campo === "telefone" ? valor.replace(/[^\d()\s-]/g, "").slice(0, 15)
+                : valor };
+    setC(proximo);
     setTocado(true);
-
-    const completo = numeroCartaoValido(proximos.numero) && validadeValida(proximos.validade)
-      && cvvValido(proximos.cvv) && proximos.nome.trim().length > 1;
-    onToken(completo ? gerarTokenCartao() : null);
+    onDados(cartaoCompleto(proximo) ? montarDadosCartao(proximo) : null);
   }
 
-  const numeroErro = tocado && numero && !numeroCartaoValido(numero) ? "Número de cartão inválido." : undefined;
-  const validadeErro = tocado && validade && !validadeValida(validade) ? "Validade inválida ou vencida." : undefined;
-  const cvvErro = tocado && cvv && !cvvValido(cvv) ? "CVV inválido." : undefined;
+  const erro = (mostrar: boolean, mensagem: string) => (tocado && mostrar ? mensagem : undefined);
 
   return (
     <div className="provider-frame" role="group" aria-label="Dados do cartão">
-      <Campo id="cartao-nome" label="Nome impresso no cartão" full value={nome}
+      <Campo id="cartao-nome" label="Nome impresso no cartão" full value={c.nome}
         onChange={event => atualizar("nome", event.target.value)} autoComplete="cc-name" />
-      <Campo id="cartao-numero" label="Número do cartão" full inputMode="numeric" value={numero}
-        onChange={event => atualizar("numero", event.target.value)} error={numeroErro} autoComplete="cc-number" />
-      <Campo id="cartao-validade" label="Validade (MM/AA)" inputMode="numeric" value={validade}
-        onChange={event => atualizar("validade", event.target.value)} error={validadeErro} autoComplete="cc-exp" />
-      <Campo id="cartao-cvv" label="CVV" inputMode="numeric" value={cvv} type="password"
-        onChange={event => atualizar("cvv", event.target.value)} error={cvvErro} autoComplete="cc-csc" />
-      <small>A Paysi nunca recebe o número nem o CVV do seu cartão.</small>
+      <Campo id="cartao-numero" label="Número do cartão" full inputMode="numeric" value={c.numero}
+        onChange={event => atualizar("numero", event.target.value)} autoComplete="cc-number"
+        error={erro(Boolean(c.numero) && !numeroCartaoValido(c.numero), "Número de cartão inválido.")} />
+      <Campo id="cartao-validade" label="Validade (MM/AA)" inputMode="numeric" value={c.validade}
+        onChange={event => atualizar("validade", event.target.value)} autoComplete="cc-exp"
+        error={erro(Boolean(c.validade) && !validadeValida(c.validade), "Validade inválida ou vencida.")} />
+      <Campo id="cartao-cvv" label="CVV" inputMode="numeric" value={c.cvv} type="password"
+        onChange={event => atualizar("cvv", event.target.value)} autoComplete="cc-csc"
+        error={erro(Boolean(c.cvv) && !cvvValido(c.cvv), "CVV inválido.")} />
+      <Campo id="cartao-cep" label="CEP do titular" inputMode="numeric" value={c.cep}
+        onChange={event => atualizar("cep", event.target.value)} autoComplete="postal-code"
+        error={erro(Boolean(c.cep) && !cepValido(c.cep), "CEP inválido.")} />
+      <Campo id="cartao-endereco-numero" label="Número do endereço" value={c.numeroEndereco}
+        onChange={event => atualizar("numeroEndereco", event.target.value.slice(0, 10))} autoComplete="off" />
+      <Campo id="cartao-telefone" label="Telefone com DDD" full inputMode="tel" value={c.telefone}
+        onChange={event => atualizar("telefone", event.target.value)} autoComplete="tel"
+        error={erro(Boolean(c.telefone) && !telefoneValido(c.telefone), "Telefone inválido.")} />
+      <small>Seus dados de cartão viajam por conexão segura, são usados só para autorizar este pagamento e não ficam guardados na Paysi.</small>
     </div>
   );
 }

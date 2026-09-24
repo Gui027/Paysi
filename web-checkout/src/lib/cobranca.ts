@@ -1,4 +1,5 @@
 import { apiRequest } from "./api.js";
+import type { DadosCartao } from "./cartao.js";
 
 export type StatusCobranca = "approved" | "declined" | "pending" | "PENDING" | "PAID" | "FAILED";
 
@@ -31,6 +32,16 @@ export function iniciarCobranca(orderId: string, input: IniciarCobrancaInput) {
   return apiRequest<CobrancaIniciada>(`/v1/orders/${encodeURIComponent(orderId)}/charge`, {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export type CartaoTokenizado = { cardToken: string; brand: string | null; last4: string | null };
+
+/** Envia o cartão ao backend, que troca por um token do provedor na hora e não guarda nada. */
+export function tokenizarCartao(orderId: string, dados: DadosCartao) {
+  return apiRequest<CartaoTokenizado>(`/v1/orders/${encodeURIComponent(orderId)}/card-token`, {
+    method: "POST",
+    body: JSON.stringify(dados),
   });
 }
 
