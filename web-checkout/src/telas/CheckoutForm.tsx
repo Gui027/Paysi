@@ -118,13 +118,14 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
     try {
       const termsHash = await calcularTermosHash(contract.legalTexts.termsUrl);
       termsHashRef.current = termsHash;
-      const pedido = await criarPedido(slug, {
+      const payload = {
         buyer: montarComprador(values, personType, campos),
         method: paymentMethod,
         installments: selectedInstallments,
         coupon: couponVisible && coupon.trim() ? coupon.trim() : null,
         termsHash,
-      }, obterChaveDeIdempotencia());
+      };
+      const pedido = await criarPedido(slug, payload, obterChaveDeIdempotencia(`${slug}:${JSON.stringify(payload)}`));
 
       const resultado = await iniciarCobranca(pedido.orderId, {
         cardToken: metodo === "cartao" ? cardToken : null,
