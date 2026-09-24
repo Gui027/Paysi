@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -73,6 +74,10 @@ class AsaasClient {
                     serverError, error);
         } catch (ResourceAccessException error) {
             throw new AsaasApiException("PROVIDER_TIMEOUT", "Falha de rede ao chamar a Asaas", true, error);
+        } catch (RestClientException error) {
+            // Resposta 2xx que não deu pra ler (ex.: formato de campo inesperado): erro controlado, não 500.
+            throw new AsaasApiException("PROVIDER_BAD_RESPONSE", "Resposta inesperada da Asaas: " + error.getMessage(),
+                    true, error);
         }
     }
 
