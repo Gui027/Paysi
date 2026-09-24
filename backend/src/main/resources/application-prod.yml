@@ -9,6 +9,11 @@ logging:
     root: INFO
     com.paysi: INFO
 
+# Atrás do Traefik: sem isso request.getRemoteAddr() devolve o IP do proxy, e o limite por IP e a
+# evidência de venda (IP do comprador) ficariam errados.
+server:
+  forward-headers-strategy: framework
+
 # Documentação interativa da API não fica exposta em produção.
 springdoc:
   api-docs:

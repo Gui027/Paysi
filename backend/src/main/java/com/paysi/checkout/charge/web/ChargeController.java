@@ -1,7 +1,10 @@
 package com.paysi.checkout.charge.web;
 
+import com.paysi.checkout.charge.app.CardTokenService;
 import com.paysi.checkout.charge.app.ChargeCreationService;
 import com.paysi.checkout.charge.app.StartChargeCommand;
+import com.paysi.checkout.charge.web.dto.CardTokenRequest;
+import com.paysi.checkout.charge.web.dto.CardTokenResponse;
 import com.paysi.checkout.charge.web.dto.ChargeStartRequest;
 import com.paysi.checkout.charge.web.dto.ChargeStartResponse;
 import com.paysi.checkout.charge.web.dto.ChargeStatusResponse;
@@ -25,10 +28,13 @@ import java.util.UUID;
 public class ChargeController {
     private final ChargeCreationService charges;
     private final CardPaymentService cardPayments;
+    private final CardTokenService cardTokens;
 
-    public ChargeController(ChargeCreationService charges, CardPaymentService cardPayments) {
+    public ChargeController(ChargeCreationService charges, CardPaymentService cardPayments,
+                            CardTokenService cardTokens) {
         this.charges = charges;
         this.cardPayments = cardPayments;
+        this.cardTokens = cardTokens;
     }
 
     @PostMapping("/v1/orders/{orderId}/charge")
@@ -39,6 +45,16 @@ public class ChargeController {
                 httpRequest.getHeader("User-Agent"), request.deviceKey(), request.termsHash(),
                 request.termsAcceptedAt());
         return ChargeStartResponse.from(charges.start(orderId, command));
+    }
+
+    @PostMapping("/v1/orders/{orderId}/card-token")
+    @Operation(summary = "Trocar os dados do cartão por um token do provedor (o cartão não é guardado)")
+    public CardTokenResponse tokenizeCard(@PathVariable UUID orderId, @Valid @RequestBody CardTokenRequest request,
+                                          HttpServletRequest httpRequest) {
+        var card = new CardTokenService.CardData(request.holderName(), request.number(), request.expiryMonth(),
+                request.expiryYear(), request.ccv(), request.postalCode(), request.addressNumber(), request.phone());
+        var result = cardTokens.tokenize(orderId, card, httpRequest.getRemoteAddr());
+        return CardTokenResponse.from(result);
     }
 
     @PostMapping("/v1/charges/{chargeId}/confirm-3ds")

@@ -57,6 +57,19 @@ public class CheckoutRateLimitGuard {
         }
     }
 
+    /**
+     * Tokenização de cartão: poucas tentativas por pedido (AM-05 — o checkout não pode virar
+     * validador de cartão) e por IP. O limite por pedido é fixo e baixo de propósito.
+     */
+    public void checkCardTokenAttempt(String ip, java.util.UUID orderId) {
+        if (!limiter.allow("checkout:cardtoken:order:" + orderId, 5, window)) {
+            throw new TooManyRequestsException("RATE_LIMITED", "Muitas tentativas com o cartão neste pedido", null);
+        }
+        if (ip != null && !ip.isBlank() && !limiter.allow("checkout:cardtoken:ip:" + ip, maxByIp, window)) {
+            throw tooMany("por este endereço IP");
+        }
+    }
+
     private static TooManyRequestsException tooMany(String reason) {
         return new TooManyRequestsException("RATE_LIMITED",
                 "Muitas tentativas de pedido em pouco tempo " + reason, null);

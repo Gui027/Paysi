@@ -48,6 +48,11 @@ class AsaasClient {
         return execute(() -> http.postForObject("/payments", request, AsaasPaymentResponse.class));
     }
 
+    AsaasTokenizeResponse tokenizeCard(AsaasTokenizeRequest request) {
+        return execute(() -> http.postForObject("/creditCard/tokenizeCreditCard", request,
+                AsaasTokenizeResponse.class));
+    }
+
     AsaasPaymentResponse getPayment(String paymentId) {
         return execute(() -> http.getForObject("/payments/{id}", AsaasPaymentResponse.class, paymentId));
     }
