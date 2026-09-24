@@ -1,17 +1,29 @@
 package com.paysi.payment.inbox.adapter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paysi.payment.inbox.port.ChargeLookup;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class DispatchingProviderEventNormalizerTest {
+    private static final UUID CHARGE_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private final ChargeLookup knownCharge = providerId ->
+            "pay_080225913252".equals(providerId) ? Optional.of(CHARGE_ID) : Optional.empty();
     private final DispatchingProviderEventNormalizer normalizer =
-            new DispatchingProviderEventNormalizer(new ObjectMapper().findAndRegisterModules());
+            new DispatchingProviderEventNormalizer(new ObjectMapper().findAndRegisterModules(), knownCharge);
+
+    private static String asaasEvent(String event, String paymentId) {
+        return """
+                {"id":"evt_1","event":"%s","dateCreated":"2024-06-12 16:45:03",
+                 "payment":{"id":"%s","externalReference":"%s","status":"RECEIVED","value":100}}
+                """.formatted(event, paymentId, UUID.randomUUID());
+    }
 
     @Test
     void fakeProviderStaysOnTheAlreadyFlatFormat() throws Exception {
@@ -26,50 +38,40 @@ class DispatchingProviderEventNormalizerTest {
     }
 
     @Test
-    void asaasReceivedMapsToCanonicalPaymentConfirmed() throws Exception {
-        UUID orderId = UUID.randomUUID();
-        String raw = """
-                {"id":"evt_123","event":"PAYMENT_RECEIVED","dateCreated":"2024-06-12 16:45:03",
-                 "payment":{"id":"pay_080225913252","externalReference":"%s","status":"RECEIVED","value":100}}
-                """.formatted(orderId);
+    void asaasReceivedMapsToConfirmedAndResolvesChargeByProviderId() throws Exception {
+        var event = normalizer.normalize("asaas", asaasEvent("PAYMENT_RECEIVED", "pay_080225913252"));
 
-        var event = normalizer.normalize("asaas", raw);
-
-        assertThat(event.providerEventId()).isEqualTo("evt_123");
+        assertThat(event.providerEventId()).isEqualTo("evt_1");
         assertThat(event.eventType()).isEqualTo("PAYMENT_CONFIRMED");
-        assertThat(event.chargeId()).isEqualTo(orderId);
+        assertThat(event.chargeId()).isEqualTo(CHARGE_ID);
         assertThat(event.providerChargeId()).isEqualTo("pay_080225913252");
         assertThat(event.occurredAt()).isEqualTo(Instant.parse("2024-06-12T19:45:03Z"));
     }
 
     @Test
-    void asaasOverdueMapsToCanonicalPaymentExpired() throws Exception {
-        UUID orderId = UUID.randomUUID();
-        String raw = """
-                {"id":"evt_456","event":"PAYMENT_OVERDUE","dateCreated":"2024-06-12 16:45:03",
-                 "payment":{"id":"pay_2","externalReference":"%s","status":"OVERDUE","value":100}}
-                """.formatted(orderId);
-
-        assertThat(normalizer.normalize("asaas", raw).eventType()).isEqualTo("PAYMENT_EXPIRED");
+    void asaasOverdueMapsToExpired() throws Exception {
+        assertThat(normalizer.normalize("asaas", asaasEvent("PAYMENT_OVERDUE", "pay_080225913252")).eventType())
+                .isEqualTo("PAYMENT_EXPIRED");
     }
 
     @Test
-    void asaasUnmappedEventKeepsPrefixInsteadOfGuessingAnEffect() throws Exception {
-        UUID orderId = UUID.randomUUID();
-        String raw = """
-                {"id":"evt_789","event":"PAYMENT_REFUNDED","dateCreated":"2024-06-12 16:45:03",
-                 "payment":{"id":"pay_3","externalReference":"%s","status":"REFUNDED","value":100}}
-                """.formatted(orderId);
+    void asaasEventWithoutEffectIsAcceptedEvenIfChargeIsNotSavedYet() throws Exception {
+        // PAYMENT_CREATED chega enquanto a transação que grava provider_charge_id ainda está aberta.
+        var event = normalizer.normalize("asaas", asaasEvent("PAYMENT_CREATED", "pay_not_saved_yet"));
 
-        assertThat(normalizer.normalize("asaas", raw).eventType()).isEqualTo("ASAAS_PAYMENT_REFUNDED");
+        assertThat(event.eventType()).isEqualTo("ASAAS_PAYMENT_CREATED");
+        assertThat(event.chargeId()).isEqualTo(new UUID(0L, 0L));
     }
 
     @Test
-    void asaasWithoutExternalReferenceFailsInsteadOfSilentlyDropping() {
-        String raw = """
-                {"id":"evt_1","event":"PAYMENT_RECEIVED","dateCreated":"2024-06-12 16:45:03",
-                 "payment":{"id":"pay_1","externalReference":"not-a-uuid","status":"RECEIVED","value":100}}
-                """;
-        assertThatThrownBy(() -> normalizer.normalize("asaas", raw)).isInstanceOf(IllegalArgumentException.class);
+    void asaasRefundKeepsPrefixInsteadOfGuessingAnEffect() throws Exception {
+        assertThat(normalizer.normalize("asaas", asaasEvent("PAYMENT_REFUNDED", "pay_080225913252")).eventType())
+                .isEqualTo("ASAAS_PAYMENT_REFUNDED");
+    }
+
+    @Test
+    void asaasConfirmationForUnknownChargeIsRejectedSoAsaasRetries() {
+        assertThatThrownBy(() -> normalizer.normalize("asaas", asaasEvent("PAYMENT_RECEIVED", "pay_unknown")))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

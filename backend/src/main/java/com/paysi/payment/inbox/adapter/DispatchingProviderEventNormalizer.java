@@ -3,6 +3,7 @@ package com.paysi.payment.inbox.adapter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paysi.payment.inbox.domain.ProviderEventPayload;
+import com.paysi.payment.inbox.port.ChargeLookup;
 import com.paysi.payment.inbox.port.ProviderEventNormalizer;
 import org.springframework.stereotype.Component;
 
@@ -25,10 +26,15 @@ public class DispatchingProviderEventNormalizer implements ProviderEventNormaliz
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final ZoneId ASAAS_ZONE = ZoneId.of("America/Sao_Paulo");
 
-    private final ObjectMapper json;
+    // Placeholder para eventos sem efeito (ver normalizeAsaas): o payload canônico exige um chargeId.
+    private static final UUID NO_CHARGE = new UUID(0L, 0L);
 
-    public DispatchingProviderEventNormalizer(ObjectMapper json) {
+    private final ObjectMapper json;
+    private final ChargeLookup charges;
+
+    public DispatchingProviderEventNormalizer(ObjectMapper json, ChargeLookup charges) {
         this.json = json;
+        this.charges = charges;
     }
 
     @Override
@@ -42,14 +48,24 @@ public class DispatchingProviderEventNormalizer implements ProviderEventNormaliz
      * {@code {"id":"evt_...","event":"PAYMENT_RECEIVED","dateCreated":"2024-06-12 16:45:03",
      * "payment":{"id":"pay_...","externalReference":"<orderId>","status":"RECEIVED",...}}}
      * — bem diferente do {@link ProviderEventPayload} já achatado que os outros provedores usam.
+     *
+     * <p>A cobrança interna é achada pelo id da Asaas ({@code payment.id}, gravado em
+     * {@code charges.provider_charge_id}); o {@code externalReference} é o id do pedido, não da cobrança.
+     * Eventos sem efeito (prefixo ASAAS_) usam um chargeId nulo: o {@code PAYMENT_CREATED}, por exemplo,
+     * chega enquanto a transação que grava o {@code provider_charge_id} ainda está aberta, e rejeitá-lo
+     * faria a Asaas penalizar (pausar) a fila de webhooks.
      */
     private ProviderEventPayload normalizeAsaas(String rawPayload) throws JsonProcessingException {
         var event = json.readValue(rawPayload, AsaasWebhookEvent.class);
         if (event.payment() == null) {
             throw new IllegalArgumentException("Webhook da Asaas sem objeto 'payment'");
         }
-        UUID chargeId = UUID.fromString(event.payment().externalReference());
-        return new ProviderEventPayload(event.id(), toCanonicalEventType(event.event()), chargeId,
+        String eventType = toCanonicalEventType(event.event());
+        UUID chargeId = eventType.startsWith("ASAAS_")
+                ? charges.findByProviderChargeId(event.payment().id()).orElse(NO_CHARGE)
+                : charges.findByProviderChargeId(event.payment().id()).orElseThrow(() ->
+                        new IllegalArgumentException("Cobrança da Asaas desconhecida: " + event.payment().id()));
+        return new ProviderEventPayload(event.id(), eventType, chargeId,
                 event.payment().id(), toInstant(event.dateCreated()));
     }
 

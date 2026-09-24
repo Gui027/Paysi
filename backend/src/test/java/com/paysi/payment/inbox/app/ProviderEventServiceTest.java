@@ -95,7 +95,7 @@ class ProviderEventServiceTest {
     private static ProviderEventService service(PaymentEventSignatureVerifier signatures,
                                                  ProviderEventRepository repository, SaleLedgerService saleLedger) {
         var json = new ObjectMapper().findAndRegisterModules();
-        return new ProviderEventService(json, signatures, new DispatchingProviderEventNormalizer(json),
+        return new ProviderEventService(json, signatures, new DispatchingProviderEventNormalizer(json, providerId -> java.util.Optional.empty()),
                 repository, saleLedger, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 }
