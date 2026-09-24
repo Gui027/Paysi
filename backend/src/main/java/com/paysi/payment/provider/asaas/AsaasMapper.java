@@ -35,8 +35,7 @@ final class AsaasMapper {
         LocalDate dueDate = LocalDate.now(ZoneOffset.UTC).plusDays(
                 request.method() == ProviderPaymentMethod.BOLETO ? request.boletoDueDays() : DEFAULT_DUE_DAYS_PIX_OR_CARD);
 
-        AsaasPaymentCreateRequest.CreditCard creditCard = request.method() == ProviderPaymentMethod.CARD
-                ? new AsaasPaymentCreateRequest.CreditCard(request.paymentToken()) : null;
+        String creditCardToken = request.method() == ProviderPaymentMethod.CARD ? request.paymentToken() : null;
 
         boolean installment = request.installments() > 1;
         BigDecimal amount = toReais(request.amountCents());
@@ -46,7 +45,7 @@ final class AsaasMapper {
                 installment ? amount : null,
                 installment ? request.installments() : null,
                 dueDate, "Pedido " + request.orderId(), request.orderId().toString(),
-                creditCard, null);
+                creditCardToken, null);
     }
 
     static ProviderPaymentResult toChargeResult(AsaasPaymentResponse response, ProviderPaymentMethod method,

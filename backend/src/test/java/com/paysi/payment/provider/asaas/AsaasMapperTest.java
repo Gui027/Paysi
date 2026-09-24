@@ -35,7 +35,7 @@ class AsaasMapperTest {
         assertThat(created.value()).isNull();
         assertThat(created.totalValue()).isEqualByComparingTo("300.00");
         assertThat(created.installmentCount()).isEqualTo(3);
-        assertThat(created.creditCard().creditCardToken()).isEqualTo("tok_abc");
+        assertThat(created.creditCardToken()).isEqualTo("tok_abc");
     }
 
     @Test
