@@ -43,6 +43,7 @@ export function CampoDeCartao({ onDados }: { onDados: (dados: DadosCartao | null
 
   return (
     <div className="provider-frame" role="group" aria-label="Dados do cartão">
+      <div className="field-grid" style={{ margin: 0 }}>
       <Campo id="cartao-nome" label="Nome impresso no cartão" full value={c.nome}
         onChange={event => atualizar("nome", event.target.value)} autoComplete="cc-name" />
       <Campo id="cartao-numero" label="Número do cartão" full inputMode="numeric" value={c.numero}
@@ -62,7 +63,8 @@ export function CampoDeCartao({ onDados }: { onDados: (dados: DadosCartao | null
       <Campo id="cartao-telefone" label="Telefone com DDD" full inputMode="tel" value={c.telefone}
         onChange={event => atualizar("telefone", event.target.value)} autoComplete="tel"
         error={erro(Boolean(c.telefone) && !telefoneValido(c.telefone), "Telefone inválido.")} />
-      <small>Seus dados de cartão viajam por conexão segura, são usados só para autorizar este pagamento e não ficam guardados na Paysi.</small>
+      </div>
+      <small style={{ display: "block", marginTop: "var(--esp-3)" }}>Seus dados de cartão viajam por conexão segura, são usados só para autorizar este pagamento e não ficam guardados na Paysi.</small>
     </div>
   );
 }
