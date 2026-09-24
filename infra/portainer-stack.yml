@@ -54,7 +54,7 @@ services:
       # Docker que estava reaproveitando um checkout antigo do git como
       # contexto. Depois de confirmar que o deploy pegou este commit, pode
       # voltar para #main.
-      context: https://github.com/Gui027/Paysi.git#517824e898630c52f4c51c346f3384857f43f2fa
+      context: https://github.com/Gui027/Paysi.git#50ed0dddd54cb5e45f7c0f04fba031afaa5ee98f
       dockerfile: backend/Dockerfile
     image: paysi-backend:${PAYSI_IMAGE_TAG:-latest}
     restart: unless-stopped
@@ -139,7 +139,7 @@ services:
 
   checkout:
     build:
-      context: https://github.com/Gui027/Paysi.git#517824e898630c52f4c51c346f3384857f43f2fa
+      context: https://github.com/Gui027/Paysi.git#50ed0dddd54cb5e45f7c0f04fba031afaa5ee98f
       dockerfile: web-checkout/Dockerfile
       args:
         VITE_API_URL: https://${PAYSI_API_DOMAIN}
