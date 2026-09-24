@@ -9,6 +9,13 @@ logging:
     root: INFO
     com.paysi: INFO
 
+# Documentação interativa da API não fica exposta em produção.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 paysi:
   provider: ${PAYSI_PROVIDER}
   security:
