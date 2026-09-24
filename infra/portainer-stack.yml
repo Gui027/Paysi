@@ -139,7 +139,7 @@ services:
 
   checkout:
     build:
-      context: https://github.com/Gui027/Paysi.git#60bfbf80c72f150119d46693cec589e262c70a66
+      context: https://github.com/Gui027/Paysi.git#41d8f191fe2a8d09b72fc30d2be9614fb2f66f9e
       dockerfile: web-checkout/Dockerfile
       args:
         VITE_API_URL: https://${PAYSI_API_DOMAIN}
