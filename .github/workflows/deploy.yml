@@ -1,0 +1,109 @@
+name: Deploy
+
+# Só roda depois que o CI da main passou. Publica as imagens no ghcr.io com a tag do commit e
+# manda o Portainer atualizar o stack (YAML vindo do git + PAYSI_IMAGE_TAG novo), sem tocar
+# nas demais variáveis do stack.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  images:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { name: backend, dockerfile: backend/Dockerfile }
+          - { name: painel, dockerfile: web-painel/Dockerfile }
+          - { name: checkout, dockerfile: web-checkout/Dockerfile }
+          - { name: site, dockerfile: web-site/Dockerfile }
+          - { name: postgres, dockerfile: infra/postgres/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - id: meta
+        run: |
+          echo "tag=${HEAD_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/paysi-${{ matrix.name }}:${{ steps.meta.outputs.tag }}
+          # VITE_API_URL é embutido no bundle do checkout em tempo de build.
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL || 'https://api.paysi.com.br' }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  portainer:
+    needs: images
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Atualizar o stack no Portainer
+        env:
+          PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
+          PORTAINER_TOKEN: ${{ secrets.PORTAINER_TOKEN }}
+          STACK_ID: ${{ secrets.PORTAINER_STACK_ID }}
+          ENDPOINT_ID: ${{ secrets.PORTAINER_ENDPOINT_ID }}
+          TAG: ${{ needs.images.outputs.tag }}
+        run: |
+          set -euo pipefail
+          for v in PORTAINER_URL PORTAINER_TOKEN STACK_ID ENDPOINT_ID; do
+            [ -n "${!v}" ] || { echo "::error::secret $v não configurado"; exit 1; }
+          done
+          api() { curl -fsS -H "X-API-Key: $PORTAINER_TOKEN" "$@"; }
+
+          # Mantém todas as variáveis atuais do stack (senhas, chaves) e troca só a tag da imagem.
+          # A tag muda a cada commit, então o Docker sempre puxa a imagem nova.
+          api "$PORTAINER_URL/api/stacks/$STACK_ID" \
+            | jq --arg tag "$TAG" '.Env | map(select(.name != "PAYSI_IMAGE_TAG")) + [{name:"PAYSI_IMAGE_TAG", value:$tag}]' \
+            > env.json
+          jq -n --rawfile file infra/portainer-stack.yml --slurpfile env env.json \
+            '{stackFileContent:$file, env:$env[0], prune:false, pullImage:true}' > payload.json
+
+          api -X PUT -H "Content-Type: application/json" --data @payload.json \
+            "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" > /dev/null
+          rm -f env.json payload.json
+          echo "Stack atualizado para a tag $TAG"
+
+      - name: Esperar o backend ficar saudável
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS -m 8 "${{ vars.API_HEALTH_URL || 'https://api.paysi.com.br/actuator/health' }}" | grep -q UP; then
+              echo "Backend saudável"; exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::o backend não ficou saudável em 10 minutos"; exit 1
