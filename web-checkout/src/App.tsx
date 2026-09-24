@@ -5,8 +5,10 @@ import { ApiRequestError } from "./lib/api";
 import { CheckoutContract, getCheckoutContract } from "./lib/checkout";
 
 function slugFromLocation(): string | null {
-  const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
-  return path.length > 0 ? path.split("/")[0] : null;
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  // O painel gera links no formato /checkout/{slug}; /{slug} também continua valendo.
+  const slug = segments[0] === "checkout" ? segments[1] : segments[0];
+  return slug ?? null;
 }
 
 export function App() {
