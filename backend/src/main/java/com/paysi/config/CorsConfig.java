@@ -11,8 +11,9 @@ import java.util.List;
  * O checkout (web-checkout) é uma SPA estática servida por outro domínio que chama a API
  * direto do navegador — sem isso o Spring rejeita todo preflight com "Invalid CORS request"
  * (comportamento padrão do framework sem nenhuma origem configurada, não é algo que a Paysi
- * escreveu). O painel não precisa disso: ele chama a API pelo seu próprio servidor Next.js
- * ({@code /api/*}), então do navegador é tudo mesma origem.
+ * escreveu). O painel também precisa estar na lista: o proxy do Next.js repassa o cabeçalho
+ * {@code Origin} que o navegador manda em todo POST, e uma vez que /v1/** tem config CORS,
+ * o Spring recusa qualquer origem fora da lista — inclusive a do próprio painel.
  */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
