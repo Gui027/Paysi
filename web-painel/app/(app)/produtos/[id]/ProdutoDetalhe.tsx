@@ -9,7 +9,12 @@ import {
   BillingCycle, createOffer, formatOfferMoney, listOffers, Offer, OfferInput, OfferInputErrors, OfferPaymentMethod, parseMoneyToCents,
   publishOffer, updateOffer, validateOfferInput,
 } from "../../../../lib/ofertas";
+import { AffiliateProgramInput, AffiliationRecurrence, getAffiliateProgram, parseCommissionPercent, recurrenceLabel, updateAffiliateProgram } from "../../../../lib/afiliados";
 import { EmptyState, Skeleton, Toast } from "../../../../components/ui";
+
+const defaultProgram: AffiliateProgramInput = { commissionBps: 3000, recurrence: "FIRST_CHARGE", autoApprove: false, supportEmail: null, description: null };
+const formatBps = (bps: number) => (bps / 100).toString().replace(".", ",");
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Aba = "geral" | "configuracoes" | "checkout" | "afiliados" | "links";
 const abas: readonly [Aba, string][] = [["geral", "Geral"], ["configuracoes", "Configurações"], ["checkout", "Checkout"], ["afiliados", "Afiliados"], ["links", "Links"]];
@@ -62,11 +67,21 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
   const [nextStep, setNextStep] = useState<{ label: string; url: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [program, setProgram] = useState<AffiliateProgramInput>(defaultProgram);
+  const [commission, setCommission] = useState(formatBps(defaultProgram.commissionBps));
+  const [programErrors, setProgramErrors] = useState<{ commission?: string; supportEmail?: string }>({});
+
+  function changeProgram(patch: Partial<AffiliateProgramInput>) {
+    setProgram(current => ({ ...current, ...patch }));
+    setProgramErrors(current => ({ ...current, supportEmail: undefined }));
+    setMessage(null);
+  }
 
   useEffect(() => {
     let active = true;
-    Promise.all([getProduct(productId), listOffers(productId)]).then(([loaded, offers]) => {
+    Promise.all([getProduct(productId), listOffers(productId), getAffiliateProgram(productId).catch(() => null)]).then(([loaded, offers, loadedProgram]) => {
       if (!active) return;
+      if (loadedProgram) { setProgram(loadedProgram); setCommission(formatBps(loadedProgram.commissionBps)); }
       const current = offers.find(item => item.status !== "ARCHIVED") ?? null;
       setProduct(loaded);
       setName(loaded.name);
@@ -105,7 +120,17 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
     const offerErrors = validateOfferInput(next, { segment: product.segment, chargeType: product.chargeType });
     if (cents === null) offerErrors.price = "Informe um valor válido com até duas casas decimais.";
     const all = { ...productErrors, ...offerErrors };
+    const commissionBps = parseCommissionPercent(commission);
+    const nextProgramErrors: { commission?: string; supportEmail?: string } = {};
+    if (affiliation && commissionBps === null) nextProgramErrors.commission = "Informe uma comissão entre 0 e 50%.";
+    if (affiliation && program.supportEmail?.trim() && !emailPattern.test(program.supportEmail.trim())) nextProgramErrors.supportEmail = "Informe um e-mail válido.";
     setErrors(all);
+    setProgramErrors(nextProgramErrors);
+    if (Object.keys(nextProgramErrors).length) {
+      setMessage({ tone: "danger", text: "Revise os campos destacados." });
+      selectAba("afiliados");
+      return false;
+    }
     if (Object.keys(all).length) {
       setMessage({ tone: "danger", text: "Revise os campos destacados." });
       if (productErrors.name || productErrors.description || offerErrors.price) selectAba("geral");
@@ -116,6 +141,11 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
     try {
       const updated = await updateProduct(product.id, { name, description: description || null, segment: product.segment, chargeType: product.chargeType, affiliationEnabled: affiliation });
       const stored = offer ? await updateOffer(offer.id, next) : await createOffer(product.id, next);
+      if (affiliation && commissionBps !== null) {
+        const savedProgram = await updateAffiliateProgram(product.id, { ...program, commissionBps, supportEmail: program.supportEmail?.trim() || null, description: program.description?.trim() || null });
+        setProgram(savedProgram);
+        setCommission(formatBps(savedProgram.commissionBps));
+      }
       setProduct(updated);
       setOffer(stored);
       setValues(offerInput(stored));
@@ -176,6 +206,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
   const boletoOn = values.paymentMethods.includes("BOLETO");
   const subscription = product.chargeType === "SUBSCRIPTION";
   const link = offer ? `${checkoutBase()}/checkout/${offer.slug}` : null;
+  const inviteLink = `${typeof window === "undefined" ? "" : window.location.origin}/afiliar/${product.id}`;
   const published = offer?.status === "PUBLISHED";
   const lockedContract = offer?.immutableFields ?? [];
 
@@ -254,10 +285,24 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
 
       {aba === "afiliados" && <>
         <p className="pe-tip">Você gerencia os seus afiliados pelo menu <Link href="/afiliados">Afiliados</Link>: aprovar pedidos, definir a comissão e encerrar afiliações.</p>
-        <Secao titulo="Configurações" texto="Permita que outras pessoas divulguem este produto em troca de comissão.">
+        <Secao titulo="Configurações" texto={<>Aprenda mais sobre os <Link href="/afiliados">afiliados</Link>.</>}>
           <Chave label="Habilitar programa de afiliados" checked={affiliation} onChange={checked => { setAffiliation(checked); setMessage(null); }} />
-          <small className="pe-hint">A comissão é definida por afiliado, no momento em que você aprova o pedido. Clique em “Salvar produto” para aplicar a mudança.</small>
+          {affiliation && <>
+            <Chave label="Aprovar cada solicitação de afiliação manualmente" checked={!program.autoApprove} onChange={checked => changeProgram({ autoApprove: !checked })} />
+            <label className="pe-field"><span>E-mail de suporte para afiliados</span><input type="email" placeholder="suporte@seunegocio.com" value={program.supportEmail ?? ""} aria-invalid={Boolean(programErrors.supportEmail)} onChange={event => changeProgram({ supportEmail: event.target.value })} />{programErrors.supportEmail && <small className="pe-error">{programErrors.supportEmail}</small>}</label>
+            <label className="pe-field"><span>Descrição para afiliados</span><textarea rows={4} maxLength={1000} placeholder="Conte o que o afiliado precisa saber para divulgar bem o produto" value={program.description ?? ""} onChange={event => changeProgram({ description: event.target.value })} /><small className="pe-hint">{(program.description ?? "").length}/1.000. Aparece na vitrine de afiliados.</small></label>
+            <label className="pe-field"><span>Comissão</span><span className="pe-inline"><input inputMode="decimal" aria-label="Comissão em porcentagem" value={commission} aria-invalid={Boolean(programErrors.commission)} onChange={event => { setCommission(event.target.value); setProgramErrors(current => ({ ...current, commission: undefined })); setMessage(null); }} /><span>% (de 0 a 50)</span></span>{programErrors.commission && <small className="pe-error">{programErrors.commission}</small>}</label>
+            {subscription && <label className="pe-field"><span>Recorrência</span><select value={program.recurrence} onChange={event => changeProgram({ recurrence: event.target.value as AffiliationRecurrence })}>{Object.entries(recurrenceLabel).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>}
+            <small className="pe-hint">{program.autoApprove ? "Quem pedir afiliação é aprovado na hora, com a comissão acima." : "Você aprova cada pedido em Afiliados e pode ajustar a comissão de cada um."} A comissão de quem já é afiliado não muda.</small>
+          </>}
+          {!affiliation && <small className="pe-hint">Clique em “Salvar produto” para aplicar a mudança.</small>}
         </Secao>
+        {affiliation && <Secao titulo="Convidar afiliados" texto={<>Aprenda mais sobre <Link href="/afiliados">convidar afiliados</Link>.</>}>
+          <div className="pe-field"><span>Copiar link de convite de afiliado</span>
+            <div className="pe-link"><input className="pe-url" readOnly aria-label="Link de convite de afiliado" value={inviteLink} onFocus={event => event.currentTarget.select()} /><button type="button" className="ui-button ui-button-primary" onClick={() => copiar(inviteLink)}>{copied ? "Copiado" : "Copiar"}</button></div>
+            <small className="pe-hint">Compartilhe este link para convidar afiliados. {product.affiliationEnabled ? "O produto só aparece na vitrine e aceita pedidos depois de publicado." : "Salve o produto para ativar o programa antes de compartilhar."}</small>
+          </div>
+        </Secao>}
       </>}
     </div>
 

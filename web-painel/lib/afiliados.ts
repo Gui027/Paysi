@@ -147,3 +147,25 @@ export const commissionStatusTone: Record<CommissionEntryStatus, "neutral" | "su
   "Disponível": "success",
   "Estornada": "danger",
 };
+
+export type AffiliateProgram = {
+  productId: string;
+  commissionBps: number;
+  recurrence: AffiliationRecurrence;
+  autoApprove: boolean;
+  supportEmail: string | null;
+  description: string | null;
+};
+
+export type AffiliateProgramInput = Omit<AffiliateProgram, "productId">;
+
+export function getAffiliateProgram(productId: string) {
+  return apiRequest<AffiliateProgram>(`/v1/products/${encodeURIComponent(productId)}/affiliate-program`);
+}
+
+export function updateAffiliateProgram(productId: string, input: AffiliateProgramInput) {
+  return apiRequest<AffiliateProgram>(`/v1/products/${encodeURIComponent(productId)}/affiliate-program`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}

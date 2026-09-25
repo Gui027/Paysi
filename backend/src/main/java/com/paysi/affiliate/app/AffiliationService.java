@@ -3,6 +3,7 @@ package com.paysi.affiliate.app;
 import com.paysi.affiliate.domain.Affiliation;
 import com.paysi.affiliate.domain.AffiliationEndReason;
 import com.paysi.affiliate.domain.AffiliationRecurrence;
+import com.paysi.affiliate.port.AffiliateProgramRepository;
 import com.paysi.affiliate.port.AffiliateRepository;
 import com.paysi.core.error.ForbiddenException;
 import com.paysi.core.error.ConflictException;
@@ -26,16 +27,20 @@ public class AffiliationService {
 
     private final AffiliateRepository affiliations;
     private final AccountRepository accounts;
+    private final AffiliateProgramRepository programs;
     private final Clock clock;
 
     @Autowired
-    public AffiliationService(AffiliateRepository affiliations, AccountRepository accounts) {
-        this(affiliations, accounts, Clock.systemUTC());
+    public AffiliationService(AffiliateRepository affiliations, AccountRepository accounts,
+                              AffiliateProgramRepository programs) {
+        this(affiliations, accounts, programs, Clock.systemUTC());
     }
 
-    AffiliationService(AffiliateRepository affiliations, AccountRepository accounts, Clock clock) {
+    AffiliationService(AffiliateRepository affiliations, AccountRepository accounts,
+                       AffiliateProgramRepository programs, Clock clock) {
         this.affiliations = affiliations;
         this.accounts = accounts;
+        this.programs = programs;
         this.clock = clock;
     }
 
@@ -49,7 +54,12 @@ public class AffiliationService {
         if (product.sellerId().equals(affiliateId)) {
             throw new ConflictException("SELF_AFFILIATION_FORBIDDEN", "Não é permitido afiliar-se ao próprio produto", "productId");
         }
-        return affiliations.request(UUID.randomUUID(), product.productId(), affiliateId, clock.instant());
+        Affiliation requested = affiliations.request(UUID.randomUUID(), product.productId(), affiliateId, clock.instant());
+        // Programa com aprovação automática: aprova já, congelando a comissão configurada no produto.
+        return programs.find(product.productId()).filter(program -> program.autoApprove())
+                .flatMap(program -> affiliations.approve(requested.id(), product.sellerId(),
+                        program.commissionBps(), program.recurrence(), clock.instant()))
+                .orElse(requested);
     }
 
     @Transactional(readOnly = true)

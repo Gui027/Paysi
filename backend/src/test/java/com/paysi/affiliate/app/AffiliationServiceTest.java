@@ -4,6 +4,8 @@ import com.paysi.affiliate.domain.Affiliation;
 import com.paysi.affiliate.domain.AffiliationEndReason;
 import com.paysi.affiliate.domain.AffiliationRecurrence;
 import com.paysi.affiliate.domain.AffiliationStatus;
+import com.paysi.affiliate.domain.AffiliateProgram;
+import com.paysi.affiliate.port.AffiliateProgramRepository;
 import com.paysi.affiliate.port.AffiliateRepository;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
@@ -45,13 +47,40 @@ class AffiliationServiceTest {
 
     private AffiliateRepository repository;
     private AccountRepository accounts;
+    private AffiliateProgramRepository programs;
     private AffiliationService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(AffiliateRepository.class);
         accounts = mock(AccountRepository.class);
-        service = new AffiliationService(repository, accounts, Clock.fixed(NOW, ZoneOffset.UTC));
+        programs = mock(AffiliateProgramRepository.class);
+        service = new AffiliationService(repository, accounts, programs, Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    @Test
+    void autoApproveProgramApprovesRequestWithConfiguredCommission() {
+        when(accounts.findById(AFFILIATE)).thenReturn(Optional.of(account(AFFILIATE, KycStatus.APPROVED)));
+        when(repository.findMarketplaceProduct(PRODUCT)).thenReturn(Optional.of(product(SELLER)));
+        when(repository.request(any(), eq(PRODUCT), eq(AFFILIATE), eq(NOW)))
+                .thenAnswer(call -> affiliation(call.getArgument(0), AffiliationStatus.PENDING));
+        when(programs.find(PRODUCT)).thenReturn(Optional.of(new AffiliateProgram(PRODUCT, 2_500,
+                AffiliationRecurrence.ALL_CYCLES, true, null, null)));
+        when(repository.approve(any(), eq(SELLER), eq(2_500), eq(AffiliationRecurrence.ALL_CYCLES), eq(NOW)))
+                .thenAnswer(call -> Optional.of(affiliation(call.getArgument(0), AffiliationStatus.APPROVED)));
+
+        assertThat(service.request(AFFILIATE, PRODUCT).status()).isEqualTo(AffiliationStatus.APPROVED);
+    }
+
+    @Test
+    void manualProgramKeepsRequestPending() {
+        when(accounts.findById(AFFILIATE)).thenReturn(Optional.of(account(AFFILIATE, KycStatus.APPROVED)));
+        when(repository.findMarketplaceProduct(PRODUCT)).thenReturn(Optional.of(product(SELLER)));
+        when(repository.request(any(), eq(PRODUCT), eq(AFFILIATE), eq(NOW)))
+                .thenAnswer(call -> affiliation(call.getArgument(0), AffiliationStatus.PENDING));
+        when(programs.find(PRODUCT)).thenReturn(Optional.of(AffiliateProgram.defaults(PRODUCT)));
+
+        assertThat(service.request(AFFILIATE, PRODUCT).status()).isEqualTo(AffiliationStatus.PENDING);
     }
 
     @Test

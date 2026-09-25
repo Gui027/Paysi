@@ -26,12 +26,14 @@ import java.util.UUID;
 @Repository
 class JdbcAffiliateRepository implements AffiliateRepository {
     private static final String MARKETPLACE_SELECT = """
-            SELECT p.id AS product_id, p.seller_id, p.name AS product_name, p.description,
+            SELECT p.id AS product_id, p.seller_id, p.name AS product_name,
+                   COALESCE(NULLIF(prog.description, ''), p.description) AS description,
                    seller.full_name AS seller_name, p.segment, p.charge_type, p.created_at,
-                   published.amount_cents, published.suggested_bps, published.guarantee_days,
-                   published.payout_delay
+                   published.amount_cents, COALESCE(prog.commission_bps, published.suggested_bps) AS suggested_bps,
+                   published.guarantee_days, published.payout_delay
               FROM products p
               JOIN accounts seller ON seller.id = p.seller_id
+              LEFT JOIN affiliate_program_settings prog ON prog.product_id = p.id
               JOIN LATERAL (
                     SELECT o.amount_cents, o.suggested_bps, o.guarantee_days, o.payout_delay
                       FROM offers o
