@@ -17,7 +17,7 @@ import {
   productSegmentLabel,
   productStatusLabel,
 } from "../../../lib/produtos";
-import { Botao, Dialog, EmptyState, Etiqueta, Select, Skeleton, Toast } from "../../../components/ui";
+import { Botao, Dialog, EmptyState, Etiqueta, Skeleton, Toast } from "../../../components/ui";
 
 const emptyFilters: ProductFilters = { query: "", status: "", segment: "", chargeType: "" };
 
@@ -105,40 +105,45 @@ export function ProdutosPage() {
   const hasFilters = Object.values(filters).some(Boolean);
 
   return <>
-    <header className="content-header products-heading">
-      <div><h1>Produtos</h1><p>Localize seus produtos e acompanhe o estado de publicação.</p></div>
-      <div className="ui-actions">
-        <Link className="ui-button ui-button-secondary" href="/cupons">Cupons de desconto</Link>
-        <Link className="ui-button ui-button-primary product-create" href="/produtos/novo">Novo produto</Link>
-      </div>
+    <header className="prod-head">
+      <h1>Produtos</h1>
+      <Link className="ui-button ui-button-primary" href="/produtos/novo">Criar produto</Link>
     </header>
 
-    <section className="ui-card product-filters" aria-labelledby="product-filter-title">
-      <h2 id="product-filter-title">Filtros</h2>
-      <label className="ui-field product-search"><span>Buscar por nome</span><input type="search" value={filters.query} onChange={event => updateFilter("query", event.target.value)} placeholder="Ex.: Curso de vendas" /></label>
-      <Select label="Status" value={filters.status} onChange={event => updateFilter("status", event.target.value)}>
-        <option value="">Todos</option><option value="DRAFT">Rascunho</option><option value="ACTIVE">Publicado</option><option value="PAUSED">Pausado</option><option value="SUSPENDED">Suspenso</option>
-      </Select>
-      <Select label="Segmento" value={filters.segment} onChange={event => updateFilter("segment", event.target.value)}>
-        <option value="">Todos</option><option value="SAAS">SaaS</option><option value="DIGITAL">Produto digital</option>
-      </Select>
-      <Select label="Cobrança" value={filters.chargeType} onChange={event => updateFilter("chargeType", event.target.value)}>
-        <option value="">Todas</option><option value="ONE_TIME">Pagamento único</option><option value="SUBSCRIPTION">Assinatura</option>
-      </Select>
-      {hasFilters && <Botao variant="secondary" onClick={() => router.replace("/produtos", { scroll: false })}>Limpar filtros</Botao>}
-    </section>
+    <section className="prod-panel" aria-label="Lista de produtos">
+      <div className="prod-toolbar">
+        <label className="prod-search"><span className="sr-only">Buscar por nome</span>
+          <input type="search" value={filters.query} onChange={event => updateFilter("query", event.target.value)} placeholder="Buscar…" /></label>
+        <Link className="prod-link" href="/cupons">Cupons de desconto</Link>
+        <label className="prod-status"><span className="sr-only">Status</span>
+          <select value={filters.status} onChange={event => updateFilter("status", event.target.value)}>
+            <option value="">Todos</option><option value="DRAFT">Rascunho</option><option value="ACTIVE">Publicado</option><option value="PAUSED">Pausado</option><option value="SUSPENDED">Suspenso</option>
+          </select></label>
+      </div>
 
-    {error && <Toast tone="danger">{error} <button className="toast-action" onClick={() => void load()}>Tentar novamente</button></Toast>}
-    {loading ? <Skeleton label="Carregando lista de produtos" /> : products.length === 0 ?
-      <EmptyState title="Nenhum produto cadastrado" description="Crie um produto em rascunho para começar." action={<Link className="ui-button ui-button-primary" href="/produtos/novo">Criar produto</Link>} /> :
-      visibleProducts.length === 0 ? <EmptyState title="Nenhum resultado" description="Ajuste ou limpe os filtros para localizar outro produto." action={<Botao variant="secondary" onClick={() => router.replace("/produtos", { scroll: false })}>Limpar filtros</Botao>} /> :
-      <section className="product-list" aria-label="Lista de produtos">
-        {visibleProducts.map(product => <article className="ui-card product-row" key={product.id}>
-          <div className="product-main"><div className="ui-labels"><Etiqueta tone={statusTone(product.status)}>{productStatusLabel[product.status]}</Etiqueta><span>{productSegmentLabel[product.segment]}</span></div><h2><Link href={`/produtos/${product.id}`}>{product.name}</Link></h2><p>{product.description || "Sem descrição."}</p></div>
-          <dl className="product-meta"><div><dt>Cobrança</dt><dd>{productChargeTypeLabel[product.chargeType]}</dd></div><div><dt>Criado em</dt><dd>{new Intl.DateTimeFormat("pt-BR").format(new Date(product.createdAt))}</dd></div></dl>
-          <div className="product-actions"><Link className="ui-button ui-button-secondary" href={`/produtos/${product.id}`}>Ver detalhes</Link><Link className="ui-button ui-button-secondary" href={`/produtos/${product.id}/editar`}>Editar</Link><Botao variant="danger" onClick={() => setArchiveTarget(product)}>Arquivar</Botao></div>
-        </article>)}
-      </section>}
+      {error && <Toast tone="danger">{error} <button className="toast-action" onClick={() => void load()}>Tentar novamente</button></Toast>}
+      {loading ? <Skeleton label="Carregando lista de produtos" /> : products.length === 0 ?
+        <EmptyState title="Nenhum produto cadastrado" description="Crie um produto em rascunho para começar." action={<Link className="ui-button ui-button-primary" href="/produtos/novo">Criar produto</Link>} /> :
+        visibleProducts.length === 0 ? <EmptyState title="Nenhum resultado" description="Ajuste ou limpe os filtros para localizar outro produto." action={hasFilters ? <Botao variant="secondary" onClick={() => router.replace("/produtos", { scroll: false })}>Limpar filtros</Botao> : undefined} /> :
+        <table className="prod-table">
+          <thead><tr><th scope="col">Nome</th><th scope="col">Cobrança</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
+          <tbody>{visibleProducts.map(product => <tr key={product.id}>
+            <td><Link className="prod-name" href={`/produtos/${product.id}`}>{product.name}</Link></td>
+            <td className="prod-muted">{productChargeTypeLabel[product.chargeType]} · {productSegmentLabel[product.segment]}</td>
+            <td><Etiqueta tone={statusTone(product.status)}>{productStatusLabel[product.status]}</Etiqueta></td>
+            <td className="prod-actions">
+              <details className="prod-menu">
+                <summary aria-label={`Ações de ${product.name}`}>⋮</summary>
+                <div className="prod-menu-list">
+                  <Link href={`/produtos/${product.id}`}>Ver detalhes</Link>
+                  <Link href={`/produtos/${product.id}/editar`}>Editar</Link>
+                  <button type="button" onClick={() => setArchiveTarget(product)}>Arquivar</button>
+                </div>
+              </details>
+            </td>
+          </tr>)}</tbody>
+        </table>}
+    </section>
     {nextCursor && !loading && <div className="load-more"><Botao variant="secondary" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? "Carregando…" : "Carregar mais"}</Botao></div>}
 
     <Dialog open={Boolean(archiveTarget)} title="Arquivar produto" onClose={() => !archiving && setArchiveTarget(null)}>
