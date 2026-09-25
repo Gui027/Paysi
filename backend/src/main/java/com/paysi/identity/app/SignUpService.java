@@ -1,15 +1,21 @@
 package com.paysi.identity.app;
 
+import com.paysi.core.error.ForbiddenException;
 import com.paysi.identity.domain.Account;
 import com.paysi.identity.domain.DuplicateAccountField;
 import com.paysi.identity.domain.TaxId;
 import com.paysi.identity.port.AccountRepository;
 import com.paysi.identity.port.PasswordHasher;
 import com.paysi.identity.port.PlatformPlanReader;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * RF-001/RF-005/RF-125: cria a conta já vinculada ao plano Transacional.
@@ -22,17 +28,36 @@ public class SignUpService {
     private final AccountRepository accountRepository;
     private final PlatformPlanReader platformPlanReader;
     private final PasswordHasher passwordHasher;
+    private final Set<String> allowedEmails;
 
+    /**
+     * @param allowedEmails lista separada por vírgula; vazia = cadastro aberto. Enquanto o KYC real não
+     *                      existir, produção deve rodar restrita a convidados (KYC fake aprova qualquer um).
+     */
+    @Autowired
     public SignUpService(AccountRepository accountRepository, PlatformPlanReader platformPlanReader,
-                          PasswordHasher passwordHasher) {
+                          PasswordHasher passwordHasher,
+                          @Value("${paysi.signup.allowed-emails:}") String allowedEmails) {
         this.accountRepository = accountRepository;
         this.platformPlanReader = platformPlanReader;
         this.passwordHasher = passwordHasher;
+        this.allowedEmails = Arrays.stream(allowedEmails.split(","))
+                .map(value -> value.strip().toLowerCase(Locale.ROOT))
+                .filter(value -> !value.isEmpty())
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public SignUpService(AccountRepository accountRepository, PlatformPlanReader platformPlanReader,
+                          PasswordHasher passwordHasher) {
+        this(accountRepository, platformPlanReader, passwordHasher, "");
     }
 
     @Transactional
     public AccountCreated signUp(SignUpCommand command) {
         String normalizedEmail = normalizeEmail(command.email());
+        if (!allowedEmails.isEmpty() && !allowedEmails.contains(normalizedEmail)) {
+            throw new ForbiddenException("SIGNUP_RESTRICTED", "O cadastro está disponível apenas por convite no momento");
+        }
         TaxId taxId = TaxId.of(command.taxId(), command.personType());
 
         if (accountRepository.existsActiveByEmail(normalizedEmail)) {

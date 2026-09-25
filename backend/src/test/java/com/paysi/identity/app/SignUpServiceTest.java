@@ -1,6 +1,7 @@
 package com.paysi.identity.app;
 
 import com.paysi.core.error.ConflictException;
+import com.paysi.core.error.ForbiddenException;
 import com.paysi.identity.domain.Account;
 import com.paysi.identity.domain.InitialMode;
 import com.paysi.identity.domain.PersonType;
@@ -72,6 +73,29 @@ class SignUpServiceTest {
                     assertThat(error.code()).isEqualTo("TAX_ID_ALREADY_REGISTERED");
                     assertThat(error.field()).isEqualTo("taxId");
                 });
+    }
+
+    @Test
+    void inviteOnlyModeRejectsEmailsOutsideTheListWithoutTouchingTheDatabase() {
+        var accounts = new InMemoryAccounts();
+        var service = new SignUpService(accounts, accountId -> "TRANSACIONAL", passwordHasher(raw -> "hash"),
+                " Dono@Exemplo.com , amiga@exemplo.com ");
+
+        assertThatThrownBy(() -> service.signUp(command("Estranho", "estranho@exemplo.com", "52998224725")))
+                .isInstanceOfSatisfying(ForbiddenException.class,
+                        error -> assertThat(error.code()).isEqualTo("SIGNUP_RESTRICTED"));
+        assertThat(accounts.inserted).isEmpty();
+    }
+
+    @Test
+    void inviteOnlyModeAcceptsListedEmailsIgnoringCaseAndSpaces() {
+        var accounts = new InMemoryAccounts();
+        var service = new SignUpService(accounts, accountId -> "TRANSACIONAL", passwordHasher(raw -> "hash"),
+                " Dono@Exemplo.com , amiga@exemplo.com ");
+
+        service.signUp(command("Dono", "DONO@exemplo.com", "52998224725"));
+
+        assertThat(accounts.inserted).hasSize(1);
     }
 
     private static SignUpCommand command(String fullName, String email, String taxId) {

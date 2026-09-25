@@ -80,6 +80,9 @@ springdoc:
 paysi:
   provider: ${PAYSI_PROVIDER:fake}
   web-base-url: ${PAYSI_WEB_BASE_URL:http://localhost:3000}
+  signup:
+    # Vazio = cadastro aberto. Lista de e-mails separada por vírgula = só convidados.
+    allowed-emails: ${PAYSI_SIGNUP_ALLOWED_EMAILS:}
   security:
     allowed-origins: ${PAYSI_ALLOWED_ORIGINS:http://localhost:5173}
   asset:
