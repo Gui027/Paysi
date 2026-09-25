@@ -1,40 +1,245 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ReactNode, useEffect, useState } from "react";
 import { ApiRequestError } from "../../../../lib/api";
-import { getProduct, Product, productChargeTypeLabel, productSegmentLabel, productStatusLabel } from "../../../../lib/produtos";
-import { formatOfferMoney, listOffers, Offer } from "../../../../lib/ofertas";
-import { EmptyState, Etiqueta, Skeleton, Toast } from "../../../../components/ui";
+import { archiveProduct, getProduct, Product, productChargeTypeLabel, productSegmentLabel, productStatusLabel, updateProduct, validateProductInput } from "../../../../lib/produtos";
+import {
+  BillingCycle, createOffer, listOffers, Offer, OfferInput, OfferInputErrors, OfferPaymentMethod, parseMoneyToCents,
+  publishOffer, updateOffer, validateOfferInput,
+} from "../../../../lib/ofertas";
+import { EmptyState, Skeleton, Toast } from "../../../../components/ui";
+
+type Aba = "geral" | "configuracoes" | "checkout" | "afiliados";
+const abas: readonly [Aba, string][] = [["geral", "Geral"], ["configuracoes", "Configurações"], ["checkout", "Checkout"], ["afiliados", "Afiliados"]];
+const cycleLabel: Record<BillingCycle, string> = { MONTHLY: "Mensal", QUARTERLY: "Trimestral", SEMIANNUAL: "Semestral", ANNUAL: "Anual" };
+const methodLabel: Record<OfferPaymentMethod, string> = { PIX: "Pix", CARD: "Cartão de crédito", BOLETO: "Boleto" };
+
+const blankOffer: OfferInput = {
+  priceCents: 0, cycle: null, trialDays: 0, trialRequiresCard: true, guaranteeDays: 7, maxInstallments: 1,
+  boletoDueDays: 3, boletoAdvanceDays: 5, paymentMethods: ["PIX", "CARD"], payoutDelay: "D32",
+};
+
+function offerInput(offer: Offer): OfferInput {
+  return {
+    priceCents: offer.priceCents, cycle: offer.cycle, trialDays: offer.trialDays, trialRequiresCard: offer.trialRequiresCard,
+    guaranteeDays: offer.guaranteeDays, maxInstallments: offer.maxInstallments, boletoDueDays: offer.boletoDueDays,
+    boletoAdvanceDays: offer.boletoAdvanceDays, paymentMethods: offer.paymentMethods, payoutDelay: offer.payoutDelay,
+  };
+}
+
+const priceText = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
+const checkoutBase = () => (process.env.NEXT_PUBLIC_CHECKOUT_BASE_URL ?? "https://checkout.paysi.com.br").replace(/\/$/, "");
+
+function Secao({ titulo, texto, children }: { titulo: string; texto?: ReactNode; children: ReactNode }) {
+  return <section className="pe-section"><div className="pe-section-intro"><h2>{titulo}</h2>{texto && <p>{texto}</p>}</div><div className="pe-card">{children}</div></section>;
+}
+
+function Chave({ label, checked, disabled, onChange }: { label: string; checked: boolean; disabled?: boolean; onChange: (checked: boolean) => void }) {
+  return <label className="pe-switch"><input type="checkbox" role="switch" checked={checked} disabled={disabled} onChange={event => onChange(event.target.checked)} /><span className="pe-track" aria-hidden="true" /><span>{label}</span></label>;
+}
 
 export function ProdutoDetalhe({ productId }: { productId: string }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const aba = (abas.find(([id]) => id === searchParams.get("aba"))?.[0] ?? "geral") as Aba;
+
   const [product, setProduct] = useState<Product | null>(null);
+  const [offer, setOffer] = useState<Offer | null>(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [affiliation, setAffiliation] = useState(false);
+  const [values, setValues] = useState<OfferInput>(blankOffer);
+  const [price, setPrice] = useState("");
+  const [errors, setErrors] = useState<OfferInputErrors & { name?: string; description?: string }>({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [error, setError] = useState(false);
-  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [message, setMessage] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const [nextStep, setNextStep] = useState<{ label: string; url: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    Promise.all([getProduct(productId), listOffers(productId)]).then(([value, loadedOffers]) => { if (active) { setProduct(value); setOffers(loadedOffers); } }).catch(requestError => {
+    Promise.all([getProduct(productId), listOffers(productId)]).then(([loaded, offers]) => {
       if (!active) return;
-      if (requestError instanceof ApiRequestError && requestError.status === 404) setNotFound(true);
-      else setError(true);
+      const current = offers.find(item => item.status !== "ARCHIVED") ?? null;
+      setProduct(loaded);
+      setName(loaded.name);
+      setDescription(loaded.description ?? "");
+      setAffiliation(loaded.affiliationEnabled);
+      setOffer(current);
+      setValues(current ? offerInput(current) : { ...blankOffer, cycle: loaded.chargeType === "SUBSCRIPTION" ? "MONTHLY" : null });
+      setPrice(current ? priceText(current.priceCents) : "");
+    }).catch(error => {
+      if (!active) return;
+      if (error instanceof ApiRequestError && error.status === 404) setNotFound(true);
+      else setLoadFailed(true);
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [productId]);
 
-  if (loading) return <Skeleton label="Carregando detalhe do produto" />;
-  if (notFound) return <EmptyState title="Produto não encontrado" description="O produto não existe ou não está disponível para esta conta." action={<Link className="ui-button ui-button-secondary" href="/produtos">Voltar aos produtos</Link>} />;
-  if (error || !product) return <Toast tone="danger">Não foi possível carregar o produto. <Link href="/produtos">Voltar aos produtos</Link></Toast>;
+  function change<K extends keyof OfferInput>(field: K, value: OfferInput[K]) {
+    setValues(current => ({ ...current, [field]: value }));
+    setErrors(current => ({ ...current, [field]: undefined }));
+    setMessage(null);
+  }
 
-  return <>
-    <nav className="breadcrumb" aria-label="Navegação estrutural"><Link href="/produtos">Produtos</Link><span aria-hidden="true">/</span><span aria-current="page">Detalhe</span></nav>
-    <header className="content-header products-heading"><div><div className="ui-labels"><Etiqueta tone={product.status === "ACTIVE" ? "success" : "neutral"}>{productStatusLabel[product.status]}</Etiqueta><span>{productSegmentLabel[product.segment]}</span></div><h1>{product.name}</h1><p>{product.description || "Sem descrição."}</p></div><Link className="ui-button ui-button-secondary" href={`/produtos/${product.id}/editar`}>Editar produto</Link></header>
-    <div className="product-detail-grid">
-      <section className="ui-card" aria-labelledby="operational-title"><h2 id="operational-title">Dados operacionais</h2><dl className="detail-list"><div><dt>Tipo de cobrança</dt><dd>{productChargeTypeLabel[product.chargeType]}</dd></div><div><dt>Afiliação</dt><dd>{product.affiliationEnabled ? "Permitida" : "Desativada"}</dd></div><div><dt>Criado em</dt><dd>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "long", timeStyle: "short" }).format(new Date(product.createdAt))}</dd></div><div><dt>Identificador</dt><dd><code>{product.id}</code></dd></div></dl></section>
-      <section className="ui-card" aria-labelledby="offers-title"><div className="section-heading"><div><h2 id="offers-title">Ofertas</h2><p>Configure preço, meios de pagamento e publicação.</p></div><Link className="ui-button" href={`/produtos/${product.id}/ofertas`}>Criar oferta</Link></div>{offers.length === 0 ? <EmptyState title="Nenhuma oferta disponível" description={product.status === "DRAFT" ? "Crie uma oferta para preparar o checkout do produto." : "Este produto ainda não possui ofertas."} headingLevel="h3" action={<Link className="ui-button ui-button-secondary" href={`/produtos/${product.id}/ofertas`}>Configurar oferta</Link>} /> : <div className="offer-list">{offers.map(offer => <article className="offer-list-item" key={offer.id}><div><strong>{formatOfferMoney(offer.priceCents)}</strong><span>{offer.cycle ? `Ciclo ${offer.cycle.toLocaleLowerCase()}` : "Pagamento único"}</span><span className={`ui-label ui-label-${offer.status === "PUBLISHED" ? "success" : "neutral"}`}>{offer.status === "PUBLISHED" ? "Publicada" : "Rascunho"}</span></div><Link className="ui-button ui-button-secondary" href={`/produtos/${product.id}/ofertas/${offer.id}`}>Editar</Link></article>)}</div>}</section>
+  function toggleMethod(method: OfferPaymentMethod, checked: boolean) {
+    change("paymentMethods", checked ? [...new Set([...values.paymentMethods, method])] : values.paymentMethods.filter(item => item !== method));
+  }
+
+  function selectAba(next: Aba) {
+    router.replace(next === "geral" ? `/produtos/${productId}` : `/produtos/${productId}?aba=${next}`, { scroll: false });
+  }
+
+  async function save(): Promise<boolean> {
+    if (!product) return false;
+    const cents = parseMoneyToCents(price);
+    const next: OfferInput = { ...values, priceCents: cents ?? 0 };
+    const productErrors = validateProductInput({ name, description: description || null, segment: product.segment, chargeType: product.chargeType, affiliationEnabled: affiliation });
+    const offerErrors = validateOfferInput(next, { segment: product.segment, chargeType: product.chargeType });
+    if (cents === null) offerErrors.price = "Informe um valor válido com até duas casas decimais.";
+    const all = { ...productErrors, ...offerErrors };
+    setErrors(all);
+    if (Object.keys(all).length) {
+      setMessage({ tone: "danger", text: "Revise os campos destacados." });
+      if (productErrors.name || productErrors.description || offerErrors.price) selectAba("geral");
+      return false;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const updated = await updateProduct(product.id, { name, description: description || null, segment: product.segment, chargeType: product.chargeType, affiliationEnabled: affiliation });
+      const stored = offer ? await updateOffer(offer.id, next) : await createOffer(product.id, next);
+      setProduct(updated);
+      setOffer(stored);
+      setValues(offerInput(stored));
+      setPrice(priceText(stored.priceCents));
+      setMessage({ tone: "success", text: "Produto salvo." });
+      return true;
+    } catch (error) {
+      setMessage({ tone: "danger", text: error instanceof ApiRequestError ? error.message : "Não foi possível salvar o produto. Tente novamente." });
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function publish() {
+    if (!offer) { setMessage({ tone: "danger", text: "Salve o produto antes de publicar o checkout." }); return; }
+    setPublishing(true);
+    setMessage(null);
+    setNextStep(null);
+    try {
+      const result = await publishOffer(offer.id);
+      setOffer(result.offer);
+      if (result.published) setMessage({ tone: "success", text: "Checkout publicado." });
+      else {
+        // actionUrl aponta para fora do painel; levamos o vendedor à tela interna certa e voltamos (?next=).
+        const needsKyc = result.requiredAction === "COMPLETE_KYC";
+        const back = encodeURIComponent(`/produtos/${productId}?aba=checkout`);
+        setMessage({ tone: "danger", text: needsKyc ? "Conclua a verificação de identidade para publicar." : "Configure o perfil fiscal para publicar." });
+        setNextStep({ label: needsKyc ? "Continuar verificação" : "Configurar perfil fiscal", url: `${needsKyc ? "/verificacao" : "/perfil-fiscal"}?next=${back}` });
+      }
+    } catch (error) {
+      setMessage({ tone: "danger", text: error instanceof ApiRequestError ? error.message : "Não foi possível publicar o checkout." });
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function remove() {
+    try {
+      await archiveProduct(productId);
+      router.push("/produtos");
+    } catch {
+      setConfirmDelete(false);
+      setMessage({ tone: "danger", text: "Não foi possível excluir o produto." });
+    }
+  }
+
+  if (loading) return <Skeleton label="Carregando produto" />;
+  if (notFound) return <EmptyState title="Produto não encontrado" description="O produto não existe ou não está disponível para esta conta." action={<Link className="ui-button ui-button-secondary" href="/produtos">Voltar aos produtos</Link>} />;
+  if (loadFailed || !product) return <Toast tone="danger">Não foi possível carregar o produto. <Link href="/produtos">Voltar aos produtos</Link></Toast>;
+
+  const cardOn = values.paymentMethods.includes("CARD");
+  const boletoOn = values.paymentMethods.includes("BOLETO");
+  const subscription = product.chargeType === "SUBSCRIPTION";
+  const link = offer ? `${checkoutBase()}/checkout/${offer.slug}` : null;
+  const published = offer?.status === "PUBLISHED";
+  const lockedContract = offer?.immutableFields ?? [];
+
+  return <div className="pe">
+    <header className="pe-head">
+      <div className="pe-title"><Link href="/produtos" aria-label="Voltar aos produtos" className="pe-back">←</Link><h1>{product.name}</h1></div>
+      <button type="button" className="ui-button ui-button-primary" disabled={saving} onClick={() => void save()}>{saving ? "Salvando…" : "Salvar produto"}</button>
+    </header>
+
+    <div className="pe-tabs" role="tablist" aria-label="Seções do produto">
+      {abas.map(([id, label]) => <button key={id} type="button" role="tab" id={`aba-${id}`} aria-selected={aba === id} aria-controls={`painel-${id}`} onClick={() => selectAba(id)}>{label}</button>)}
     </div>
-  </>;
+
+    {message && <Toast tone={message.tone}>{message.text}{nextStep && <> <Link href={nextStep.url}>{nextStep.label}</Link></>}</Toast>}
+
+    <div role="tabpanel" id={`painel-${aba}`} aria-labelledby={`aba-${aba}`}>
+      {aba === "geral" && <>
+        <Secao titulo="Produto" texto="Nome e descrição que o comprador vê no checkout.">
+          <label className="pe-field"><span>Nome do produto</span><input value={name} maxLength={120} aria-invalid={Boolean(errors.name)} onChange={event => { setName(event.target.value); setErrors(current => ({ ...current, name: undefined })); }} />{errors.name && <small className="pe-error">{errors.name}</small>}</label>
+          <label className="pe-field"><span>Descrição</span><textarea rows={4} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} /><small className="pe-hint">{description.length}/2.000</small></label>
+          <dl className="pe-facts"><div><dt>Tipo de pagamento</dt><dd>{productChargeTypeLabel[product.chargeType]}</dd></div><div><dt>Tipo de produto</dt><dd>{productSegmentLabel[product.segment]}</dd></div><div><dt>Status</dt><dd>{productStatusLabel[product.status]}</dd></div></dl>
+        </Secao>
+        <Secao titulo="Preço" texto={subscription ? "Valor cobrado a cada ciclo." : undefined}>
+          <label className="pe-field"><span>Preço</span><span className="pe-money"><span aria-hidden="true">R$</span><input inputMode="decimal" placeholder="0,00" aria-label="Preço em reais" value={price} aria-invalid={Boolean(errors.price)} onChange={event => { setPrice(event.target.value); setErrors(current => ({ ...current, price: undefined })); }} /></span>{errors.price && <small className="pe-error">{errors.price}</small>}</label>
+          {subscription && <label className="pe-field"><span>Cobrança</span><select value={values.cycle ?? "MONTHLY"} disabled={lockedContract.includes("CYCLE")} onChange={event => change("cycle", event.target.value as BillingCycle)}>{Object.entries(cycleLabel).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select>{errors.cycle && <small className="pe-error">{errors.cycle}</small>}</label>}
+        </Secao>
+      </>}
+
+      {aba === "configuracoes" && <>
+        <Secao titulo="Pagamento" texto="Escolha como o comprador pode pagar.">
+          <fieldset className="pe-fieldset"><legend>Métodos de pagamento</legend>
+            {(["PIX", "CARD", "BOLETO"] as OfferPaymentMethod[]).map(method => <Chave key={method} label={methodLabel[method]} checked={values.paymentMethods.includes(method)} disabled={method === "BOLETO" && product.segment !== "SAAS"} onChange={checked => toggleMethod(method, checked)} />)}
+            {product.segment !== "SAAS" && <small className="pe-hint">Boleto está disponível apenas para produtos de software (SaaS).</small>}
+            {errors.paymentMethods && <small className="pe-error">{errors.paymentMethods}</small>}
+          </fieldset>
+          <label className="pe-field"><span>Parcelamento</span><select disabled={!cardOn} value={values.maxInstallments} onChange={event => change("maxInstallments", Number(event.target.value))}>{Array.from({ length: 12 }, (_, index) => index + 1).map(n => <option key={n} value={n}>{n === 1 ? "À vista" : `Até ${n}x`}</option>)}</select>{errors.maxInstallments && <small className="pe-error">{errors.maxInstallments}</small>}</label>
+          {boletoOn && <label className="pe-field"><span>Validade do boleto</span><span className="pe-inline"><input type="number" min={1} max={15} value={values.boletoDueDays} onChange={event => change("boletoDueDays", Number(event.target.value))} /><span>dias corridos</span></span>{errors.boletoDueDays && <small className="pe-error">{errors.boletoDueDays}</small>}</label>}
+        </Secao>
+        <Secao titulo="Garantia" texto="Prazo em que o comprador pode pedir reembolso.">
+          <label className="pe-field"><span>Garantia</span><span className="pe-inline"><input type="number" min={7} value={values.guaranteeDays} disabled={lockedContract.includes("GUARANTEE")} onChange={event => change("guaranteeDays", Number(event.target.value))} /><span>dias (mínimo 7)</span></span>{errors.guaranteeDays && <small className="pe-error">{errors.guaranteeDays}</small>}</label>
+          {lockedContract.length > 0 && <small className="pe-hint">Ciclo e garantia ficam protegidos após a primeira cobrança confirmada.</small>}
+        </Secao>
+        {subscription && <Secao titulo="Teste grátis" texto="Deixe em 0 para cobrar desde o início.">
+          <label className="pe-field"><span>Período de teste</span><span className="pe-inline"><input type="number" min={0} max={30} value={values.trialDays} onChange={event => change("trialDays", Number(event.target.value))} /><span>dias</span></span>{errors.trialDays && <small className="pe-error">{errors.trialDays}</small>}</label>
+          {product.segment === "SAAS" && <Chave label="Exigir cartão para iniciar o teste" checked={values.trialRequiresCard} onChange={checked => change("trialRequiresCard", checked)} />}
+        </Secao>}
+        <Secao titulo="Cupons de desconto" texto="Crie códigos promocionais para este e outros produtos."><Link className="ui-button ui-button-secondary pe-fit" href="/cupons">Gerenciar cupons</Link></Secao>
+      </>}
+
+      {aba === "checkout" && <>
+        <Secao titulo="Publicação" texto="Publique para liberar o link de compra.">
+          <p className="pe-status"><span className={`pe-dot ${published ? "pe-dot-on" : ""}`} aria-hidden="true" />{published ? "Checkout publicado" : offer ? "Checkout em rascunho" : "Salve o produto para criar o checkout"}</p>
+          {!published && <button type="button" className="ui-button ui-button-primary pe-fit" disabled={publishing || !offer} onClick={() => void publish()}>{publishing ? "Publicando…" : "Publicar checkout"}</button>}
+        </Secao>
+        <Secao titulo="Link de compra" texto="Compartilhe este link com seus compradores.">
+          {published && link ? <div className="pe-link"><a href={link} target="_blank" rel="noreferrer">{link}</a><button type="button" className="ui-button ui-button-secondary" onClick={() => { void navigator.clipboard.writeText(link).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1800); }); }}>{copied ? "Link copiado" : "Copiar link"}</button></div> : <p className="pe-hint">O link aparece aqui depois que o checkout for publicado.</p>}
+        </Secao>
+      </>}
+
+      {aba === "afiliados" && <Secao titulo="Programa de afiliados" texto="Deixe outras pessoas divulgarem seu produto em troca de comissão.">
+        <Chave label="Permitir afiliados neste produto" checked={affiliation} onChange={checked => { setAffiliation(checked); setMessage(null); }} />
+        <small className="pe-hint">Clique em “Salvar produto” para aplicar. A gestão dos afiliados fica em <Link href="/afiliados">Afiliados</Link>.</small>
+      </Secao>}
+    </div>
+
+    <footer className="pe-foot">
+      {confirmDelete ? <span className="pe-confirm" role="alert">Excluir “{product.name}”? <button type="button" className="ui-button ui-button-danger" onClick={() => void remove()}>Sim, excluir</button> <button type="button" className="ui-button ui-button-secondary" onClick={() => setConfirmDelete(false)}>Cancelar</button></span>
+        : <button type="button" className="ui-button ui-button-danger" onClick={() => setConfirmDelete(true)}>Excluir produto</button>}
+      <button type="button" className="ui-button ui-button-primary" disabled={saving} onClick={() => void save()}>{saving ? "Salvando…" : "Salvar produto"}</button>
+    </footer>
+  </div>;
 }

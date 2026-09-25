@@ -41,7 +41,7 @@ test.describe("produto (criar produto)", () => {
 
     await expect(page).toHaveURL(new RegExp(`/produtos/${PRODUTO_CRIADO.id}$`));
     await expect(page.getByRole("heading", { name: PRODUTO_CRIADO.name })).toBeVisible();
-    await expect(page.getByText(/nenhuma oferta disponível/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /salvar produto/i }).first()).toBeVisible();
   });
 
   test("bloqueia envio sem nome do produto", async ({ page }) => {
