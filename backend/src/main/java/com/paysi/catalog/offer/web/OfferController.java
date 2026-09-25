@@ -66,6 +66,16 @@ public class OfferController {
         return OfferResponse.from(offers.get(accountId(token), offerId));
     }
 
+    @PostMapping("/offers/{offerId}/duplicate")
+    @Operation(summary = "Duplicar oferta em rascunho, com novo link")
+    public ResponseEntity<OfferResponse> duplicate(
+            @CookieValue(name = COOKIE_NAME, required = false) String token,
+            @PathVariable UUID offerId) {
+        var copy = offers.duplicate(accountId(token), offerId);
+        return ResponseEntity.created(URI.create("/v1/offers/" + copy.offer().id()))
+                .body(OfferResponse.from(copy));
+    }
+
     @PostMapping("/offers/{offerId}/publish")
     @Operation(summary = "Publicar oferta")
     public ResponseEntity<OfferPublicationResponse> publish(

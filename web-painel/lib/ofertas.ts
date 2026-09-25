@@ -27,6 +27,7 @@ export type Offer = {
   immutableFields: OfferImmutableField[];
   createdAt: string;
   updatedAt: string;
+  name: string | null;
 };
 
 export type OfferInput = {
@@ -40,9 +41,12 @@ export type OfferInput = {
   boletoAdvanceDays: number;
   paymentMethods: OfferPaymentMethod[];
   payoutDelay: OfferPayoutDelay;
+  name?: string | null;
 };
 
 export type OfferInputErrors = Partial<Record<keyof OfferInput | "price", string>>;
+
+export const OFFER_NAME_MAX = 60;
 
 export type OfferSimulation = {
   grossCents: number;
@@ -79,6 +83,7 @@ export function formatOfferMoney(cents: number): string {
 
 export function validateOfferInput(input: OfferInput, context: { segment: "SAAS" | "DIGITAL"; chargeType: "ONE_TIME" | "SUBSCRIPTION" }): OfferInputErrors {
   const errors: OfferInputErrors = {};
+  if ((input.name?.trim().length ?? 0) > OFFER_NAME_MAX) errors.name = `Use no máximo ${OFFER_NAME_MAX} caracteres.`;
   if (!Number.isSafeInteger(input.priceCents) || input.priceCents < 2_000) errors.price = "Informe um preço mínimo de R$ 20,00.";
   if (context.chargeType === "SUBSCRIPTION" && !input.cycle) errors.cycle = "Escolha o ciclo da assinatura.";
   if (context.chargeType === "ONE_TIME" && input.cycle) errors.cycle = "Pagamento único não aceita ciclo.";
@@ -107,6 +112,10 @@ export function createOffer(productId: string, input: OfferInput) {
 
 export function updateOffer(offerId: string, input: OfferInput) {
   return apiRequest<Offer>(`/v1/offers/${encodeURIComponent(offerId)}`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+export function duplicateOffer(offerId: string) {
+  return apiRequest<Offer>(`/v1/offers/${encodeURIComponent(offerId)}/duplicate`, { method: "POST" });
 }
 
 export function publishOffer(offerId: string) {

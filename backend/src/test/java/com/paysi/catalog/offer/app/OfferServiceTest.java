@@ -59,6 +59,45 @@ class OfferServiceTest {
     }
 
     @Test
+    void duplicateCopiesTermsIntoNewDraftWithOwnSlugAndCopyName() {
+        var products = new InMemoryProducts(product(SELLER, "Gestão Ágil", Segment.SAAS,
+                ChargeType.SUBSCRIPTION));
+        var offers = new InMemoryOffers();
+        var service = service(offers, products);
+        UUID productId = products.products.getFirst().id();
+        OfferValues named = subscription();
+        OfferView original = service.create(SELLER, productId, new OfferValues(named.priceCents(), named.cycle(),
+                named.trialDays(), named.trialRequiresCard(), named.guaranteeDays(), named.maxInstallments(),
+                named.boletoDueDays(), named.boletoAdvanceDays(), named.paymentMethods(), named.payoutDelay(),
+                "  Plano Pro "));
+
+        OfferView copy = service.duplicate(SELLER, original.offer().id());
+
+        assertThat(original.offer().name()).isEqualTo("Plano Pro");
+        assertThat(copy.offer().id()).isNotEqualTo(original.offer().id());
+        assertThat(copy.offer().slug()).isNotEqualTo(original.offer().slug());
+        assertThat(copy.offer().name()).isEqualTo("Plano Pro (cópia)");
+        assertThat(copy.offer().priceCents()).isEqualTo(original.offer().priceCents());
+        assertThat(copy.offer().status()).isEqualTo(com.paysi.catalog.offer.domain.OfferStatus.DRAFT);
+    }
+
+    @Test
+    void duplicateOfForeignOfferIsNotFoundAndLongNamesAreRejected() {
+        var products = new InMemoryProducts(product(SELLER, "Gestão Ágil", Segment.SAAS,
+                ChargeType.SUBSCRIPTION));
+        var offers = new InMemoryOffers();
+        var service = service(offers, products);
+        OfferView original = service.create(SELLER, products.products.getFirst().id(), subscription());
+
+        assertThatThrownBy(() -> service.duplicate(OTHER_SELLER, original.offer().id()))
+                .isInstanceOf(NotFoundException.class);
+        OfferValues v = subscription();
+        assertThatThrownBy(() -> new OfferValues(v.priceCents(), v.cycle(), v.trialDays(), v.trialRequiresCard(),
+                v.guaranteeDays(), v.maxInstallments(), v.boletoDueDays(), v.boletoAdvanceDays(),
+                v.paymentMethods(), v.payoutDelay(), "x".repeat(61))).isInstanceOf(ValidationException.class);
+    }
+
+    @Test
     void validatesEveryCommercialCombination() {
         assertInvalid(oneTime(1_999, null, true, Set.of(OfferPaymentMethod.CARD)), "priceCents");
         assertInvalid(oneTime(2_000, BillingCycle.MONTHLY, true, Set.of(OfferPaymentMethod.CARD)), "cycle");

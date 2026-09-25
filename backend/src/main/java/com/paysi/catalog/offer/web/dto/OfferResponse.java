@@ -33,7 +33,8 @@ public record OfferResponse(
         Instant availableAt,
         Set<OfferImmutableField> immutableFields,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String name
 ) {
     public static OfferResponse from(OfferView view) {
         var offer = view.offer();
@@ -42,6 +43,6 @@ public record OfferResponse(
                 offer.trialRequiresCard(), offer.guaranteeDays(), offer.maxInstallments(),
                 offer.boletoDueDays(), offer.boletoAdvanceDays(), offer.paymentMethods(),
                 offer.payoutDelay(), offer.status(), view.availableAt(), view.immutableFields(),
-                offer.createdAt(), offer.updatedAt());
+                offer.createdAt(), offer.updatedAt(), offer.name());
     }
 }

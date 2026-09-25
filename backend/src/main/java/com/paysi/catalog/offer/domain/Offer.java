@@ -28,8 +28,20 @@ public record Offer(
         OfferStatus status,
         Instant archivedAt,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String name
 ) {
+    /** Oferta sem nome; mantém a assinatura anterior do construtor. */
+    public Offer(UUID id, UUID productId, ChargeType chargeType, Segment segment, String slug,
+                 long priceCents, BillingCycle cycle, int trialDays, boolean trialRequiresCard,
+                 int guaranteeDays, int maxInstallments, int boletoDueDays, int boletoAdvanceDays,
+                 Set<OfferPaymentMethod> paymentMethods, OfferPayoutDelay payoutDelay, OfferStatus status,
+                 Instant archivedAt, Instant createdAt, Instant updatedAt) {
+        this(id, productId, chargeType, segment, slug, priceCents, cycle, trialDays, trialRequiresCard,
+                guaranteeDays, maxInstallments, boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay,
+                status, archivedAt, createdAt, updatedAt, null);
+    }
+
     public Offer {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(productId, "productId");
@@ -77,14 +89,20 @@ public record Offer(
         return new Offer(id, productId, chargeType, segment, slug, values.priceCents(), values.cycle(),
                 values.trialDays(), values.trialRequiresCard(), values.guaranteeDays(),
                 values.maxInstallments(), values.boletoDueDays(), values.boletoAdvanceDays(),
-                values.paymentMethods(), values.payoutDelay(), OfferStatus.DRAFT, null, now, now);
+                values.paymentMethods(), values.payoutDelay(), OfferStatus.DRAFT, null, now, now, values.name());
+    }
+
+    /** Valores comerciais atuais, para criar uma cópia da oferta. */
+    public OfferValues values() {
+        return new OfferValues(priceCents, cycle, trialDays, trialRequiresCard, guaranteeDays, maxInstallments,
+                boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay, name);
     }
 
     public Offer update(OfferValues values, Instant now) {
         return new Offer(id, productId, chargeType, segment, slug, values.priceCents(), values.cycle(),
                 values.trialDays(), values.trialRequiresCard(), values.guaranteeDays(),
                 values.maxInstallments(), values.boletoDueDays(), values.boletoAdvanceDays(),
-                values.paymentMethods(), values.payoutDelay(), status, archivedAt, createdAt, now);
+                values.paymentMethods(), values.payoutDelay(), status, archivedAt, createdAt, now, values.name());
     }
 
     public Offer publish(Instant now) {
@@ -94,7 +112,7 @@ public record Offer(
         }
         return new Offer(id, productId, chargeType, segment, slug, priceCents, cycle, trialDays,
                 trialRequiresCard, guaranteeDays, maxInstallments, boletoDueDays, boletoAdvanceDays,
-                paymentMethods, payoutDelay, OfferStatus.PUBLISHED, null, createdAt, now);
+                paymentMethods, payoutDelay, OfferStatus.PUBLISHED, null, createdAt, now, name);
     }
 
     private static ValidationException invalid(String message, String field) {

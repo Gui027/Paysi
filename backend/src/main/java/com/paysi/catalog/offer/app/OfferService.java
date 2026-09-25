@@ -48,6 +48,22 @@ public class OfferService {
         return view(offer, now);
     }
 
+    /** Copia os termos comerciais para uma nova oferta em rascunho, com outro link. */
+    @Transactional
+    public OfferView duplicate(UUID sellerId, UUID offerId) {
+        Offer source = requireOffer(sellerId, offerId);
+        Product product = requireProduct(sellerId, source.productId());
+        OfferValues values = source.values();
+        String base = values.name() == null ? "Oferta" : values.name();
+        String copyName = (base + " (cópia)").length() > OfferValues.NAME_MAX_LENGTH
+                ? base.substring(0, OfferValues.NAME_MAX_LENGTH - " (cópia)".length()) + " (cópia)"
+                : base + " (cópia)";
+        return create(sellerId, product.id(), new OfferValues(values.priceCents(), values.cycle(),
+                values.trialDays(), values.trialRequiresCard(), values.guaranteeDays(), values.maxInstallments(),
+                values.boletoDueDays(), values.boletoAdvanceDays(), values.paymentMethods(),
+                values.payoutDelay(), copyName));
+    }
+
     @Transactional(readOnly = true)
     public List<OfferView> list(UUID sellerId, UUID productId) {
         requireProduct(sellerId, productId);

@@ -698,3 +698,8 @@ button { cursor: pointer; }
 @media (max-width: 1100px) { .ck-body { grid-template-columns: 1fr; } }
 
 .pe-row-actions { display: flex; justify-content: flex-end; gap: var(--esp-2); flex-wrap: wrap; }
+
+.pe-panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--esp-4); flex-wrap: wrap; margin-bottom: var(--esp-4); }
+.pe-panel-head .pe-hint { margin: 0; }
+.pe-switcher { display: flex; align-items: center; gap: var(--esp-3); margin-bottom: var(--esp-5); font-size: 14px; font-weight: 600; }
+.pe-switcher select { min-height: 40px; padding: 0 var(--esp-3); border: 1px solid var(--paysi-linha); border-radius: 10px; background: #fff; font: inherit; font-weight: 400; max-width: 100%; }

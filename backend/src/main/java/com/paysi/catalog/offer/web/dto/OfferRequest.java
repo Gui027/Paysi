@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
+import jakarta.validation.constraints.Size;
 
 import java.util.Set;
 import java.util.UUID;
@@ -27,6 +28,7 @@ public record OfferRequest(
         @NotNull @Min(3) @Max(10) Integer boletoAdvanceDays,
         @NotEmpty Set<OfferPaymentMethod> paymentMethods,
         @NotNull OfferPayoutDelay payoutDelay,
+        @Size(max = 60, message = "O nome da oferta deve ter no máximo 60 caracteres") String name,
         @Null(message = "Produto é somente leitura") @Schema(accessMode = Schema.AccessMode.READ_ONLY) UUID productId,
         @Null(message = "Segmento é somente leitura") @Schema(accessMode = Schema.AccessMode.READ_ONLY) Segment segment,
         @Null(message = "Tipo de cobrança é somente leitura") @Schema(accessMode = Schema.AccessMode.READ_ONLY)
@@ -36,6 +38,6 @@ public record OfferRequest(
 ) {
     public OfferValues toValues() {
         return new OfferValues(priceCents, cycle, trialDays, trialRequiresCard, guaranteeDays,
-                maxInstallments, boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay);
+                maxInstallments, boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay, name);
     }
 }

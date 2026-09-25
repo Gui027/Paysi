@@ -6,7 +6,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { ApiRequestError } from "../../../../lib/api";
 import { archiveProduct, getProduct, Product, productChargeTypeLabel, productSegmentLabel, productStatusLabel, updateProduct, validateProductInput } from "../../../../lib/produtos";
 import {
-  BillingCycle, createOffer, formatOfferMoney, listOffers, Offer, OfferInput, OfferInputErrors, OfferPaymentMethod, parseMoneyToCents,
+  BillingCycle, createOffer, duplicateOffer, formatOfferMoney, listOffers, Offer, OfferInput, OfferInputErrors, OfferPaymentMethod, parseMoneyToCents,
   publishOffer, updateOffer, validateOfferInput,
 } from "../../../../lib/ofertas";
 import { AffiliateProgramInput, AffiliationRecurrence, getAffiliateProgram, parseCommissionPercent, recurrenceLabel, updateAffiliateProgram } from "../../../../lib/afiliados";
@@ -31,9 +31,12 @@ function offerInput(offer: Offer): OfferInput {
     priceCents: offer.priceCents, cycle: offer.cycle, trialDays: offer.trialDays, trialRequiresCard: offer.trialRequiresCard,
     guaranteeDays: offer.guaranteeDays, maxInstallments: offer.maxInstallments, boletoDueDays: offer.boletoDueDays,
     boletoAdvanceDays: offer.boletoAdvanceDays, paymentMethods: offer.paymentMethods, payoutDelay: offer.payoutDelay,
+    name: offer.name,
   };
 }
 
+const offerLabel = (offer: Offer, offers: Offer[]) => offer.name?.trim() || `Oferta ${offers.findIndex(item => item.id === offer.id) + 1}`;
+const upsert = (list: Offer[], offer: Offer) => list.some(item => item.id === offer.id) ? list.map(item => item.id === offer.id ? offer : item) : [...list, offer];
 const priceText = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
 const checkoutBase = () => (process.env.NEXT_PUBLIC_CHECKOUT_BASE_URL ?? "https://checkout.paysi.com.br").replace(/\/$/, "");
 
@@ -52,6 +55,9 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [offer, setOffer] = useState<Offer | null>(null);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offerName, setOfferName] = useState("");
+  const [duplicating, setDuplicating] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [affiliation, setAffiliation] = useState(false);
@@ -82,7 +88,11 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
     Promise.all([getProduct(productId), listOffers(productId), getAffiliateProgram(productId).catch(() => null)]).then(([loaded, offers, loadedProgram]) => {
       if (!active) return;
       if (loadedProgram) { setProgram(loadedProgram); setCommission(formatBps(loadedProgram.commissionBps)); }
-      const current = offers.find(item => item.status !== "ARCHIVED") ?? null;
+      const active_ = offers.filter(item => item.status !== "ARCHIVED").sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      const wanted = searchParams.get("oferta");
+      const current = active_.find(item => item.id === wanted) ?? active_[0] ?? null;
+      setOffers(active_);
+      setOfferName(current?.name ?? "");
       setProduct(loaded);
       setName(loaded.name);
       setDescription(loaded.description ?? "");
@@ -108,14 +118,48 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
     change("paymentMethods", checked ? [...new Set([...values.paymentMethods, method])] : values.paymentMethods.filter(item => item !== method));
   }
 
+  function urlFor(aba: Aba, offerId: string | null) {
+    const query = new URLSearchParams();
+    if (aba !== "geral") query.set("aba", aba);
+    if (offerId && offers.length > 1) query.set("oferta", offerId);
+    const text = query.toString();
+    return text ? `/produtos/${productId}?${text}` : `/produtos/${productId}`;
+  }
+
   function selectAba(next: Aba) {
-    router.replace(next === "geral" ? `/produtos/${productId}` : `/produtos/${productId}?aba=${next}`, { scroll: false });
+    router.replace(urlFor(next, offer?.id ?? null), { scroll: false });
+  }
+
+  // Troca a oferta em edição: os campos de preço e configurações passam a ser os dela.
+  function selectOffer(next: Offer, toAba: Aba = aba) {
+    setOffer(next);
+    setValues(offerInput(next));
+    setPrice(priceText(next.priceCents));
+    setOfferName(next.name ?? "");
+    setErrors({});
+    setMessage(null);
+    router.replace(`/produtos/${productId}?${new URLSearchParams({ ...(toAba !== "geral" ? { aba: toAba } : {}), oferta: next.id })}`, { scroll: false });
+  }
+
+  async function duplicate(source: Offer) {
+    setDuplicating(true);
+    setMessage(null);
+    try {
+      const copy = await duplicateOffer(source.id);
+      setOffers(current => upsert(current, copy));
+      selectOffer(copy, "geral");
+      setMessage({ tone: "success", text: "Oferta duplicada. Ajuste o nome e o preço e salve." });
+    } catch (error) {
+      setMessage({ tone: "danger", text: error instanceof ApiRequestError ? error.message : "Não foi possível duplicar a oferta." });
+    } finally {
+      setDuplicating(false);
+    }
   }
 
   async function save(): Promise<boolean> {
     if (!product) return false;
     const cents = parseMoneyToCents(price);
-    const next: OfferInput = { ...values, priceCents: cents ?? 0 };
+    const next: OfferInput = { ...values, priceCents: cents ?? 0, name: offerName.trim() || null };
     const productErrors = validateProductInput({ name, description: description || null, segment: product.segment, chargeType: product.chargeType, affiliationEnabled: affiliation });
     const offerErrors = validateOfferInput(next, { segment: product.segment, chargeType: product.chargeType });
     if (cents === null) offerErrors.price = "Informe um valor válido com até duas casas decimais.";
@@ -148,8 +192,10 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       }
       setProduct(updated);
       setOffer(stored);
+      setOffers(current => upsert(current, stored));
       setValues(offerInput(stored));
       setPrice(priceText(stored.priceCents));
+      setOfferName(stored.name ?? "");
       setMessage({ tone: "success", text: "Produto salvo." });
       return true;
     } catch (error) {
@@ -160,14 +206,15 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
     }
   }
 
-  async function publish() {
-    if (!offer) { setMessage({ tone: "danger", text: "Salve o produto antes de publicar o checkout." }); return; }
+  async function publish(target: Offer | null = offer) {
+    if (!target) { setMessage({ tone: "danger", text: "Salve o produto antes de publicar o checkout." }); return; }
     setPublishing(true);
     setMessage(null);
     setNextStep(null);
     try {
-      const result = await publishOffer(offer.id);
-      setOffer(result.offer);
+      const result = await publishOffer(target.id);
+      setOffers(current => upsert(current, result.offer));
+      if (offer?.id === result.offer.id) setOffer(result.offer);
       if (result.published) setMessage({ tone: "success", text: "Checkout publicado." });
       else {
         // actionUrl aponta para fora do painel; levamos o vendedor à tela interna certa e voltamos (?next=).
@@ -220,6 +267,8 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       {abas.map(([id, label]) => <button key={id} type="button" role="tab" id={`aba-${id}`} aria-selected={aba === id} aria-controls={`painel-${id}`} onClick={() => selectAba(id)}>{label}</button>)}
     </div>
 
+    {offers.length > 1 && (aba === "geral" || aba === "configuracoes") && offer && <label className="pe-switcher"><span>Oferta em edição</span><select value={offer.id} onChange={event => { const next = offers.find(item => item.id === event.target.value); if (next) selectOffer(next); }}>{offers.map(item => <option key={item.id} value={item.id}>{offerLabel(item, offers)} · {formatOfferMoney(item.priceCents)}</option>)}</select></label>}
+
     {message && <Toast tone={message.tone}>{message.text}{nextStep && <> <Link href={nextStep.url}>{nextStep.label}</Link></>}</Toast>}
 
     <div role="tabpanel" id={`painel-${aba}`} aria-labelledby={`aba-${aba}`}>
@@ -229,7 +278,8 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
           <label className="pe-field"><span>Descrição</span><textarea rows={4} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} /><small className="pe-hint">{description.length}/2.000</small></label>
           <dl className="pe-facts"><div><dt>Tipo de pagamento</dt><dd>{productChargeTypeLabel[product.chargeType]}</dd></div><div><dt>Tipo de produto</dt><dd>{productSegmentLabel[product.segment]}</dd></div><div><dt>Status</dt><dd>{productStatusLabel[product.status]}</dd></div></dl>
         </Secao>
-        <Secao titulo="Preço" texto={subscription ? "Valor cobrado a cada ciclo." : undefined}>
+        <Secao titulo="Preço" texto={subscription ? "Valor cobrado a cada ciclo." : "Cada oferta tem o seu preço e o seu link."}>
+          <label className="pe-field"><span>Nome da oferta</span><input value={offerName} maxLength={60} placeholder="Ex.: Plano Pro" aria-invalid={Boolean(errors.name)} onChange={event => { setOfferName(event.target.value); setErrors(current => ({ ...current, name: undefined })); }} />{errors.name && <small className="pe-error">{errors.name}</small>}<small className="pe-hint">Só você vê este nome; ele ajuda a distinguir as ofertas.</small></label>
           <label className="pe-field"><span>Preço</span><span className="pe-money"><span aria-hidden="true">R$</span><input inputMode="decimal" placeholder="0,00" aria-label="Preço em reais" value={price} aria-invalid={Boolean(errors.price)} onChange={event => { setPrice(event.target.value); setErrors(current => ({ ...current, price: undefined })); }} /></span>{errors.price && <small className="pe-error">{errors.price}</small>}</label>
           {subscription && <label className="pe-field"><span>Cobrança</span><select value={values.cycle ?? "MONTHLY"} disabled={lockedContract.includes("CYCLE")} onChange={event => change("cycle", event.target.value as BillingCycle)}>{Object.entries(cycleLabel).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select>{errors.cycle && <small className="pe-error">{errors.cycle}</small>}</label>}
         </Secao>
@@ -257,30 +307,44 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       </>}
 
       {aba === "checkout" && <div className="pe-panel">
-        <p className="pe-hint">Cada oferta tem um checkout. Publique para liberar o link de compra.</p>
-        {offer ? <table className="prod-table">
+        <div className="pe-panel-head">
+          <p className="pe-hint">Cada oferta tem um preço, um checkout e um link. Publique para liberar o link de compra.</p>
+          {offer && <button type="button" className="ui-button ui-button-secondary" disabled={duplicating} onClick={() => void duplicate(offer)}>{duplicating ? "Criando…" : "Nova oferta"}</button>}
+        </div>
+        {offers.length > 0 ? <table className="prod-table">
           <thead><tr><th scope="col">Nome</th><th scope="col">Preço</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
-          <tbody><tr>
-            <td><span className="prod-name">Checkout A</span> <span className="pe-badge">Padrão</span></td>
-            <td className="prod-muted">{formatOfferMoney(offer.priceCents)}</td>
-            <td><span className={`pe-pill ${published ? "pe-pill-on" : ""}`}>{published ? "Publicado" : "Rascunho"}</span></td>
-            <td className="prod-actions"><div className="pe-row-actions"><Link className="ui-button ui-button-secondary" href={`/aparencia/${offer.id}`}>Personalizar</Link>{published ? <button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(link)}>{copied ? "Link copiado" : "Copiar link"}</button> : <button type="button" className="ui-button ui-button-primary" disabled={publishing} onClick={() => void publish()}>{publishing ? "Publicando…" : "Publicar"}</button>}</div></td>
-          </tr></tbody>
+          <tbody>{offers.map((item, index) => {
+            const itemPublished = item.status === "PUBLISHED";
+            return <tr key={item.id}>
+              <td><span className="prod-name">{offerLabel(item, offers)}</span>{index === 0 && <span className="pe-badge">Padrão</span>}</td>
+              <td className="prod-muted">{formatOfferMoney(item.priceCents)}</td>
+              <td><span className={`pe-pill ${itemPublished ? "pe-pill-on" : ""}`}>{itemPublished ? "Publicado" : "Rascunho"}</span></td>
+              <td className="prod-actions"><div className="pe-row-actions">
+                <button type="button" className="ui-button ui-button-secondary" aria-label={`Editar ${offerLabel(item, offers)}`} onClick={() => selectOffer(item, "geral")}>Editar</button>
+                <Link className="ui-button ui-button-secondary" href={`/aparencia/${item.id}`} aria-label={`Personalizar ${offerLabel(item, offers)}`}>Personalizar</Link>
+                <button type="button" className="ui-button ui-button-secondary" disabled={duplicating} aria-label={`Duplicar ${offerLabel(item, offers)}`} onClick={() => void duplicate(item)}>Duplicar</button>
+                {itemPublished ? <button type="button" className="ui-button ui-button-secondary" aria-label={`Copiar link de ${offerLabel(item, offers)}`} onClick={() => copiar(`${checkoutBase()}/checkout/${item.slug}`)}>{copied ? "Link copiado" : "Copiar link"}</button> : <button type="button" className="ui-button ui-button-primary" disabled={publishing} aria-label={`Publicar ${offerLabel(item, offers)}`} onClick={() => void publish(item)}>{publishing ? "Publicando…" : "Publicar"}</button>}
+              </div></td>
+            </tr>;
+          })}</tbody>
         </table> : <p className="pe-empty">Salve o produto para criar o checkout.</p>}
       </div>}
 
       {aba === "links" && <div className="pe-panel">
-        <p className="pe-hint">Links para divulgar este produto.</p>
-        {offer && published && link ? <table className="prod-table">
-          <thead><tr><th scope="col">Nome do link</th><th scope="col">URL</th><th scope="col">Tipo</th><th scope="col">Preço</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
-          <tbody><tr>
-            <td><span className="prod-name">{product.name}</span></td>
-            <td><input className="pe-url" readOnly aria-label="URL do checkout" value={link} onFocus={event => event.currentTarget.select()} /></td>
-            <td><span className="pe-pill pe-pill-blue">Checkout</span></td>
-            <td className="prod-muted">{formatOfferMoney(offer.priceCents)}</td>
-            <td className="prod-actions"><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(link)}>{copied ? "Copiado" : "Copiar"}</button></td>
-          </tr></tbody>
-        </table> : <p className="pe-empty">Os links aparecem aqui depois que o checkout for publicado. <button type="button" className="pe-linkbtn" onClick={() => selectAba("checkout")}>Ir para Checkout</button></p>}
+        <p className="pe-hint">Links para divulgar este produto. Cada oferta publicada tem o seu.</p>
+        {offers.filter(item => item.status === "PUBLISHED").length > 0 ? <table className="prod-table">
+          <thead><tr><th scope="col">Oferta</th><th scope="col">URL</th><th scope="col">Tipo</th><th scope="col">Preço</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
+          <tbody>{offers.filter(item => item.status === "PUBLISHED").map(item => {
+            const itemLink = `${checkoutBase()}/checkout/${item.slug}`;
+            return <tr key={item.id}>
+              <td><span className="prod-name">{offerLabel(item, offers)}</span></td>
+              <td><input className="pe-url" readOnly aria-label={`URL do checkout de ${offerLabel(item, offers)}`} value={itemLink} onFocus={event => event.currentTarget.select()} /></td>
+              <td><span className="pe-pill pe-pill-blue">Checkout</span></td>
+              <td className="prod-muted">{formatOfferMoney(item.priceCents)}</td>
+              <td className="prod-actions"><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(itemLink)}>{copied ? "Copiado" : "Copiar"}</button></td>
+            </tr>;
+          })}</tbody>
+        </table> : <p className="pe-empty">Os links aparecem aqui depois que um checkout for publicado. <button type="button" className="pe-linkbtn" onClick={() => selectAba("checkout")}>Ir para Checkout</button></p>}
       </div>}
 
       {aba === "afiliados" && <>

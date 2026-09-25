@@ -61,13 +61,32 @@ test.describe("editor do produto (abas)", () => {
     expect(programaEnviado).toBeNull();
   });
 
+  test("duplica a oferta, edita a cópia e lista os dois checkouts", async ({ page }) => {
+    const COPIA = { ...OFERTA, id: "off_ed_2", slug: "curso-vendas-2", name: "Plano Pro (cópia)", createdAt: "2026-09-26T12:00:00Z" };
+    let enviado: Record<string, unknown> | null = null;
+    await page.route(`**/api/v1/offers/${OFERTA.id}/duplicate`, (route) => route.fulfill({ status: 201, json: COPIA }));
+    await page.route(`**/api/v1/offers/${COPIA.id}`, async (route) => { enviado = route.request().postDataJSON(); await route.fulfill({ json: { ...COPIA, ...enviado } }); });
+    await page.goto(`/produtos/${PRODUTO.id}?aba=checkout`);
+    await page.getByRole("button", { name: "Duplicar Oferta 1" }).click();
+    await expect(page.getByText("Oferta duplicada.")).toBeVisible();
+    await expect(page.getByLabel("Nome da oferta")).toHaveValue("Plano Pro (cópia)");
+    await page.getByLabel("Nome da oferta").fill("Plano Pro");
+    await page.getByLabel("Preço em reais").fill("199,00");
+    await page.getByRole("button", { name: "Salvar produto" }).first().click();
+    await expect(page.getByText("Produto salvo.")).toBeVisible();
+    expect(enviado).toMatchObject({ name: "Plano Pro", priceCents: 19900 });
+    await page.getByRole("tab", { name: "Checkout" }).click();
+    await expect(page.getByRole("row")).toHaveCount(3);
+    await expect(page.getByRole("button", { name: "Publicar Plano Pro" })).toBeVisible();
+  });
+
   test("publica o checkout e mostra o link", async ({ page }) => {
     await page.route(`**/api/v1/offers/${OFERTA.id}/publish`, (route) => route.fulfill({ json: { published: true, requiredAction: null, actionUrl: null, offer: { ...OFERTA, status: "PUBLISHED" } } }));
     await page.goto(`/produtos/${PRODUTO.id}?aba=checkout`);
-    await page.getByRole("button", { name: "Publicar", exact: true }).click();
+    await page.getByRole("button", { name: "Publicar Oferta 1" }).click();
     await expect(page.getByText("Checkout publicado.")).toBeVisible();
     await page.getByRole("tab", { name: "Links" }).click();
-    await expect(page.getByLabel("URL do checkout")).toHaveValue(/checkout\/curso-vendas/);
+    await expect(page.getByLabel("URL do checkout de Oferta 1")).toHaveValue(/checkout\/curso-vendas/);
   });
 
   test("passa no axe em todas as abas (com o programa de afiliados aberto)", async ({ page }) => {
