@@ -264,7 +264,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
             <td><span className="prod-name">Checkout A</span> <span className="pe-badge">Padrão</span></td>
             <td className="prod-muted">{formatOfferMoney(offer.priceCents)}</td>
             <td><span className={`pe-pill ${published ? "pe-pill-on" : ""}`}>{published ? "Publicado" : "Rascunho"}</span></td>
-            <td className="prod-actions">{published ? <button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(link)}>{copied ? "Link copiado" : "Copiar link"}</button> : <button type="button" className="ui-button ui-button-primary" disabled={publishing} onClick={() => void publish()}>{publishing ? "Publicando…" : "Publicar"}</button>}</td>
+            <td className="prod-actions"><div className="pe-row-actions"><Link className="ui-button ui-button-secondary" href={`/aparencia/${offer.id}`}>Personalizar</Link>{published ? <button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(link)}>{copied ? "Link copiado" : "Copiar link"}</button> : <button type="button" className="ui-button ui-button-primary" disabled={publishing} onClick={() => void publish()}>{publishing ? "Publicando…" : "Publicar"}</button>}</div></td>
           </tr></tbody>
         </table> : <p className="pe-empty">Salve o produto para criar o checkout.</p>}
       </div>}

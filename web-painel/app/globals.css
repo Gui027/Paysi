@@ -670,3 +670,31 @@ button { cursor: pointer; }
 .pe-linkbtn { border: 0; background: transparent; color: var(--blue-700); font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
 .pe-tip { margin: 0 0 var(--esp-6); padding: var(--esp-4) var(--esp-5); border-radius: 16px; background: #FFF6DB; color: #7A4B00; font-size: 14px; }
 .pe-tip a { color: inherit; font-weight: 600; }
+
+/* Personalizar checkout */
+.ck-bar { display: flex; align-items: center; gap: var(--esp-4); flex-wrap: wrap; padding: var(--esp-3) var(--esp-4); margin-bottom: var(--esp-5); border-radius: 16px; background: #fff; }
+.ck-name { font-size: 18px; }
+.ck-device { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--gray-50); margin-left: var(--esp-4); }
+.ck-device button { min-height: 32px; padding: 0 var(--esp-4); border: 0; border-radius: 999px; background: transparent; color: #4B5563; font: inherit; font-size: 14px; cursor: pointer; }
+.ck-device button[aria-pressed="true"] { background: var(--blue-600); color: #fff; }
+.ck-state { margin-left: auto; color: #7A4B00; font-size: 14px; }
+.ck-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--esp-5); align-items: start; }
+.ck-stage { padding: var(--esp-5); border-radius: 20px; background: #fff; }
+.ck-frame { margin: 0 auto; overflow: hidden; border: 1px solid var(--paysi-linha); border-radius: 12px; background: #F0F1F3; }
+.ck-frame-desktop { max-width: 820px; } .ck-frame-mobile { max-width: 360px; }
+.ck-page { padding: var(--esp-5); }
+.ck-banner { display: block; width: 100%; max-height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: var(--esp-4); }
+.ck-head { display: flex; align-items: center; gap: var(--esp-3); margin-bottom: var(--esp-4); }
+.ck-logo { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; background: #E5E7EB; }
+.ck-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--esp-4); }
+.ck-frame-desktop .ck-columns:has(.ck-side) { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.ck-card { display: grid; gap: var(--esp-3); padding: var(--esp-5); border-radius: 12px; background: #fff; }
+.ck-line { display: block; height: 30px; border-radius: 8px; background: #EDEEF0; } .ck-short { width: 60%; }
+.ck-price { margin: 0; font-size: 20px; font-weight: 700; }
+.ck-pay { min-height: 44px; border: 0; border-radius: 8px; background: var(--ck-color, #1D6BD8); color: #fff; font: inherit; font-weight: 600; }
+.ck-side { width: 100%; border-radius: 12px; object-fit: cover; }
+.ck-panel { display: grid; gap: var(--esp-5); padding: var(--esp-5); border-radius: 20px; background: #fff; }
+.ck-panel h2 { margin: 0; font-size: 18px; }
+@media (max-width: 1100px) { .ck-body { grid-template-columns: 1fr; } }
+
+.pe-row-actions { display: flex; justify-content: flex-end; gap: var(--esp-2); flex-wrap: wrap; }

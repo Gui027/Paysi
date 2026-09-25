@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Appearance,
@@ -12,7 +13,9 @@ import {
 } from "../../../../lib/aparencia";
 import { ApiRequestError, fieldErrors } from "../../../../lib/api";
 import { AssetKind, assetContentUrl, removeAsset, uploadAsset } from "../../../../lib/assets";
-import { Botao, EmptyState, SeletorCor, Skeleton, Toast, UploadImagem } from "../../../../components/ui";
+import { formatOfferMoney, getOffer } from "../../../../lib/ofertas";
+import { getProduct } from "../../../../lib/produtos";
+import { EmptyState, SeletorCor, Skeleton, Toast, UploadImagem } from "../../../../components/ui";
 
 const blankAppearance: AppearanceInput = {
   logoAssetId: null,
@@ -38,6 +41,10 @@ export function AparenciaForm({ offerId }: { offerId: string }) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const [productId, setProductId] = useState<string | null>(null);
+  const [productName, setProductName] = useState("");
+  const [priceLabel, setPriceLabel] = useState("");
   const [uploading, setUploading] = useState<Record<AssetKind, boolean>>({
     LOGO: false,
     BANNER: false,
@@ -56,6 +63,18 @@ export function AparenciaForm({ offerId }: { offerId: string }) {
       if (error instanceof ApiRequestError && error.status === 404) setNotFound(true);
       else setLoadFailed(true);
     }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [offerId]);
+
+  // Nome e preço só ilustram a prévia; se falhar, a prévia usa textos genéricos.
+  useEffect(() => {
+    let active = true;
+    getOffer(offerId).then(offer => {
+      if (!active) return;
+      setProductId(offer.productId);
+      setPriceLabel(formatOfferMoney(offer.priceCents));
+      return getProduct(offer.productId).then(product => { if (active) setProductName(product.name); });
+    }).catch(() => undefined);
     return () => { active = false; };
   }, [offerId]);
 
@@ -132,59 +151,58 @@ export function AparenciaForm({ offerId }: { offerId: string }) {
   if (notFound) return <EmptyState title="Oferta não encontrada" description="A oferta não existe ou não está disponível para esta conta." />;
   if (loadFailed) return <Toast tone="danger">Não foi possível carregar a aparência desta oferta.</Toast>;
 
-  return <>
-    <header className="content-header"><div><h1>Aparência do checkout</h1><p>Personalize a identidade visual sem alterar o contrato de dados do checkout.</p></div></header>
-    <form className="ui-card appearance-form" onSubmit={event => void submit(event)} noValidate>
-      {generalError && <Toast tone="danger">{generalError}</Toast>}
-      {saved && !generalError && <Toast tone="success">Aparência salva.</Toast>}
-      <div className="appearance-grid">
-        <UploadImagem label="Logo" hint="PNG ou JPEG, até 5 MB e 4096 px."
-          error={errors.logoAssetId} uploading={uploading.LOGO}
-          previewUrl={values.logoAssetId ? assetContentUrl(values.logoAssetId) : null}
-          onSelect={file => void handleUpload("LOGO", file)}
-          onRemove={values.logoAssetId ? () => void handleRemove("LOGO", values.logoAssetId!) : undefined} />
-        <UploadImagem label="Banner" hint="PNG ou JPEG, até 5 MB e 4096 px."
-          error={errors.bannerAssetId} uploading={uploading.BANNER}
-          previewUrl={values.bannerAssetId ? assetContentUrl(values.bannerAssetId) : null}
-          onSelect={file => void handleUpload("BANNER", file)}
-          onRemove={values.bannerAssetId ? () => void handleRemove("BANNER", values.bannerAssetId!) : undefined} />
-        <UploadImagem label="Imagem lateral" hint="PNG ou JPEG, até 5 MB e 4096 px."
-          error={errors.sideImageAssetId} uploading={uploading.SIDE_IMAGE}
-          previewUrl={values.sideImageAssetId ? assetContentUrl(values.sideImageAssetId) : null}
-          onSelect={file => void handleUpload("SIDE_IMAGE", file)}
-          onRemove={values.sideImageAssetId ? () => void handleRemove("SIDE_IMAGE", values.sideImageAssetId!) : undefined} />
-      </div>
-      <SeletorCor label="Cor primária" value={values.primaryColor} error={errors.primaryColor}
-        onChange={value => change("primaryColor", value)} />
-      <label className="ui-field" htmlFor="button-text"><span>Texto do botão</span>
-        <input id="button-text" type="text" maxLength={40} value={values.buttonText}
-          aria-invalid={Boolean(errors.buttonText)}
-          onChange={event => change("buttonText", event.target.value)} />
-        {errors.buttonText && <small className="ui-error">{errors.buttonText}</small>}
-      </label>
+  const color = /^#[0-9A-Fa-f]{6}$/.test(values.primaryColor) ? values.primaryColor : "#1D6BD8";
+  const imageField = (kind: AssetKind, label: string, field: keyof AppearanceInput) => <UploadImagem label={label} hint="PNG ou JPEG, até 5 MB e 4096 px."
+    error={errors[field]} uploading={uploading[kind]}
+    previewUrl={values[field] ? assetContentUrl(values[field]!) : null}
+    onSelect={file => void handleUpload(kind, file)}
+    onRemove={values[field] ? () => void handleRemove(kind, values[field]!) : undefined} />;
 
-      <div className="appearance-preview-grid">
-        <Preview title="Prévia — desktop" className="appearance-preview-desktop" values={values} />
-        <Preview title="Prévia — mobile" className="appearance-preview-mobile" values={values} />
+  return <form className="ck" onSubmit={event => void submit(event)} noValidate>
+    <header className="ck-bar">
+      <Link href={productId ? `/produtos/${productId}?aba=checkout` : "/produtos"} className="pe-back" aria-label="Voltar ao produto">←</Link>
+      <strong className="ck-name">Personalizar checkout</strong>
+      <div className="ck-device" role="group" aria-label="Tamanho da tela">
+        <button type="button" aria-pressed={device === "desktop"} onClick={() => setDevice("desktop")}>Desktop</button>
+        <button type="button" aria-pressed={device === "mobile"} onClick={() => setDevice("mobile")}>Celular</button>
       </div>
+      <span className="ck-state" role="status">{dirty ? "Existem alterações não salvas" : saved ? "Tudo certo!" : ""}</span>
+      <button type="submit" className="ui-button ui-button-primary" disabled={saving}>{saving ? "Salvando…" : "Salvar checkout"}</button>
+    </header>
 
-      <div className="ui-actions product-form-actions">
-        <Botao type="submit" disabled={saving}>{saving ? "Salvando…" : "Salvar aparência"}</Botao>
-        {dirty && <span className="unsaved-indicator" role="status">Alterações não salvas</span>}
-      </div>
-    </form>
-  </>;
-}
+    <div className="ck-body">
+      <section className="ck-stage" aria-label="Prévia do checkout">
+        <div className={`ck-frame ck-frame-${device}`}>
+          <div className="ck-page" style={{ ["--ck-color" as string]: color }}>
+            {values.bannerAssetId && <img className="ck-banner" src={assetContentUrl(values.bannerAssetId)} alt="" />}
+            <div className="ck-head">
+              {values.logoAssetId ? <img className="ck-logo" src={assetContentUrl(values.logoAssetId)} alt="" /> : <span className="ck-logo ck-logo-empty" aria-hidden="true" />}
+              <strong>{productName || "Nome do produto"}</strong>
+            </div>
+            <div className="ck-columns">
+              <div className="ck-card">
+                <span className="ck-line" /><span className="ck-line" /><span className="ck-line ck-short" />
+                {priceLabel && <p className="ck-price">{priceLabel}</p>}
+                <button type="button" className="ck-pay" disabled>{values.buttonText || "Comprar agora"}</button>
+              </div>
+              {values.sideImageAssetId && <img className="ck-side" src={assetContentUrl(values.sideImageAssetId)} alt="" />}
+            </div>
+          </div>
+        </div>
+      </section>
 
-function Preview({ title, className, values }: { title: string; className: string; values: AppearanceInput }) {
-  const color = /^#[0-9A-Fa-f]{6}$/.test(values.primaryColor) ? values.primaryColor : "#2563EB";
-  return <div className={`appearance-preview ${className}`}>
-    <header>{title}</header>
-    <div className="appearance-preview-body">
-      {values.bannerAssetId && <img src={assetContentUrl(values.bannerAssetId)} alt="" />}
-      {values.logoAssetId && <img src={assetContentUrl(values.logoAssetId)} alt="" />}
-      {values.sideImageAssetId && <img src={assetContentUrl(values.sideImageAssetId)} alt="" />}
-      <button type="button" style={{ background: color }} disabled>{values.buttonText || "Comprar agora"}</button>
+      <aside className="ck-panel" aria-label="Configurações do checkout">
+        {generalError && <Toast tone="danger">{generalError}</Toast>}
+        <h2>Aparência</h2>
+        {imageField("LOGO", "Logo", "logoAssetId")}
+        {imageField("BANNER", "Banner", "bannerAssetId")}
+        {imageField("SIDE_IMAGE", "Imagem lateral", "sideImageAssetId")}
+        <SeletorCor label="Cor primária" value={values.primaryColor} error={errors.primaryColor} onChange={value => change("primaryColor", value)} />
+        <label className="ui-field" htmlFor="button-text"><span>Texto do botão</span>
+          <input id="button-text" type="text" maxLength={40} value={values.buttonText} aria-invalid={Boolean(errors.buttonText)} onChange={event => change("buttonText", event.target.value)} />
+          {errors.buttonText && <small className="ui-error">{errors.buttonText}</small>}
+        </label>
+      </aside>
     </div>
-  </div>;
+  </form>;
 }

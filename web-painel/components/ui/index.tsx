@@ -73,7 +73,7 @@ export function UploadImagem({ label, hint, error, previewUrl, uploading, onSele
   return <div className="ui-field ui-upload">
     <span>{label}</span>
     {previewUrl && <img className="ui-upload-preview" src={previewUrl} alt="" />}
-    <input id={generatedId} type="file" accept="image/png,image/jpeg" disabled={uploading}
+    <input id={generatedId} type="file" aria-label={label} accept="image/png,image/jpeg" disabled={uploading}
       aria-invalid={Boolean(error)} aria-describedby={(error || hint) ? helpId : undefined}
       onChange={event => {
         const file = event.target.files?.[0];
