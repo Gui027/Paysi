@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
-import { Cartao, EmptyState, Etiqueta, Skeleton, Tabela, Toast } from "../../../components/ui";
+import { Skeleton, Tabela, Toast } from "../../../components/ui";
 import { currentSession, SessionCreated } from "../../../lib/sessao";
 import {
   BalanceView,
@@ -58,36 +58,29 @@ export function InicioPage() {
     return () => { active = false; };
   }, [mode, period, reloadKey]);
 
-  return <>
-    <header className="content-header dashboard-page-header">
-      <div>
-        <span className="paysi-rotulo">Visão geral</span>
-        <h1>Início</h1>
-        <p>Acompanhe a operação em um só lugar.</p>
-      </div>
-      {mode === "SELLER" && <label className="dashboard-filter">
-        <span>Período</span>
-        <select value={period} onChange={event => setPeriod(event.target.value as DashboardPeriodPreset)}>
-          {Object.entries(periodLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </select>
-      </label>}
+  const periods = Object.entries(periodLabel) as [DashboardPeriodPreset, string][];
+
+  return <div className="dash">
+    <header className="dash-head">
+      <h1>Dashboard</h1>
+      {mode === "SELLER" && <div className="dash-period" role="group" aria-label="Período">
+        {periods.map(([value, label]) => <button key={value} type="button" aria-pressed={period === value} onClick={() => setPeriod(value)}>{label}</button>)}
+      </div>}
     </header>
 
-    {mode === null ? <Skeleton label="Carregando início" /> :
-      mode === "AFFILIATE" ? <Cartao className="dashboard-mode-card">
+    {mode === null ? <Skeleton label="Carregando dashboard" /> :
+      mode === "AFFILIATE" ? <section className="dash-card dash-note">
         <h2>Modo afiliado</h2>
         <p>Este painel mostra a operação de vendedor. A visão do modo afiliado ainda está em construção — troque para "Vender" para acompanhar sua conta.</p>
-      </Cartao> : error ? <Toast tone="danger">{error} <button className="toast-action" onClick={() => setReloadKey(value => value + 1)}>Tentar novamente</button></Toast> :
-      loading || !dashboard ? <Skeleton label="Carregando dashboard" /> : <div className="dashboard-blocks">
-        <Vendas block={dashboard.salesToday} period={dashboard.period.preset} />
-        <SaldoBuckets block={dashboard.balance} />
+      </section> : error ? <Toast tone="danger">{error} <button className="toast-action" onClick={() => setReloadKey(value => value + 1)}>Tentar novamente</button></Toast> :
+      loading || !dashboard ? <Skeleton label="Carregando dashboard" /> : <div className="dash-grid">
         <Alertas block={dashboard.alerts} />
-        <ProximosRecebimentos block={dashboard.nextReceivables} />
-        <Assinaturas block={dashboard.subscriptions} />
+        <Vendas block={dashboard.salesToday} period={dashboard.period.preset} subscriptions={dashboard.subscriptions} />
+        <SaldoBuckets block={dashboard.balance} />
         <UltimasVendas block={dashboard.recentSales} />
-        <AcoesRapidas />
+        <ProximosRecebimentos block={dashboard.nextReceivables} />
       </div>}
-  </>;
+  </div>;
 }
 
 function Bloco<T>({ title, block, emptyTitle, emptyDescription, className, children }: {
@@ -98,87 +91,67 @@ function Bloco<T>({ title, block, emptyTitle, emptyDescription, className, child
   className?: string;
   children: (data: T) => ReactNode;
 }) {
-  return <section className={className} aria-labelledby={`${title}-titulo`}>
+  return <section className={`dash-card ${className ?? ""}`} aria-labelledby={`${title}-titulo`}>
     <h2 id={`${title}-titulo`}>{title}</h2>
     {block.state === "ERROR" ? <Toast tone="danger">{block.message ?? "Este bloco está temporariamente indisponível."}</Toast> :
-      block.state === "EMPTY" ? <EmptyState headingLevel="h3" title={emptyTitle} description={emptyDescription} action={<Link className="ui-button ui-button-primary" href="/produtos/novo">Criar produto</Link>} /> :
+      block.state === "EMPTY" ? <div className="dash-empty"><h3>{emptyTitle}</h3><p>{emptyDescription}</p></div> :
       block.data === undefined ? <Toast tone="danger">Resposta incompleta do dashboard.</Toast> : children(block.data)}
   </section>;
 }
 
-function Vendas({ block, period }: { block: DashboardBlock<SalesSummary>; period: DashboardPeriodPreset }) {
-  return <Bloco className="dashboard-section dashboard-sales" title="Vendas no período" block={block} emptyTitle={`Nenhuma venda em ${periodLabel[period].toLowerCase()}`} emptyDescription="Crie um produto para começar a vender.">
-    {data => <div className="stats stats-dashboard">
-      <Cartao className="dashboard-kpi-card"><span>Valor confirmado</span><strong className="paysi-valor">{formatarCentavos(data.amountCents)}</strong></Cartao>
-      <Cartao className="dashboard-kpi-card"><span>Quantidade</span><strong>{data.count}</strong></Cartao>
+function Vendas({ block, period, subscriptions }: { block: DashboardBlock<SalesSummary>; period: DashboardPeriodPreset; subscriptions: DashboardBlock<SubscriptionSummary> }) {
+  const subs = subscriptions.data;
+  return <Bloco className="dash-wide" title="Vendas" block={block} emptyTitle={`Nenhuma venda em ${periodLabel[period].toLowerCase()}`} emptyDescription="Crie um produto e compartilhe o link de checkout para começar a vender.">
+    {data => <div className="dash-kpis">
+      <div className="dash-kpi dash-kpi-rose"><span>Valor confirmado</span><strong className="paysi-valor">{formatarCentavos(data.amountCents)}</strong></div>
+      <div className="dash-kpi dash-kpi-amber"><span>Vendas</span><strong>{data.count}</strong></div>
+      <div className="dash-kpi dash-kpi-green"><span>Assinaturas ativas</span><strong>{subs ? subs.active : "—"}</strong></div>
+      <div className="dash-kpi dash-kpi-violet"><span>Em atraso</span><strong>{subs ? subs.pastDue : "—"}</strong></div>
     </div>}
   </Bloco>;
 }
 
 function SaldoBuckets({ block }: { block: DashboardBlock<BalanceView> }) {
-  return <Bloco className="dashboard-section dashboard-balance" title="Saldo" block={block} emptyTitle="Saldo indisponível" emptyDescription="Ainda não há saldo para exibir.">
-    {balance => <div className="stats stats-dashboard">
-      {bucketOrder.map(bucket => <Cartao className="dashboard-balance-card" key={bucket}>
+  return <Bloco className="dash-wide" title="Saldo" block={block} emptyTitle="Saldo indisponível" emptyDescription="Ainda não há saldo para exibir.">
+    {balance => <div className="dash-balance">
+      {bucketOrder.map(bucket => <div className={`dash-bal dash-bal-${bucket}`} key={bucket}>
         <span>{bucketLabel[bucket]}</span>
         <strong className="paysi-valor">{formatarCentavos(balance[bucket])}</strong>
-      </Cartao>)}
+      </div>)}
     </div>}
   </Bloco>;
 }
 
 function Alertas({ block }: { block: DashboardBlock<DashboardAlert[]> }) {
-  return <Bloco className="dashboard-section dashboard-alerts" title="Alertas" block={block} emptyTitle="Nenhum alerta no momento" emptyDescription="Sua conta está em dia.">
-    {alerts => <div className="alert-list">
-      {alerts.map(alert => <Cartao className={`dashboard-alert-card dashboard-alert-card-${alert.tone}`} key={alert.id} role={alert.tone === "danger" ? "alert" : "status"}>
-        <div className="ui-labels"><Etiqueta tone={alert.tone}>{alert.tone === "danger" ? "Atenção" : "Aviso"}</Etiqueta></div>
-        <h3>{alert.title}</h3>
-        <p>{alert.description}</p>
-        {alert.actionUrl && (alert.actionUrl.startsWith("/") ? <Link className="ui-button ui-button-secondary" href={alert.actionUrl}>Continuar</Link> : <a className="ui-button ui-button-secondary" href={alert.actionUrl} target="_blank" rel="noopener noreferrer">Continuar verificação</a>)}
-      </Cartao>)}
-    </div>}
-  </Bloco>;
+  if (!block.data?.length) return null;
+  return <section className="dash-wide dash-alerts" aria-label="Alertas">
+    {block.data.map(alert => <div className={`dash-alert dash-alert-${alert.tone}`} key={alert.id} role={alert.tone === "danger" ? "alert" : "status"}>
+      <div><h2>{alert.title}</h2><p>{alert.description}</p></div>
+      {alert.actionUrl && (alert.actionUrl.startsWith("/") ? <Link className="ui-button ui-button-secondary" href={alert.actionUrl}>Continuar</Link> : <a className="ui-button ui-button-secondary" href={alert.actionUrl} target="_blank" rel="noopener noreferrer">Continuar verificação</a>)}
+    </div>)}
+  </section>;
 }
 
 function ProximosRecebimentos({ block }: { block: DashboardBlock<UpcomingReceivable[]> }) {
-  return <Bloco className="dashboard-section dashboard-receivables" title="Próximos recebimentos" block={block} emptyTitle="Nenhum recebimento previsto" emptyDescription="Quando houver valores a caminho do seu saldo disponível, eles aparecem aqui.">
-    {items => <Cartao className="dashboard-table-card"><Tabela caption="Próximos recebimentos" headers={["Data prevista", "Valor"]} rows={items.map((item): ReactNode[] => [
-      formatDate(item.availableAt),
-      <span key={`${item.availableAt}-${item.amountCents}`} className="paysi-valor">{formatarCentavos(item.amountCents)}</span>,
-    ])} /></Cartao>}
-  </Bloco>;
-}
-
-function Assinaturas({ block }: { block: DashboardBlock<SubscriptionSummary> }) {
-  return <Bloco className="dashboard-section dashboard-subscriptions" title="Assinaturas" block={block} emptyTitle="Nenhuma assinatura" emptyDescription="Assinaturas ativas e inadimplentes aparecerão aqui.">
-    {data => <div className="stats stats-dashboard">
-      <Cartao className="dashboard-kpi-card"><span>Ativas</span><strong>{data.active}</strong></Cartao>
-      <Cartao className="dashboard-kpi-card"><span>Em atraso</span><strong>{data.pastDue}</strong></Cartao>
-    </div>}
+  return <Bloco className="dash-side" title="Próximos recebimentos" block={block} emptyTitle="Nenhum recebimento previsto" emptyDescription="Valores a caminho do seu saldo disponível aparecem aqui.">
+    {items => <ul className="dash-list">{items.map(item => <li key={`${item.availableAt}-${item.amountCents}`}>
+      <span>{formatDate(item.availableAt)}</span><strong className="paysi-valor">{formatarCentavos(item.amountCents)}</strong>
+    </li>)}</ul>}
   </Bloco>;
 }
 
 function UltimasVendas({ block }: { block: DashboardBlock<RecentSale[]> }) {
-  return <Bloco className="dashboard-section dashboard-recent-sales" title="Últimas vendas" block={block} emptyTitle="Nenhuma venda recente" emptyDescription="As vendas confirmadas aparecerão aqui.">
-    {items => <Cartao className="dashboard-table-card"><Tabela caption="Últimas vendas" headers={["Comprador", "Valor", "Método", "Status", "Data"]} rows={items.map((item): ReactNode[] => [
+  return <Bloco className="dash-main" title="Últimas vendas" block={block} emptyTitle="Nenhuma venda recente" emptyDescription="As vendas confirmadas aparecerão aqui.">
+    {items => <div className="dash-table-wrap"><Tabela caption="Últimas vendas" headers={["Comprador", "Valor", "Método", "Status", "Data"]} rows={items.map((item): ReactNode[] => [
       item.buyer,
       <span key={`${item.id}-amount`} className="paysi-valor">{formatarCentavos(item.amountCents)}</span>,
       item.method,
       item.status,
       formatDate(item.occurredAt),
-    ])} /></Cartao>}
+    ])} /></div>}
   </Bloco>;
 }
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
-}
-
-function AcoesRapidas() {
-  return <section className="dashboard-section dashboard-actions" aria-labelledby="acoes-titulo">
-    <h2 id="acoes-titulo">Ações rápidas</h2>
-    <div className="ui-actions">
-      <Link className="ui-button ui-button-primary" href="/produtos/novo">Criar produto</Link>
-      <Link className="ui-button ui-button-secondary" href="/produtos">Ver produtos</Link>
-    </div>
-  </section>;
 }
