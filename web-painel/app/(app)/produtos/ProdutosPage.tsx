@@ -17,6 +17,7 @@ import {
   productSegmentLabel,
   productStatusLabel,
 } from "../../../lib/produtos";
+import { CriarProdutoModal } from "./CriarProdutoModal";
 import { Botao, Dialog, EmptyState, Etiqueta, Skeleton, Toast } from "../../../components/ui";
 
 const emptyFilters: ProductFilters = { query: "", status: "", segment: "", chargeType: "" };
@@ -38,6 +39,7 @@ export function ProdutosPage() {
   const [error, setError] = useState<string | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Product | null>(null);
   const [archiving, setArchiving] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const filters = useMemo<ProductFilters>(() => ({
     query: searchParams.get("q") ?? "",
@@ -107,8 +109,9 @@ export function ProdutosPage() {
   return <>
     <header className="prod-head">
       <h1>Produtos</h1>
-      <Link className="ui-button ui-button-primary" href="/produtos/novo">Criar produto</Link>
+      <button type="button" className="ui-button ui-button-primary" onClick={() => setCreating(true)}>Criar produto</button>
     </header>
+    <CriarProdutoModal open={creating} onClose={() => setCreating(false)} />
 
     <section className="prod-panel" aria-label="Lista de produtos">
       <div className="prod-toolbar">
@@ -123,7 +126,7 @@ export function ProdutosPage() {
 
       {error && <Toast tone="danger">{error} <button className="toast-action" onClick={() => void load()}>Tentar novamente</button></Toast>}
       {loading ? <Skeleton label="Carregando lista de produtos" /> : products.length === 0 ?
-        <EmptyState title="Nenhum produto cadastrado" description="Crie um produto em rascunho para começar." action={<Link className="ui-button ui-button-primary" href="/produtos/novo">Criar produto</Link>} /> :
+        <EmptyState title="Nenhum produto cadastrado" description="Crie um produto em rascunho para começar." action={<button type="button" className="ui-button ui-button-primary" onClick={() => setCreating(true)}>Criar produto</button>} /> :
         visibleProducts.length === 0 ? <EmptyState title="Nenhum resultado" description="Ajuste ou limpe os filtros para localizar outro produto." action={hasFilters ? <Botao variant="secondary" onClick={() => router.replace("/produtos", { scroll: false })}>Limpar filtros</Botao> : undefined} /> :
         <table className="prod-table">
           <thead><tr><th scope="col">Nome</th><th scope="col">Cobrança</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
