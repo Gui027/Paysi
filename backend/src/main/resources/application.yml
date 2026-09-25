@@ -29,6 +29,18 @@ spring:
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      # Defaults servem ao Mailpit local (sem auth/TLS). Provedor real: MAIL_SMTP_AUTH=true e
+      # MAIL_SMTP_STARTTLS=true (porta 587) ou MAIL_SMTP_SSL=true (porta 465).
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:false}
+      mail.smtp.ssl.enable: ${MAIL_SMTP_SSL:false}
+      # Sem timeout um SMTP lento segura a requisição indefinidamente.
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 8000
+      mail.smtp.writetimeout: 8000
   servlet:
     multipart:
       max-file-size: 5MB
