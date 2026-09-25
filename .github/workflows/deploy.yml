@@ -83,7 +83,10 @@ jobs:
           for v in PORTAINER_URL PORTAINER_TOKEN STACK_ID ENDPOINT_ID; do
             [ -n "${!v}" ] || { echo "::error::secret $v não configurado"; exit 1; }
           done
-          api() { curl -fsS -H "X-API-Key: $PORTAINER_TOKEN" "$@"; }
+          # -k: o Portainer em IP:9443 usa certificado autoassinado. O tráfego continua cifrado; o que se
+          # perde é a verificação de identidade do servidor (trocar por um domínio com certificado válido
+          # e remover o -k é uma melhoria futura).
+          api() { curl -fsSk -H "X-API-Key: $PORTAINER_TOKEN" "$@"; }
 
           # Mantém todas as variáveis atuais do stack (senhas, chaves) e troca só a tag da imagem.
           # A tag muda a cada commit, então o Docker sempre puxa a imagem nova.
