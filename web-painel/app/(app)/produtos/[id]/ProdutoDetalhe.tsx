@@ -38,7 +38,8 @@ function offerInput(offer: Offer): OfferInput {
 
 const offerLabel = (offer: Offer, offers: Offer[]) => offer.name?.trim() || `Oferta ${offers.findIndex(item => item.id === offer.id) + 1}`;
 const upsert = (list: Offer[], offer: Offer) => list.some(item => item.id === offer.id) ? list.map(item => item.id === offer.id ? offer : item) : [...list, offer];
-const priceText = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
+// Só reformata o texto de centavos vindo da API ("9700" -> "97,00"); nenhuma conta com dinheiro.
+const priceText = (cents: number) => { const digits = String(cents).padStart(3, "0"); return `${digits.slice(0, -2)},${digits.slice(-2)}`; };
 const checkoutBase = () => (process.env.NEXT_PUBLIC_CHECKOUT_BASE_URL ?? "https://checkout.paysi.com.br").replace(/\/$/, "");
 
 function Secao({ titulo, texto, children }: { titulo: string; texto?: ReactNode; children: ReactNode }) {
