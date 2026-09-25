@@ -103,10 +103,10 @@ function Vendas({ block, period, subscriptions }: { block: DashboardBlock<SalesS
   const subs = subscriptions.data;
   return <Bloco className="dash-wide" title="Vendas" block={block} emptyTitle={`Nenhuma venda em ${periodLabel[period].toLowerCase()}`} emptyDescription="Crie um produto e compartilhe o link de checkout para começar a vender.">
     {data => <div className="dash-kpis">
-      <div className="dash-kpi dash-kpi-rose"><span>Valor confirmado</span><strong className="paysi-valor">{formatarCentavos(data.amountCents)}</strong></div>
-      <div className="dash-kpi dash-kpi-amber"><span>Vendas</span><strong>{data.count}</strong></div>
-      <div className="dash-kpi dash-kpi-green"><span>Assinaturas ativas</span><strong>{subs ? subs.active : "—"}</strong></div>
-      <div className="dash-kpi dash-kpi-violet"><span>Em atraso</span><strong>{subs ? subs.pastDue : "—"}</strong></div>
+      <div className="dash-kpi dash-kpi-green"><span>Valor confirmado</span><strong className="paysi-valor">{formatarCentavos(data.amountCents)}</strong></div>
+      <div className="dash-kpi dash-kpi-blue"><span>Vendas</span><strong>{data.count}</strong></div>
+      <div className="dash-kpi dash-kpi-violet"><span>Assinaturas ativas</span><strong>{subs ? subs.active : "—"}</strong></div>
+      <div className="dash-kpi dash-kpi-red"><span>Em atraso</span><strong>{subs ? subs.pastDue : "—"}</strong></div>
     </div>}
   </Bloco>;
 }

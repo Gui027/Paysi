@@ -569,7 +569,10 @@ button { cursor: pointer; }
 .dash-kpi { display: grid; gap: var(--esp-2); padding: var(--esp-5); border-radius: 20px; }
 .dash-kpi span { color: #4B5563; font-size: 14px; }
 .dash-kpi strong { color: var(--paysi-texto); font-size: 28px; line-height: 1.15; font-weight: 700; }
-.dash-kpi-rose { background: #FFE9EC; } .dash-kpi-amber { background: #FFF1DC; } .dash-kpi-green { background: #DFF6E8; } .dash-kpi-violet { background: #EBE7FF; }
+.dash-kpi-green { background: #DFF6E8; } .dash-kpi-green strong { color: #0B6B3A; }
+.dash-kpi-blue { background: #E3EEFC; } .dash-kpi-blue strong { color: #1858B4; }
+.dash-kpi-violet { background: #EBE7FF; } .dash-kpi-violet strong { color: #4B3BB0; }
+.dash-kpi-red { background: #FFE4E1; } .dash-kpi-red strong { color: #B42318; }
 .dash-balance { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--esp-4); }
 .dash-bal { display: grid; gap: var(--esp-2); padding: var(--esp-4) var(--esp-5); border-radius: 20px; background: var(--gray-50); }
 .dash-bal span { color: #4B5563; font-size: 13px; }
