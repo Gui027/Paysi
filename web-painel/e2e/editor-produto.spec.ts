@@ -32,13 +32,14 @@ test.describe("editor do produto (abas)", () => {
   test("publica o checkout e mostra o link", async ({ page }) => {
     await page.route(`**/api/v1/offers/${OFERTA.id}/publish`, (route) => route.fulfill({ json: { published: true, requiredAction: null, actionUrl: null, offer: { ...OFERTA, status: "PUBLISHED" } } }));
     await page.goto(`/produtos/${PRODUTO.id}?aba=checkout`);
-    await page.getByRole("button", { name: "Publicar checkout" }).click();
-    await expect(page.getByText("Checkout publicado", { exact: true }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: /checkout\/curso-vendas/ })).toBeVisible();
+    await page.getByRole("button", { name: "Publicar", exact: true }).click();
+    await expect(page.getByText("Checkout publicado.")).toBeVisible();
+    await page.getByRole("tab", { name: "Links" }).click();
+    await expect(page.getByLabel("URL do checkout")).toHaveValue(/checkout\/curso-vendas/);
   });
 
   test("passa no axe em todas as abas", async ({ page }) => {
-    for (const aba of ["", "?aba=configuracoes", "?aba=checkout", "?aba=afiliados"]) {
+    for (const aba of ["", "?aba=configuracoes", "?aba=checkout", "?aba=afiliados", "?aba=links"]) {
       await page.goto(`/produtos/${PRODUTO.id}${aba}`);
       await expect(page.getByRole("tab", { name: "Geral" })).toBeVisible();
       const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();

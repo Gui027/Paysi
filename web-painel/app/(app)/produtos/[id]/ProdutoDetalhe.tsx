@@ -6,13 +6,13 @@ import { ReactNode, useEffect, useState } from "react";
 import { ApiRequestError } from "../../../../lib/api";
 import { archiveProduct, getProduct, Product, productChargeTypeLabel, productSegmentLabel, productStatusLabel, updateProduct, validateProductInput } from "../../../../lib/produtos";
 import {
-  BillingCycle, createOffer, listOffers, Offer, OfferInput, OfferInputErrors, OfferPaymentMethod, parseMoneyToCents,
+  BillingCycle, createOffer, formatOfferMoney, listOffers, Offer, OfferInput, OfferInputErrors, OfferPaymentMethod, parseMoneyToCents,
   publishOffer, updateOffer, validateOfferInput,
 } from "../../../../lib/ofertas";
 import { EmptyState, Skeleton, Toast } from "../../../../components/ui";
 
-type Aba = "geral" | "configuracoes" | "checkout" | "afiliados";
-const abas: readonly [Aba, string][] = [["geral", "Geral"], ["configuracoes", "Configurações"], ["checkout", "Checkout"], ["afiliados", "Afiliados"]];
+type Aba = "geral" | "configuracoes" | "checkout" | "afiliados" | "links";
+const abas: readonly [Aba, string][] = [["geral", "Geral"], ["configuracoes", "Configurações"], ["checkout", "Checkout"], ["afiliados", "Afiliados"], ["links", "Links"]];
 const cycleLabel: Record<BillingCycle, string> = { MONTHLY: "Mensal", QUARTERLY: "Trimestral", SEMIANNUAL: "Semestral", ANNUAL: "Anual" };
 const methodLabel: Record<OfferPaymentMethod, string> = { PIX: "Pix", CARD: "Cartão de crédito", BOLETO: "Boleto" };
 
@@ -153,6 +153,11 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
     }
   }
 
+  function copiar(text: string | null) {
+    if (!text) return;
+    void navigator.clipboard.writeText(text).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1800); });
+  }
+
   async function remove() {
     try {
       await archiveProduct(productId);
@@ -220,20 +225,40 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
         <Secao titulo="Cupons de desconto" texto="Crie códigos promocionais para este e outros produtos."><Link className="ui-button ui-button-secondary pe-fit" href="/cupons">Gerenciar cupons</Link></Secao>
       </>}
 
-      {aba === "checkout" && <>
-        <Secao titulo="Publicação" texto="Publique para liberar o link de compra.">
-          <p className="pe-status"><span className={`pe-dot ${published ? "pe-dot-on" : ""}`} aria-hidden="true" />{published ? "Checkout publicado" : offer ? "Checkout em rascunho" : "Salve o produto para criar o checkout"}</p>
-          {!published && <button type="button" className="ui-button ui-button-primary pe-fit" disabled={publishing || !offer} onClick={() => void publish()}>{publishing ? "Publicando…" : "Publicar checkout"}</button>}
-        </Secao>
-        <Secao titulo="Link de compra" texto="Compartilhe este link com seus compradores.">
-          {published && link ? <div className="pe-link"><a href={link} target="_blank" rel="noreferrer">{link}</a><button type="button" className="ui-button ui-button-secondary" onClick={() => { void navigator.clipboard.writeText(link).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1800); }); }}>{copied ? "Link copiado" : "Copiar link"}</button></div> : <p className="pe-hint">O link aparece aqui depois que o checkout for publicado.</p>}
+      {aba === "checkout" && <div className="pe-panel">
+        <p className="pe-hint">Cada oferta tem um checkout. Publique para liberar o link de compra.</p>
+        {offer ? <table className="prod-table">
+          <thead><tr><th scope="col">Nome</th><th scope="col">Preço</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
+          <tbody><tr>
+            <td><span className="prod-name">Checkout A</span> <span className="pe-badge">Padrão</span></td>
+            <td className="prod-muted">{formatOfferMoney(offer.priceCents)}</td>
+            <td><span className={`pe-pill ${published ? "pe-pill-on" : ""}`}>{published ? "Publicado" : "Rascunho"}</span></td>
+            <td className="prod-actions">{published ? <button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(link)}>{copied ? "Link copiado" : "Copiar link"}</button> : <button type="button" className="ui-button ui-button-primary" disabled={publishing} onClick={() => void publish()}>{publishing ? "Publicando…" : "Publicar"}</button>}</td>
+          </tr></tbody>
+        </table> : <p className="pe-empty">Salve o produto para criar o checkout.</p>}
+      </div>}
+
+      {aba === "links" && <div className="pe-panel">
+        <p className="pe-hint">Links para divulgar este produto.</p>
+        {offer && published && link ? <table className="prod-table">
+          <thead><tr><th scope="col">Nome do link</th><th scope="col">URL</th><th scope="col">Tipo</th><th scope="col">Preço</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
+          <tbody><tr>
+            <td><span className="prod-name">{product.name}</span></td>
+            <td><input className="pe-url" readOnly aria-label="URL do checkout" value={link} onFocus={event => event.currentTarget.select()} /></td>
+            <td><span className="pe-pill pe-pill-blue">Checkout</span></td>
+            <td className="prod-muted">{formatOfferMoney(offer.priceCents)}</td>
+            <td className="prod-actions"><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(link)}>{copied ? "Copiado" : "Copiar"}</button></td>
+          </tr></tbody>
+        </table> : <p className="pe-empty">Os links aparecem aqui depois que o checkout for publicado. <button type="button" className="pe-linkbtn" onClick={() => selectAba("checkout")}>Ir para Checkout</button></p>}
+      </div>}
+
+      {aba === "afiliados" && <>
+        <p className="pe-tip">Você gerencia os seus afiliados pelo menu <Link href="/afiliados">Afiliados</Link>: aprovar pedidos, definir a comissão e encerrar afiliações.</p>
+        <Secao titulo="Configurações" texto="Permita que outras pessoas divulguem este produto em troca de comissão.">
+          <Chave label="Habilitar programa de afiliados" checked={affiliation} onChange={checked => { setAffiliation(checked); setMessage(null); }} />
+          <small className="pe-hint">A comissão é definida por afiliado, no momento em que você aprova o pedido. Clique em “Salvar produto” para aplicar a mudança.</small>
         </Secao>
       </>}
-
-      {aba === "afiliados" && <Secao titulo="Programa de afiliados" texto="Deixe outras pessoas divulgarem seu produto em troca de comissão.">
-        <Chave label="Permitir afiliados neste produto" checked={affiliation} onChange={checked => { setAffiliation(checked); setMessage(null); }} />
-        <small className="pe-hint">Clique em “Salvar produto” para aplicar. A gestão dos afiliados fica em <Link href="/afiliados">Afiliados</Link>.</small>
-      </Secao>}
     </div>
 
     <footer className="pe-foot">
