@@ -18,6 +18,22 @@ import static org.mockito.Mockito.verify;
 
 class FakeKycProviderTest {
     @Test
+    void springInstantiatesTheBeanOnlyWhenTheFakeProviderIsSelected() {
+        var runner = new org.springframework.boot.test.context.runner.ApplicationContextRunner()
+                .withBean(KycWebhookStore.class, () -> mock(KycWebhookStore.class))
+                .withUserConfiguration(FakeKycProvider.class, ConfiguredKycProvider.class);
+
+        runner.withPropertyValues("paysi.kyc.provider=fake").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).hasSingleBean(FakeKycProvider.class).doesNotHaveBean(ConfiguredKycProvider.class);
+        });
+        runner.withPropertyValues("paysi.kyc.provider=configured").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).hasSingleBean(ConfiguredKycProvider.class).doesNotHaveBean(FakeKycProvider.class);
+        });
+    }
+
+    @Test
     void createProcessApprovesAccountImmediately() {
         var store = mock(KycWebhookStore.class);
         var provider = new FakeKycProvider(store, Clock.fixed(Instant.parse("2026-09-23T12:00:00Z"), ZoneOffset.UTC));

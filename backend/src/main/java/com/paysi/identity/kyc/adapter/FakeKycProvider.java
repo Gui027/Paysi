@@ -28,6 +28,7 @@ public class FakeKycProvider implements KycProvider {
     private final KycWebhookStore webhookStore;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public FakeKycProvider(KycWebhookStore webhookStore) {
         this(webhookStore, Clock.systemUTC());
     }
