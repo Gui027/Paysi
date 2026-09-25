@@ -37,6 +37,9 @@ spring:
       mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
       mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:false}
       mail.smtp.ssl.enable: ${MAIL_SMTP_SSL:false}
+      # Com STARTTLS obrigatório, um servidor que não oferece TLS derruba o envio em vez de mandar em claro.
+      mail.smtp.starttls.required: ${MAIL_SMTP_STARTTLS_REQUIRED:false}
+      mail.smtp.ssl.protocols: ${MAIL_SSL_PROTOCOLS:TLSv1.2 TLSv1.3}
       # Sem timeout um SMTP lento segura a requisição indefinidamente.
       mail.smtp.connectiontimeout: 5000
       mail.smtp.timeout: 8000
