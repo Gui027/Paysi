@@ -107,7 +107,10 @@ export function ProdutosPage() {
   return <>
     <header className="content-header products-heading">
       <div><h1>Produtos</h1><p>Localize seus produtos e acompanhe o estado de publicação.</p></div>
-      <Link className="ui-button ui-button-primary product-create" href="/produtos/novo">Novo produto</Link>
+      <div className="ui-actions">
+        <Link className="ui-button ui-button-secondary" href="/cupons">Cupons de desconto</Link>
+        <Link className="ui-button ui-button-primary product-create" href="/produtos/novo">Novo produto</Link>
+      </div>
     </header>
 
     <section className="ui-card product-filters" aria-labelledby="product-filter-title">

@@ -6,7 +6,18 @@ import { useEffect, useState } from "react";
 import { currentSession, SessionCreated, switchMode } from "../lib/sessao";
 import { LogoutButton } from "./LogoutButton";
 
-const links = [["/inicio", "Início"], ["/produtos", "Produtos"], ["/cupons", "Cupons"], ["/vendas", "Vendas"], ["/assinaturas", "Assinaturas"], ["/afiliados", "Afiliados"], ["/vitrine", "Vitrine"], ["/meus-links", "Meus links"], ["/saldo", "Saldo"], ["/plano", "Plano"], ["/integracoes", "Integrações"], ["/verificacao", "Verificação"], ["/perfil", "Perfil"], ["/componentes", "Componentes"]] as const;
+type Link_ = readonly [href: string, label: string];
+
+// Menu enxuto por modo. As rotas que saíram (perfil, plano, componentes, cupons) continuam
+// existindo — só não ocupam o menu. Cupons abre pelo botão na lista de Produtos.
+const sellerLinks: readonly Link_[] = [
+  ["/inicio", "Início"], ["/produtos", "Produtos"], ["/vendas", "Vendas"], ["/assinaturas", "Assinaturas"],
+  ["/afiliados", "Afiliados"], ["/saldo", "Financeiro"], ["/integracoes", "Integrações"], ["/verificacao", "Verificação"],
+];
+const affiliateLinks: readonly Link_[] = [
+  ["/inicio", "Início"], ["/vitrine", "Vitrine"], ["/meus-links", "Meus links"], ["/saldo", "Financeiro"],
+  ["/verificacao", "Verificação"],
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -24,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <a className="skip-link" href="#conteudo">Ir para o conteúdo</a>
     <aside className="sidebar">
       <img src="/paysi-logo.svg" alt="Paysi" />
-      <nav aria-label="Navegação principal">{links.map(([href, label]) => <Link key={href} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? "page" : undefined}>{label}</Link>)}</nav>
+      <nav aria-label="Navegação principal">{(mode === "AFFILIATE" ? affiliateLinks : sellerLinks).map(([href, label]) => <Link key={href} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? "page" : undefined}>{label}</Link>)}</nav>
       <LogoutButton />
     </aside>
     <div className="app-column">
