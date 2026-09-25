@@ -62,6 +62,18 @@ export async function mockPedido(page: Page, orderId = "order_e2e_1") {
   });
 }
 
+/** Tokenização do cartão (POST /v1/orders/{id}/card-token): devolve só o token, como o backend. */
+export async function mockTokenizacaoCartao(page: Page, capturas: { tokenizacao?: string; cobranca?: string } = {}) {
+  await page.route(/\/v1\/orders\/.+\/card-token$/, async (route) => {
+    capturas.tokenizacao = route.request().postData() ?? "";
+    await route.fulfill({ json: { cardToken: "tok_e2e_1", brand: "VISA", last4: "1111" } });
+  });
+  // Observa (não intercepta): o mock da cobrança é registrado depois e atende antes.
+  page.on("request", (request) => {
+    if (/\/v1\/orders\/.+\/charge$/.test(request.url())) capturas.cobranca = request.postData() ?? "";
+  });
+}
+
 export async function mockCobranca(page: Page, resposta: Record<string, unknown>) {
   await page.route(/\/v1\/orders\/.+\/charge$/, async (route) => {
     await route.fulfill({ json: resposta });
@@ -135,6 +147,13 @@ export async function preencherComprador(page: Page) {
   await page.getByLabel(/nome completo/i).fill("Maria Compradora");
   await page.getByLabel(/e-mail/i).fill("maria@example.com");
   await page.getByLabel(/cpf/i).fill("39053344705");
+}
+
+/** CEP, número e telefone do titular: a Asaas exige para tokenizar o cartão. */
+export async function preencherTitularDoCartao(page: Page) {
+  await page.getByLabel(/cep do titular/i).fill("01310100");
+  await page.getByLabel(/número do endereço/i).fill("10");
+  await page.getByLabel(/telefone com ddd/i).fill("11999998888");
 }
 
 export async function aceitarTermos(page: Page) {

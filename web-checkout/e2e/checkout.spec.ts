@@ -12,6 +12,8 @@ import {
   COBRANCA_PIX,
   COBRANCA_BOLETO,
   preencherComprador,
+  preencherTitularDoCartao,
+  mockTokenizacaoCartao,
   aceitarTermos,
 } from "./fixtures";
 
@@ -95,6 +97,7 @@ test.describe("checkout — fluxo feliz por método de pagamento", () => {
   test("Cartão: aprovado mostra confirmação de sucesso", async ({ page }) => {
     await mockOferta(page);
     await mockPedido(page);
+    await mockTokenizacaoCartao(page);
     await mockCobranca(page, COBRANCA_CARTAO_APROVADA);
     await page.goto(`/${OFERTA_SLUG}`);
 
@@ -104,15 +107,43 @@ test.describe("checkout — fluxo feliz por método de pagamento", () => {
     await page.getByLabel(/número do cartão/i).fill("4111111111111111");
     await page.getByLabel(/validade/i).fill("1230");
     await page.getByLabel(/cvv/i).fill("123");
+    await preencherTitularDoCartao(page);
     await aceitarTermos(page);
     await page.getByRole("button", { name: /pagar agora/i }).click();
 
     await expect(page.getByRole("heading", { name: /pagamento aprovado/i })).toBeVisible();
   });
 
+  test("Cartão: número e CVV só vão ao /card-token, a cobrança leva apenas o token", async ({ page }) => {
+    const capturas: { tokenizacao?: string; cobranca?: string } = {};
+    await mockOferta(page);
+    await mockPedido(page);
+    await mockTokenizacaoCartao(page, capturas);
+    await mockCobranca(page, COBRANCA_CARTAO_APROVADA);
+    await page.goto(`/${OFERTA_SLUG}`);
+
+    await preencherComprador(page);
+    await page.getByRole("radio", { name: "Cartão" }).check();
+    await page.getByLabel(/nome impresso no cartão/i).fill("MARIA COMPRADORA");
+    await page.getByLabel(/número do cartão/i).fill("4111111111111111");
+    await page.getByLabel(/validade/i).fill("1230");
+    await page.getByLabel(/cvv/i).fill("123");
+    await preencherTitularDoCartao(page);
+    await aceitarTermos(page);
+    await page.getByRole("button", { name: /pagar agora/i }).click();
+
+    await expect(page.getByRole("heading", { name: /pagamento aprovado/i })).toBeVisible();
+    expect(capturas.tokenizacao).toContain("4111111111111111");
+    expect(capturas.tokenizacao).toContain("01310100");
+    expect(capturas.cobranca).toContain("tok_e2e_1");
+    expect(capturas.cobranca).not.toContain("4111111111111111");
+    expect(capturas.cobranca).not.toContain("\"ccv\"");
+  });
+
   test("Cartão: recusado mostra tela de recusa com opção de tentar Pix", async ({ page }) => {
     await mockOferta(page);
     await mockPedido(page);
+    await mockTokenizacaoCartao(page);
     await mockCobranca(page, COBRANCA_CARTAO_RECUSADA);
     await page.goto(`/${OFERTA_SLUG}`);
 
@@ -122,6 +153,7 @@ test.describe("checkout — fluxo feliz por método de pagamento", () => {
     await page.getByLabel(/número do cartão/i).fill("4111111111111111");
     await page.getByLabel(/validade/i).fill("1230");
     await page.getByLabel(/cvv/i).fill("123");
+    await preencherTitularDoCartao(page);
     await aceitarTermos(page);
     await page.getByRole("button", { name: /pagar agora/i }).click();
 
