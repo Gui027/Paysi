@@ -32,6 +32,7 @@ export type CheckoutContract = {
   requiredBuyerFields: Record<PersonType, string[]>;
   appearance: CheckoutAppearance;
   legalTexts: CheckoutLegalTexts;
+  returnUrl?: string | null;
 };
 
 export const cycleLabel: Record<BillingCycle, string> = {

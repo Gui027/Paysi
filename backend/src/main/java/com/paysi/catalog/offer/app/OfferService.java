@@ -61,7 +61,7 @@ public class OfferService {
         return create(sellerId, product.id(), new OfferValues(values.priceCents(), values.cycle(),
                 values.trialDays(), values.trialRequiresCard(), values.guaranteeDays(), values.maxInstallments(),
                 values.boletoDueDays(), values.boletoAdvanceDays(), values.paymentMethods(),
-                values.payoutDelay(), copyName));
+                values.payoutDelay(), copyName, values.returnUrl()));
     }
 
     @Transactional(readOnly = true)

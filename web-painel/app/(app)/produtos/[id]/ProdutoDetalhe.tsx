@@ -32,6 +32,7 @@ function offerInput(offer: Offer): OfferInput {
     guaranteeDays: offer.guaranteeDays, maxInstallments: offer.maxInstallments, boletoDueDays: offer.boletoDueDays,
     boletoAdvanceDays: offer.boletoAdvanceDays, paymentMethods: offer.paymentMethods, payoutDelay: offer.payoutDelay,
     name: offer.name,
+    returnUrl: offer.returnUrl ?? null,
   };
 }
 
@@ -57,6 +58,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
   const [offer, setOffer] = useState<Offer | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [offerName, setOfferName] = useState("");
+  const [returnUrl, setReturnUrl] = useState("");
   const [duplicating, setDuplicating] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -93,6 +95,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       const current = active_.find(item => item.id === wanted) ?? active_[0] ?? null;
       setOffers(active_);
       setOfferName(current?.name ?? "");
+      setReturnUrl(current?.returnUrl ?? "");
       setProduct(loaded);
       setName(loaded.name);
       setDescription(loaded.description ?? "");
@@ -136,6 +139,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
     setValues(offerInput(next));
     setPrice(priceText(next.priceCents));
     setOfferName(next.name ?? "");
+    setReturnUrl(next.returnUrl ?? "");
     setErrors({});
     setMessage(null);
     router.replace(`/produtos/${productId}?${new URLSearchParams({ ...(toAba !== "geral" ? { aba: toAba } : {}), oferta: next.id })}`, { scroll: false });
@@ -159,7 +163,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
   async function save(): Promise<boolean> {
     if (!product) return false;
     const cents = parseMoneyToCents(price);
-    const next: OfferInput = { ...values, priceCents: cents ?? 0, name: offerName.trim() || null };
+    const next: OfferInput = { ...values, priceCents: cents ?? 0, name: offerName.trim() || null, returnUrl: returnUrl.trim() || null };
     const productErrors = validateProductInput({ name, description: description || null, segment: product.segment, chargeType: product.chargeType, affiliationEnabled: affiliation });
     const offerErrors = validateOfferInput(next, { segment: product.segment, chargeType: product.chargeType });
     if (cents === null) offerErrors.price = "Informe um valor válido com até duas casas decimais.";
@@ -196,6 +200,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       setValues(offerInput(stored));
       setPrice(priceText(stored.priceCents));
       setOfferName(stored.name ?? "");
+      setReturnUrl(stored.returnUrl ?? "");
       setMessage({ tone: "success", text: "Produto salvo." });
       return true;
     } catch (error) {
@@ -303,6 +308,9 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
           <label className="pe-field"><span>Período de teste</span><span className="pe-inline"><input type="number" min={0} max={30} value={values.trialDays} onChange={event => change("trialDays", Number(event.target.value))} /><span>dias</span></span>{errors.trialDays && <small className="pe-error">{errors.trialDays}</small>}</label>
           {product.segment === "SAAS" && <Chave label="Exigir cartão para iniciar o teste" checked={values.trialRequiresCard} onChange={checked => change("trialRequiresCard", checked)} />}
         </Secao>}
+        <Secao titulo="Depois do pagamento" texto="Leve o comprador de volta ao seu site ou sistema quando o pagamento for aprovado.">
+          <label className="pe-field"><span>URL de retorno</span><input type="url" inputMode="url" placeholder="https://seusite.com/obrigado" value={returnUrl} aria-invalid={Boolean(errors.returnUrl)} onChange={event => { setReturnUrl(event.target.value); setErrors(current => ({ ...current, returnUrl: undefined })); setMessage(null); }} />{errors.returnUrl && <small className="pe-error">{errors.returnUrl}</small>}<small className="pe-hint">Deixe em branco para manter o comprador na página de confirmação da Paysi. Ao voltar, acrescentamos ?paysi_status=approved e o ref do cliente. Confirme a venda pelo webhook, não por esta URL.</small></label>
+        </Secao>
         <Secao titulo="Cupons de desconto" texto="Crie códigos promocionais para este e outros produtos."><Link className="ui-button ui-button-secondary pe-fit" href="/cupons">Gerenciar cupons</Link></Secao>
       </>}
 
@@ -329,6 +337,16 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
           })}</tbody>
         </table> : <p className="pe-empty">Salve o produto para criar o checkout.</p>}
       </div>}
+
+      {aba === "checkout" && offers.length > 0 && <Secao titulo="Integrar com seu sistema" texto={<>Use o link da oferta no seu SaaS ou landing page e receba os avisos de venda por <Link href="/integracoes">webhook</Link>.</>}>
+        <div className="pe-field"><span>Identificar o cliente no link</span>
+          <div className="pe-link"><input className="pe-url" readOnly aria-label="Exemplo de link com identificação do cliente" value={`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`} onFocus={event => event.currentTarget.select()} /><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`)}>{copied ? "Copiado" : "Copiar"}</button></div>
+          <small className="pe-hint"><strong>ref</strong> é o identificador do cliente no seu sistema: ele volta em todos os webhooks desta venda. <strong>email</strong> e <strong>name</strong> pré-preenchem o formulário. O preço nunca vem do link: é sempre o da oferta.</small>
+        </div>
+        <div className="pe-field"><span>Eventos que você recebe</span>
+          <small className="pe-hint">PAYMENT.APPROVED (venda e renovações), SUBSCRIPTION.PAST_DUE, SUBSCRIPTION.CANCELED, PAYMENT.REFUNDED e CHARGEBACK.OPENED. Cada um leva o <strong>reference</strong>, o e-mail do comprador, a oferta e o valor. Configure a URL e a assinatura em <Link href="/integracoes">Integrações</Link>.</small>
+        </div>
+      </Secao>}
 
       {aba === "links" && <div className="pe-panel">
         <p className="pe-hint">Links para divulgar este produto. Cada oferta publicada tem o seu.</p>

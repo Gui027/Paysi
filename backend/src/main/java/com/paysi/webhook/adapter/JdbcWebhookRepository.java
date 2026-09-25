@@ -73,7 +73,7 @@ public class JdbcWebhookRepository implements WebhookRepository {
     @Override public void markPublished(UUID eventId, UUID token, Instant now) { jdbc.update("update outbox_events set published_at=?,locked_at=null,lock_token=null where id=? and lock_token=?", Timestamp.from(now), eventId, token); }
 
     @Override public List<WebhookEndpoint> activeEndpoints(UUID accountId, String eventType) {
-        return jdbc.query("select * from webhook_endpoints where account_id=? and disabled_at is null and ?=any(event_types)", (rs, row) -> endpoint(rs), accountId, eventType);
+        return jdbc.query("select * from webhook_endpoints where account_id=? and disabled_at is null and exists (select 1 from unnest(event_types) as subscribed where upper(subscribed)=upper(?))", (rs, row) -> endpoint(rs), accountId, eventType);
     }
 
     @Override public int nextAttempt(UUID eventId, UUID endpointId) {

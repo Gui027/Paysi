@@ -11,6 +11,7 @@ import {
   resendWebhookDelivery,
   rotateWebhookSecret,
   SUGGESTED_WEBHOOK_EVENTS,
+  WEBHOOK_EVENT_DESCRIPTIONS,
   updateWebhookEndpoint,
   WebhookDelivery,
   WebhookEndpoint,
@@ -303,7 +304,7 @@ export function IntegracoesPage() {
         <fieldset>
           <legend>Eventos</legend>
           {SUGGESTED_WEBHOOK_EVENTS.map((event) => (
-            <Checkbox key={event} label={event} checked={formEvents.includes(event)} onChange={() => toggleEvent(event)} />
+            <Checkbox key={event} label={`${event} — ${WEBHOOK_EVENT_DESCRIPTIONS[event]}`} checked={formEvents.includes(event)} onChange={() => toggleEvent(event)} />
           ))}
         </fieldset>
         <Checkbox label="Ativo" checked={formEnabled} onChange={(e) => setFormEnabled(e.target.checked)} />

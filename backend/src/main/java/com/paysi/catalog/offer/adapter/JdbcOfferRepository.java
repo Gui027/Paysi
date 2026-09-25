@@ -47,14 +47,14 @@ class JdbcOfferRepository implements OfferRepository {
                   (id, product_id, charge_type, segment, slug, amount_cents, cycle,
                    trial_days, trial_requires_card, guarantee_days, max_installments,
                    boleto_due_days, boleto_cycle_lead_days, payout_delay, status,
-                   created_at, updated_at, name)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   created_at, updated_at, name, return_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, offer.id(), offer.productId(), offer.chargeType().name(), offer.segment().name(),
                 offer.slug(), offer.priceCents(), name(offer.cycle()), offer.trialDays(),
                 offer.trialRequiresCard(), offer.guaranteeDays(), offer.maxInstallments(),
                 offer.boletoDueDays(), offer.boletoAdvanceDays(), offer.payoutDelay().name(),
                 offer.status().name(), Timestamp.from(offer.createdAt()), Timestamp.from(offer.updatedAt()),
-                offer.name());
+                offer.name(), offer.returnUrl());
         replaceMethods(offer);
     }
 
@@ -103,12 +103,12 @@ class JdbcOfferRepository implements OfferRepository {
                     UPDATE offers
                        SET amount_cents = ?, cycle = ?, trial_days = ?, trial_requires_card = ?,
                            guarantee_days = ?, max_installments = ?, boleto_due_days = ?,
-                           boleto_cycle_lead_days = ?, payout_delay = ?, updated_at = ?, name = ?
+                           boleto_cycle_lead_days = ?, payout_delay = ?, updated_at = ?, name = ?, return_url = ?
                      WHERE id = ? AND archived_at IS NULL
                     """, offer.priceCents(), name(offer.cycle()), offer.trialDays(),
                     offer.trialRequiresCard(), offer.guaranteeDays(), offer.maxInstallments(),
                     offer.boletoDueDays(), offer.boletoAdvanceDays(), offer.payoutDelay().name(),
-                    Timestamp.from(offer.updatedAt()), offer.name(), offer.id());
+                    Timestamp.from(offer.updatedAt()), offer.name(), offer.returnUrl(), offer.id());
             if (changed != 1) throw new IllegalStateException("Oferta desapareceu durante a atualização");
             replaceMethods(offer);
         } catch (DataAccessException error) {
@@ -169,7 +169,7 @@ class JdbcOfferRepository implements OfferRepository {
                 OfferPayoutDelay.valueOf(rs.getString("payout_delay")),
                 OfferStatus.valueOf(rs.getString("status")),
                 instant(rs, "archived_at"), instant(rs, "created_at"), instant(rs, "updated_at"),
-                rs.getString("name"));
+                rs.getString("name"), rs.getString("return_url"));
     }
 
     private Set<OfferPaymentMethod> methods(UUID offerId) {

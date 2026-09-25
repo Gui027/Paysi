@@ -32,17 +32,20 @@ export type WebhookDelivery = {
 };
 
 /**
- * Catálogo de eventos sugeridos — o backend aceita qualquer identificador que bata com o
- * padrão MAIUSCULO_COM_PONTOS (ver WebhookEndpointService), não existe uma lista fechada ainda.
+ * Eventos que a Paysi de fato envia. O backend compara o nome sem diferenciar maiúsculas de
+ * minúsculas, então quem já cadastrou em minúsculas continua recebendo.
  */
-export const SUGGESTED_WEBHOOK_EVENTS = [
-  "ORDER_PAID",
-  "ORDER_REFUNDED",
-  "CHARGE_FAILED",
-  "SUBSCRIPTION_CANCELED",
-  "SUBSCRIPTION_PAST_DUE",
-  "PAYOUT_COMPLETED",
-] as const;
+export const WEBHOOK_EVENT_DESCRIPTIONS = {
+  "PAYMENT.APPROVED": "Pagamento aprovado (venda nova ou renovação de assinatura)",
+  "PAYMENT.REFUNDED": "Pagamento reembolsado por completo",
+  "PAYMENT.PARTIALLY_REFUNDED": "Pagamento reembolsado em parte",
+  "CHARGEBACK.OPENED": "Contestação (chargeback) aberta",
+  "SUBSCRIPTION.PAST_DUE": "Assinatura em atraso (cobrança do ciclo falhou)",
+  "SUBSCRIPTION.CANCELED": "Assinatura cancelada",
+  "INVOICE.ISSUED": "Nota fiscal emitida",
+} as const;
+
+export const SUGGESTED_WEBHOOK_EVENTS = Object.keys(WEBHOOK_EVENT_DESCRIPTIONS) as (keyof typeof WEBHOOK_EVENT_DESCRIPTIONS)[];
 
 export function listWebhookEndpoints() {
   return apiRequest<WebhookEndpoint[]>("/v1/accounts/me/webhooks");

@@ -29,8 +29,17 @@ public record Order(
         OrderStatus status,
         String idempotencyKey,
         String requestHash,
-        Instant createdAt
+        Instant createdAt,
+        String externalRef
 ) {
+    /** Pedido sem referência externa; mantém a assinatura anterior. */
+    public Order(UUID id, UUID offerId, UUID buyerId, UUID affiliationId, String buyerSnapshot, long grossCents,
+                 long discountCents, UUID couponId, long paidCents, OfferPaymentMethod method, int installments,
+                 OrderStatus status, String idempotencyKey, String requestHash, Instant createdAt) {
+        this(id, offerId, buyerId, affiliationId, buyerSnapshot, grossCents, discountCents, couponId, paidCents,
+                method, installments, status, idempotencyKey, requestHash, createdAt, null);
+    }
+
     public Order {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(offerId, "offerId");

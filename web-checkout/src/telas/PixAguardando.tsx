@@ -5,15 +5,16 @@ import { statusFinalFalhou, statusFinalPago } from "../lib/statusCobranca";
 import { Aprovado } from "./Aprovado";
 import { Recusado } from "./Recusado";
 
-export function PixAguardando({ chargeId, qrCode, expiresAt }: {
+export function PixAguardando({ chargeId, qrCode, expiresAt, urlRetorno = null }: {
   chargeId: string;
   qrCode: string;
   expiresAt: string | null;
+  urlRetorno?: string | null;
 }) {
   const { status, erro } = usePollingStatus(chargeId, "PENDING");
   const [copiado, setCopiado] = useState(false);
 
-  if (statusFinalPago(status)) return <Aprovado />;
+  if (statusFinalPago(status)) return <Aprovado urlRetorno={urlRetorno} />;
   if (statusFinalFalhou(status)) return <Recusado />;
 
   async function copiar() {

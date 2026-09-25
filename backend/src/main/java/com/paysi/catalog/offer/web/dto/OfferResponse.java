@@ -34,7 +34,8 @@ public record OfferResponse(
         Set<OfferImmutableField> immutableFields,
         Instant createdAt,
         Instant updatedAt,
-        String name
+        String name,
+        String returnUrl
 ) {
     public static OfferResponse from(OfferView view) {
         var offer = view.offer();
@@ -43,6 +44,6 @@ public record OfferResponse(
                 offer.trialRequiresCard(), offer.guaranteeDays(), offer.maxInstallments(),
                 offer.boletoDueDays(), offer.boletoAdvanceDays(), offer.paymentMethods(),
                 offer.payoutDelay(), offer.status(), view.availableAt(), view.immutableFields(),
-                offer.createdAt(), offer.updatedAt(), offer.name());
+                offer.createdAt(), offer.updatedAt(), offer.name(), offer.returnUrl());
     }
 }

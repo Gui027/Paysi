@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 const checkoutRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const output = join(checkoutRoot, ".test-dist");
 const tsc = join(checkoutRoot, "..", "node_modules", "typescript", "bin", "tsc");
-const modules = ["documento", "mascaras", "camposComprador", "checkout", "termos", "simulacao", "cartao", "cobranca", "statusCobranca", "qrPix"];
+const modules = ["documento", "mascaras", "camposComprador", "checkout", "termos", "simulacao", "cartao", "cobranca", "statusCobranca", "qrPix", "integracao"];
 
 rmSync(output, { recursive: true, force: true });
 

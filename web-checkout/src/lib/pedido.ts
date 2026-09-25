@@ -27,6 +27,7 @@ export type PedidoInput = {
   installments: number;
   coupon: string | null;
   termsHash: string;
+  reference?: string;
 };
 
 export type PedidoCriado = {

@@ -29,6 +29,7 @@ public record CreateOrderRequest(
         @Size(max = 32) String coupon,
         @Size(max = 128) String visitorKey,
         @NotNull @Size(min = 8, max = 128) String termsHash,
+        @Size(max = 128) String reference,
         @JsonAnySetter Map<String, Object> unknown
 ) {
     public CreateOrderRequest {
@@ -39,7 +40,7 @@ public record CreateOrderRequest(
         return new CreateOrderCommand(buyer.name(), buyer.email(), buyer.personType(),
                 buyer.taxId(), buyer.legalName(), buyer.municipalReg(), buyer.address(),
                 method, installments == null ? 1 : installments, cardToken, coupon,
-                visitorKey, termsHash);
+                visitorKey, termsHash, reference);
     }
 
     public record BuyerRequest(

@@ -17,13 +17,20 @@ import { Aprovado } from "./Aprovado";
 import { Recusado } from "./Recusado";
 import { PixAguardando } from "./PixAguardando";
 import { BoletoEmitido } from "./BoletoEmitido";
+import { lerParametrosIntegracao, montarUrlRetorno } from "../lib/integracao";
 
 const METHOD_TO_METODO: Record<PaymentMethod, Metodo> = { CARD: "cartao", PIX: "pix", BOLETO: "boleto" };
 const METODO_TO_METHOD: Record<Metodo, PaymentMethod> = { cartao: "CARD", pix: "PIX", boleto: "BOLETO" };
 
 export function CheckoutForm({ slug, contract }: { slug: string; contract: CheckoutContract }) {
   const [personType, setPersonType] = useState<PersonType>("PF");
-  const [values, setValues] = useState<Record<string, string>>({});
+  // O link do vendedor pode trazer ?ref=, ?email= e ?name= (integração com o sistema dele).
+  const [integracao] = useState(() => lerParametrosIntegracao(window.location.search));
+  const [values, setValues] = useState<Record<string, string>>(() => ({
+    ...(integracao.name ? { name: integracao.name } : {}),
+    ...(integracao.email ? { email: integracao.email } : {}),
+  }));
+  const urlRetorno = montarUrlRetorno(contract.returnUrl, integracao.reference);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [couponVisible, setCouponVisible] = useState(false);
   const [coupon, setCoupon] = useState("");
@@ -125,6 +132,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
         installments: selectedInstallments,
         coupon: couponVisible && coupon.trim() ? coupon.trim() : null,
         termsHash,
+        ...(integracao.reference ? { reference: integracao.reference } : {}),
       };
       const pedido = await criarPedido(slug, payload, obterChaveDeIdempotencia(`${slug}:${JSON.stringify(payload)}`));
 
@@ -185,13 +193,13 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
           />
         );
       }
-      if (cobrancaAprovada(cobranca)) return <Aprovado />;
+      if (cobrancaAprovada(cobranca)) return <Aprovado urlRetorno={urlRetorno} />;
       if (cobrancaRecusada(cobranca)) {
         return <Recusado onTentarPix={disponiveis.includes("pix") ? tentarNovamenteComPix : undefined} />;
       }
     }
     if (cobranca.method === "PIX" && cobranca.pixQrCode) {
-      return <PixAguardando chargeId={cobranca.chargeId} qrCode={cobranca.pixQrCode} expiresAt={cobranca.expiresAt} />;
+      return <PixAguardando chargeId={cobranca.chargeId} qrCode={cobranca.pixQrCode} expiresAt={cobranca.expiresAt} urlRetorno={urlRetorno} />;
     }
     if (cobranca.method === "BOLETO" && cobranca.boletoBarcode && cobranca.boletoUrl) {
       return (

@@ -25,8 +25,32 @@ public record CreateOrderCommand(
         String cardToken,
         String coupon,
         String visitorKey,
-        String termsHash
+        String termsHash,
+        String reference
 ) {
+    /** Identificador do cliente no sistema do vendedor (opcional, até 128 caracteres). */
+    public static final int REFERENCE_MAX_LENGTH = 128;
+
+    public CreateOrderCommand {
+        if (reference != null) {
+            reference = reference.strip();
+            if (reference.isEmpty()) reference = null;
+            else if (reference.length() > REFERENCE_MAX_LENGTH) {
+                throw new com.paysi.core.error.ValidationException("REFERENCE_TOO_LONG",
+                        "A referência deve ter no máximo 128 caracteres", "reference");
+            }
+        }
+    }
+
+    /** Pedido sem referência externa; mantém a assinatura anterior. */
+    public CreateOrderCommand(String name, String email, PersonType personType, String taxId, String legalName,
+                              String municipalReg, BuyerAddress address, OfferPaymentMethod method,
+                              int installments, String cardToken, String coupon, String visitorKey,
+                              String termsHash) {
+        this(name, email, personType, taxId, legalName, municipalReg, address, method, installments, cardToken,
+                coupon, visitorKey, termsHash, null);
+    }
+
     @Override
     public String toString() {
         return "CreateOrderCommand[method=" + method + ", installments=" + installments

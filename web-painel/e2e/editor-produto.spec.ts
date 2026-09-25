@@ -80,6 +80,25 @@ test.describe("editor do produto (abas)", () => {
     await expect(page.getByRole("button", { name: "Publicar Plano Pro" })).toBeVisible();
   });
 
+  test("salva a URL de retorno e recusa endereço sem https", async ({ page }) => {
+    let oferta: Record<string, unknown> | null = null;
+    await page.route(`**/api/v1/offers/${OFERTA.id}`, async (route) => { oferta = route.request().postDataJSON(); await route.fulfill({ json: { ...OFERTA, ...oferta } }); });
+    await page.goto(`/produtos/${PRODUTO.id}?aba=configuracoes`);
+    await page.getByLabel("URL de retorno").fill("http://seusite.com/obrigado");
+    await page.getByRole("button", { name: "Salvar produto" }).first().click();
+    await expect(page.getByText(/começando com https/i)).toBeVisible();
+    expect(oferta).toBeNull();
+    await page.getByLabel("URL de retorno").fill("https://seusite.com/obrigado");
+    await page.getByRole("button", { name: "Salvar produto" }).first().click();
+    await expect(page.getByText("Produto salvo.")).toBeVisible();
+    expect(oferta).toMatchObject({ returnUrl: "https://seusite.com/obrigado" });
+  });
+
+  test("mostra o exemplo de link com ref na aba Checkout", async ({ page }) => {
+    await page.goto(`/produtos/${PRODUTO.id}?aba=checkout`);
+    await expect(page.getByLabel("Exemplo de link com identificação do cliente")).toHaveValue(/checkout\/curso-vendas\?ref=ID_DO_CLIENTE/);
+  });
+
   test("publica o checkout e mostra o link", async ({ page }) => {
     await page.route(`**/api/v1/offers/${OFERTA.id}/publish`, (route) => route.fulfill({ json: { published: true, requiredAction: null, actionUrl: null, offer: { ...OFERTA, status: "PUBLISHED" } } }));
     await page.goto(`/produtos/${PRODUTO.id}?aba=checkout`);

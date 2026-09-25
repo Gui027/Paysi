@@ -28,6 +28,7 @@ export type Offer = {
   createdAt: string;
   updatedAt: string;
   name: string | null;
+  returnUrl?: string | null;
 };
 
 export type OfferInput = {
@@ -42,11 +43,24 @@ export type OfferInput = {
   paymentMethods: OfferPaymentMethod[];
   payoutDelay: OfferPayoutDelay;
   name?: string | null;
+  returnUrl?: string | null;
 };
 
 export type OfferInputErrors = Partial<Record<keyof OfferInput | "price", string>>;
 
 export const OFFER_NAME_MAX = 60;
+
+/** A URL de retorno precisa ser https (http só em localhost, para testes), sem usuário e senha. */
+export function isValidReturnUrl(value: string): boolean {
+  if (value.length > 500) return false;
+  try {
+    const url = new URL(value);
+    const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    return (url.protocol === "https:" || (url.protocol === "http:" && local)) && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
 
 export type OfferSimulation = {
   grossCents: number;
@@ -83,6 +97,7 @@ export function formatOfferMoney(cents: number): string {
 
 export function validateOfferInput(input: OfferInput, context: { segment: "SAAS" | "DIGITAL"; chargeType: "ONE_TIME" | "SUBSCRIPTION" }): OfferInputErrors {
   const errors: OfferInputErrors = {};
+  if (input.returnUrl?.trim() && !isValidReturnUrl(input.returnUrl.trim())) errors.returnUrl = "Use um endereço começando com https:// (até 500 caracteres).";
   if ((input.name?.trim().length ?? 0) > OFFER_NAME_MAX) errors.name = `Use no máximo ${OFFER_NAME_MAX} caracteres.`;
   if (!Number.isSafeInteger(input.priceCents) || input.priceCents < 2_000) errors.price = "Informe um preço mínimo de R$ 20,00.";
   if (context.chargeType === "SUBSCRIPTION" && !input.cycle) errors.cycle = "Escolha o ciclo da assinatura.";
