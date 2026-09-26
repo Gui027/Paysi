@@ -16,8 +16,8 @@ const endpoints: readonly [string, string, string, string][] = [
   ["GET", "/v1/public/payouts", "finance", "Lista os saques (page e size)."],
   ["GET", "/v1/public/reports/{relatorio}", "reports", "Relatórios: produto, afiliado, abandonadas, saldo-receber, recebiveis-cartao e assinaturas-canceladas. Filtros: from, to, productId, q, tab, page."],
   ["GET", "/v1/public/webhooks", "webhooks", "Lista os endpoints de webhook."],
-  ["POST", "/v1/public/webhooks", "webhooks", "Cria um endpoint. O segredo de assinatura aparece só nesta resposta."],
-  ["PUT", "/v1/public/webhooks/{id}", "webhooks", "Edita um endpoint (url, events e enabled)."],
+  ["POST", "/v1/public/webhooks", "webhooks", "Cria um webhook (name obrigatório; productId opcional restringe a um produto). O segredo de assinatura aparece só nesta resposta."],
+  ["PUT", "/v1/public/webhooks/{id}", "webhooks", "Edita um webhook (name, productId, url, events e enabled). Veja os eventos e a assinatura em Webhooks."],
 ];
 
 export default function Page() {

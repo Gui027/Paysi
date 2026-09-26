@@ -339,13 +339,13 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
         </table> : <p className="pe-empty">Salve o produto para criar o checkout.</p>}
       </div>}
 
-      {aba === "checkout" && offers.length > 0 && <Secao titulo="Integrar com seu sistema" texto={<>Use o link da oferta no seu SaaS ou landing page e receba os avisos de venda por <Link href="/integracoes">webhook</Link>.</>}>
+      {aba === "checkout" && offers.length > 0 && <Secao titulo="Integrar com seu sistema" texto={<>Use o link da oferta no seu SaaS ou landing page e receba os avisos de venda por <Link href="/apps/webhooks">webhook</Link>.</>}>
         <div className="pe-field"><span>Identificar o cliente no link</span>
           <div className="pe-link"><input className="pe-url" readOnly aria-label="Exemplo de link com identificação do cliente" value={`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`} onFocus={event => event.currentTarget.select()} /><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`)}>{copied ? "Copiado" : "Copiar"}</button></div>
           <small className="pe-hint"><strong>ref</strong> é o identificador do cliente no seu sistema: ele volta em todos os webhooks desta venda. <strong>email</strong> e <strong>name</strong> pré-preenchem o formulário. O preço nunca vem do link: é sempre o da oferta.</small>
         </div>
         <div className="pe-field"><span>Eventos que você recebe</span>
-          <small className="pe-hint">PAYMENT.APPROVED (venda e renovações), SUBSCRIPTION.PAST_DUE, SUBSCRIPTION.CANCELED, PAYMENT.REFUNDED e CHARGEBACK.OPENED. Cada um leva o <strong>reference</strong>, o e-mail do comprador, a oferta e o valor. Configure a URL e a assinatura em <Link href="/integracoes">Integrações</Link>.</small>
+          <small className="pe-hint">PAYMENT.APPROVED (venda e renovações), SUBSCRIPTION.PAST_DUE, SUBSCRIPTION.CANCELED, PAYMENT.REFUNDED e CHARGEBACK.OPENED. Cada um leva o <strong>reference</strong>, o e-mail do comprador, a oferta e o valor. Configure a URL e a assinatura em <Link href="/apps/webhooks">Apps → Webhooks</Link>.</small>
         </div>
       </Secao>}
 

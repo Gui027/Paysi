@@ -1,13 +1,6 @@
-import { Suspense } from "react";
-import { Skeleton } from "../../../components/ui";
-import { IntegracoesPage } from "./IntegracoesPage";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Integrações" };
-
+/** Os webhooks agora ficam em Apps → Webhooks. */
 export default function Page() {
-  return (
-    <Suspense fallback={<Skeleton label="Carregando integrações" />}>
-      <IntegracoesPage />
-    </Suspense>
-  );
+  redirect("/apps/webhooks");
 }

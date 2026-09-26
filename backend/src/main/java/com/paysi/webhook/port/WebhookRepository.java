@@ -28,6 +28,11 @@ public interface WebhookRepository {
     void releaseRetry(UUID deliveryId, UUID token);
     List<WebhookDelivery> deliveryHistory(UUID accountId, int limit);
     Optional<OutboxEvent> findEvent(UUID accountId, UUID eventId);
+    void setProfile(UUID accountId, UUID endpointId, String name, UUID productId);
+    boolean softDelete(UUID accountId, UUID endpointId);
+    void attachDeliveryDetails(UUID deliveryId, String url, String requestBody, String responseBody);
+    Optional<UUID> productOfCharge(UUID chargeId);
+    boolean productBelongsTo(UUID accountId, UUID productId);
 
     record RetryClaim(WebhookDelivery delivery, OutboxEvent event, WebhookEndpoint endpoint) { }
 }

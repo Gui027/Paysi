@@ -54,7 +54,7 @@ public class PublicApiController {
     public record RefundOut(UUID refundId, String status, long sellerCents, long affiliateCents, long platformCents,
                             long providerCents, long chargeRefundedCents, String chargeStatus) { }
 
-    public record WebhookRequest(String url, Set<String> events, boolean enabled) { }
+    public record WebhookRequest(String name, UUID productId, String url, Set<String> events, boolean enabled) { }
 
     public record Me(UUID accountId, List<String> scopes) { }
 
@@ -213,13 +213,13 @@ public class PublicApiController {
     }
 
     @PostMapping("/v1/public/webhooks")
-    @Operation(summary = "Criar um endpoint de webhook; o segredo de assinatura vem só nesta resposta")
+    @Operation(summary = "Criar um webhook (name obrigatório; productId opcional restringe a um produto); o segredo de assinatura vem só nesta resposta")
     public ResponseEntity<WebhookEndpointService.CreatedEndpoint> createWebhook(
             @RequestHeader(name = "Authorization", required = false) String authorization,
             @RequestHeader(name = ACCOUNT, required = false) String account,
             @RequestBody WebhookRequest request) {
         UUID seller = seller(authorization, account, ApiKeyModels.WEBHOOKS);
-        return ResponseEntity.status(HttpStatus.CREATED).body(webhooks.create(seller, request.url(), request.events(), request.enabled()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(webhooks.create(seller, request.name(), request.productId(), request.url(), request.events(), request.enabled()));
     }
 
     @PutMapping("/v1/public/webhooks/{endpointId}")
@@ -228,7 +228,7 @@ public class PublicApiController {
             @RequestHeader(name = "Authorization", required = false) String authorization,
             @RequestHeader(name = ACCOUNT, required = false) String account,
             @PathVariable UUID endpointId, @RequestBody WebhookRequest request) {
-        return webhooks.update(seller(authorization, account, ApiKeyModels.WEBHOOKS), endpointId, request.url(), request.events(), request.enabled());
+        return webhooks.update(seller(authorization, account, ApiKeyModels.WEBHOOKS), endpointId, request.name(), request.productId(), request.url(), request.events(), request.enabled());
     }
 
     private UUID seller(String authorization, String account, String scope) {

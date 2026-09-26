@@ -47,6 +47,46 @@ public class WebhookEndpointService {
         return new CreatedEndpoint(publicView(endpoint), encode(clear));
     }
 
+    /** Criação pelo painel: com nome e, opcionalmente, restrita a um produto do vendedor. */
+    @Transactional
+    public CreatedEndpoint create(UUID accountId, String name, UUID productId, String url, Set<String> events, boolean enabled) {
+        String cleanName = name(name);
+        checkProduct(accountId, productId);
+        CreatedEndpoint created = create(accountId, url, events, enabled);
+        repository.setProfile(accountId, created.endpoint().id(), cleanName, productId);
+        return new CreatedEndpoint(repository.findEndpoint(accountId, created.endpoint().id()).map(WebhookEndpointService::publicView).orElseThrow(WebhookEndpointService::missing), created.secret());
+    }
+
+    @Transactional
+    public EndpointView update(UUID accountId, UUID endpointId, String name, UUID productId, String url, Set<String> events, boolean enabled) {
+        String cleanName = name(name);
+        checkProduct(accountId, productId);
+        update(accountId, endpointId, url, events, enabled);
+        repository.setProfile(accountId, endpointId, cleanName, productId);
+        return repository.findEndpoint(accountId, endpointId).map(WebhookEndpointService::publicView).orElseThrow(WebhookEndpointService::missing);
+    }
+
+    @Transactional
+    public void delete(UUID accountId, UUID endpointId) {
+        if (!repository.softDelete(accountId, endpointId)) throw missing();
+    }
+
+    public EndpointView get(UUID accountId, UUID endpointId) {
+        return repository.findEndpoint(accountId, endpointId).map(WebhookEndpointService::publicView).orElseThrow(WebhookEndpointService::missing);
+    }
+
+    private void checkProduct(UUID accountId, UUID productId) {
+        if (productId != null && !repository.productBelongsTo(accountId, productId)) {
+            throw new ValidationException("WEBHOOK_PRODUCT_INVALID", "Produto inválido", "productId");
+        }
+    }
+
+    private static String name(String value) {
+        String name = value == null ? "" : value.strip();
+        if (name.isEmpty() || name.length() > 60) throw new ValidationException("WEBHOOK_NAME_INVALID", "Informe um nome de até 60 caracteres", "name");
+        return name;
+    }
+
     public List<EndpointView> list(UUID accountId) {
         return repository.listEndpoints(accountId).stream().map(WebhookEndpointService::publicView).toList();
     }
@@ -75,11 +115,15 @@ public class WebhookEndpointService {
         values.forEach(value -> { String item = value == null ? "" : value.strip().toUpperCase(); if (!EVENT.matcher(item).matches()) throw new ValidationException("WEBHOOK_EVENT_INVALID", "Tipo de evento inválido", "events"); normalized.add(item); });
         return Set.copyOf(normalized);
     }
-    private static EndpointView publicView(WebhookEndpoint endpoint) { return new EndpointView(endpoint.id(), endpoint.url(), endpoint.events(), endpoint.enabled(), endpoint.secretRotatedAt(), endpoint.createdAt()); }
+    private static EndpointView publicView(WebhookEndpoint endpoint) { return new EndpointView(endpoint.id(), endpoint.url(), endpoint.events(), endpoint.enabled(), endpoint.secretRotatedAt(), endpoint.createdAt(), endpoint.name(), endpoint.productId()); }
     private static NotFoundException missing() { return new NotFoundException("WEBHOOK_ENDPOINT_NOT_FOUND", "Endpoint de webhook não encontrado"); }
 
     public record EndpointView(UUID id, String url, Set<String> events, boolean enabled,
-                               java.time.Instant secretRotatedAt, java.time.Instant createdAt) { }
+                               java.time.Instant secretRotatedAt, java.time.Instant createdAt, String name, UUID productId) {
+        public EndpointView(UUID id, String url, Set<String> events, boolean enabled, java.time.Instant secretRotatedAt, java.time.Instant createdAt) {
+            this(id, url, events, enabled, secretRotatedAt, createdAt, null, null);
+        }
+    }
     public record CreatedEndpoint(EndpointView endpoint, String secret) { }
     public record RotatedSecret(UUID endpointId, String secret, java.time.Instant previousSecretValidUntil) { }
 }

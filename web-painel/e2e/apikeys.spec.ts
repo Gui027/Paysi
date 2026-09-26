@@ -32,7 +32,7 @@ test.describe("apps e API", () => {
     await page.getByRole("link", { name: "Apps", exact: true }).click();
     await expect(page).toHaveURL(/\/apps$/);
     await expect(page.getByRole("heading", { name: "Apps" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Webhooks" })).toHaveAttribute("href", "/integracoes");
+    await expect(page.getByRole("link", { name: "Webhooks" })).toHaveAttribute("href", "/apps/webhooks");
     await page.getByRole("link", { name: "API", exact: true }).click();
     await expect(page).toHaveURL(/\/apps\/api$/);
     await expect(page.getByRole("heading", { name: "API" })).toBeVisible();

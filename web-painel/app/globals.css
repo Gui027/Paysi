@@ -935,3 +935,22 @@ button { cursor: pointer; }
 .aj-doc table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; font-size: 14px; }
 .aj-doc th, .aj-doc td { padding: var(--esp-3) var(--esp-4); border-bottom: 1px solid var(--paysi-linha); text-align: left; vertical-align: top; }
 .aj-doc th { background: var(--gray-50); font-weight: 600; }
+
+/* ---------- Webhooks ---------- */
+.wh-url { max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wh-filters { margin-left: 0; }
+.wh-test { display: grid; justify-items: end; gap: var(--esp-2); }
+.wh-test-result { margin: 0; font-size: 14px; }
+.wh-token { display: flex; gap: var(--esp-3); }
+.wh-token input { flex: 1; min-width: 0; }
+.wh-check { width: 1%; }
+.prod-menu-list a.col-item { color: var(--paysi-texto); }
+.wh-detail { display: grid; gap: var(--esp-2); }
+.wh-detail p { margin: 0; }
+.wh-blocks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--esp-4); margin-top: var(--esp-4); }
+.wh-block header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--esp-2); }
+.wh-block h3 { margin: 0; font-size: 16px; }
+.wh-copy { border: 0; background: transparent; color: var(--blue-700); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.wh-copy:disabled { color: #6B7280; cursor: default; text-decoration: none; }
+.wh-block pre { height: 240px; margin: 0; padding: var(--esp-3); overflow: auto; border-radius: 10px; background: #ECEEF1; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+@media (max-width: 800px) { .wh-blocks { grid-template-columns: 1fr; } }

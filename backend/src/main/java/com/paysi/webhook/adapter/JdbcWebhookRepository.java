@@ -34,16 +34,16 @@ public class JdbcWebhookRepository implements WebhookRepository {
     }
 
     @Override public List<WebhookEndpoint> listEndpoints(UUID accountId) {
-        return jdbc.query("select * from webhook_endpoints where account_id=? order by created_at desc", (rs, row) -> endpoint(rs), accountId);
+        return jdbc.query("select * from webhook_endpoints where account_id=? and deleted_at is null order by created_at desc", (rs, row) -> endpoint(rs), accountId);
     }
 
     @Override public Optional<WebhookEndpoint> findEndpoint(UUID accountId, UUID endpointId) {
-        return jdbc.query("select * from webhook_endpoints where account_id=? and id=?", (rs, row) -> endpoint(rs), accountId, endpointId).stream().findFirst();
+        return jdbc.query("select * from webhook_endpoints where account_id=? and id=? and deleted_at is null", (rs, row) -> endpoint(rs), accountId, endpointId).stream().findFirst();
     }
 
     @Override public boolean updateEndpoint(UUID accountId, UUID endpointId, String url, Set<String> events, boolean enabled) {
         Integer changed = jdbc.execute((ConnectionCallback<Integer>) connection -> {
-            try (var statement = connection.prepareStatement("update webhook_endpoints set url=?,event_types=?,disabled_at=case when ? then null else coalesce(disabled_at,now()) end where account_id=? and id=?")) {
+            try (var statement = connection.prepareStatement("update webhook_endpoints set url=?,event_types=?,disabled_at=case when ? then null else coalesce(disabled_at,now()) end where account_id=? and id=? and deleted_at is null")) {
                 statement.setString(1, url);
                 Array value = connection.createArrayOf("text", events.toArray());
                 try { statement.setArray(2, value); statement.setBoolean(3, enabled); statement.setObject(4, accountId); statement.setObject(5, endpointId); return statement.executeUpdate(); }
@@ -117,8 +117,29 @@ public class JdbcWebhookRepository implements WebhookRepository {
         return jdbc.query("select id,account_id,event_type,payload::text,created_at from outbox_events where account_id=? and id=?", (rs, row) -> new OutboxEvent(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getString(3), rs.getString(4), rs.getTimestamp(5).toInstant()), accountId, eventId).stream().findFirst();
     }
 
+    @Override public void setProfile(UUID accountId, UUID endpointId, String name, UUID productId) {
+        jdbc.update("update webhook_endpoints set name=?,product_id=? where account_id=? and id=?", name, productId, accountId, endpointId);
+    }
+
+    @Override public boolean softDelete(UUID accountId, UUID endpointId) {
+        return jdbc.update("update webhook_endpoints set deleted_at=now(),disabled_at=coalesce(disabled_at,now()) where account_id=? and id=? and deleted_at is null", accountId, endpointId) == 1;
+    }
+
+    @Override public void attachDeliveryDetails(UUID deliveryId, String url, String requestBody, String responseBody) {
+        jdbc.update("update webhook_deliveries set url=?,request_body=?,response_body=? where id=?", url, requestBody, responseBody, deliveryId);
+    }
+
+    @Override public boolean productBelongsTo(UUID accountId, UUID productId) {
+        Integer found = jdbc.queryForObject("select count(*) from products where id=? and seller_id=?", Integer.class, productId, accountId);
+        return found != null && found > 0;
+    }
+
+    @Override public Optional<UUID> productOfCharge(UUID chargeId) {
+        return jdbc.query("select f.product_id from charges c join orders o on o.id=c.order_id join offers f on f.id=o.offer_id where c.id=?", (rs, row) -> rs.getObject(1, UUID.class), chargeId).stream().findFirst();
+    }
+
     private static WebhookEndpoint endpoint(java.sql.ResultSet rs) throws java.sql.SQLException {
-        return new WebhookEndpoint(rs.getObject("id", UUID.class), rs.getObject("account_id", UUID.class), rs.getString("url"), strings(rs.getArray("event_types")), rs.getTimestamp("disabled_at") == null, rs.getBytes("secret_enc"), rs.getBytes("secret_prev_enc"), instant(rs.getTimestamp("secret_rotated_at")), rs.getTimestamp("created_at").toInstant());
+        return new WebhookEndpoint(rs.getObject("id", UUID.class), rs.getObject("account_id", UUID.class), rs.getString("url"), strings(rs.getArray("event_types")), rs.getTimestamp("disabled_at") == null, rs.getBytes("secret_enc"), rs.getBytes("secret_prev_enc"), instant(rs.getTimestamp("secret_rotated_at")), rs.getTimestamp("created_at").toInstant(), rs.getString("name"), rs.getObject("product_id", UUID.class));
     }
     private static WebhookDelivery delivery(java.sql.ResultSet rs) throws java.sql.SQLException { return new WebhookDelivery(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getObject(3, UUID.class), rs.getInt(4), (Integer) rs.getObject(5), rs.getString(6), instant(rs.getTimestamp(7)), rs.getTimestamp(8).toInstant()); }
     private static Set<String> strings(Array value) throws java.sql.SQLException { return Set.copyOf(Arrays.asList((String[]) value.getArray())); }
