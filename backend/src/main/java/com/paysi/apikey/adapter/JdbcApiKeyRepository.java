@@ -40,13 +40,13 @@ class JdbcApiKeyRepository implements ApiKeyRepository {
 
     @Override
     public long count(UUID accountId) {
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM api_keys WHERE account_id = ?", Long.class, accountId);
+        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM public_api_keys WHERE account_id = ?", Long.class, accountId);
         return total == null ? 0 : total;
     }
 
     @Override
     public void insert(UUID id, UUID accountId, String name, UUID clientId, String secretHash, String last4, List<String> scopes) {
-        jdbc.update("INSERT INTO api_keys (id, account_id, name, client_id, secret_hash, secret_last4, scopes) VALUES (?, ?, ?, ?, ?, ?, ?::text[])",
+        jdbc.update("INSERT INTO public_api_keys (id, account_id, name, client_id, secret_hash, secret_last4, scopes) VALUES (?, ?, ?, ?, ?, ?, ?::text[])",
                 id, accountId, name, clientId, secretHash, last4, array(scopes));
     }
 
@@ -58,29 +58,29 @@ class JdbcApiKeyRepository implements ApiKeyRepository {
             filter = " AND lower(name) LIKE ? ESCAPE '\\'";
             params.add("%" + query.strip().toLowerCase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%");
         }
-        return jdbc.query("SELECT " + COLUMNS + " FROM api_keys WHERE account_id = ?" + filter + " ORDER BY created_at DESC, id",
+        return jdbc.query("SELECT " + COLUMNS + " FROM public_api_keys WHERE account_id = ?" + filter + " ORDER BY created_at DESC, id",
                 MAPPER, params.toArray());
     }
 
     @Override
     public Optional<ApiKey> find(UUID accountId, UUID id) {
-        return jdbc.query("SELECT " + COLUMNS + " FROM api_keys WHERE account_id = ? AND id = ?", MAPPER, accountId, id)
+        return jdbc.query("SELECT " + COLUMNS + " FROM public_api_keys WHERE account_id = ? AND id = ?", MAPPER, accountId, id)
                 .stream().findFirst();
     }
 
     @Override
     public void update(UUID accountId, UUID id, String name, List<String> scopes) {
-        jdbc.update("UPDATE api_keys SET name = ?, scopes = ?::text[] WHERE account_id = ? AND id = ?", name, array(scopes), accountId, id);
+        jdbc.update("UPDATE public_api_keys SET name = ?, scopes = ?::text[] WHERE account_id = ? AND id = ?", name, array(scopes), accountId, id);
     }
 
     @Override
     public void delete(UUID accountId, UUID id) {
-        jdbc.update("DELETE FROM api_keys WHERE account_id = ? AND id = ?", accountId, id);
+        jdbc.update("DELETE FROM public_api_keys WHERE account_id = ? AND id = ?", accountId, id);
     }
 
     @Override
     public Optional<KeyCredentials> findByClientId(UUID clientId) {
-        return jdbc.query("SELECT id, account_id, secret_hash, scopes FROM api_keys WHERE client_id = ?",
+        return jdbc.query("SELECT id, account_id, secret_hash, scopes FROM public_api_keys WHERE client_id = ?",
                 (rs, row) -> new KeyCredentials(rs.getObject("id", UUID.class), rs.getObject("account_id", UUID.class),
                         rs.getString("secret_hash"), List.of((String[]) rs.getArray("scopes").getArray())), clientId)
                 .stream().findFirst();
@@ -88,7 +88,7 @@ class JdbcApiKeyRepository implements ApiKeyRepository {
 
     @Override
     public void insertToken(String tokenHash, UUID keyId, Instant expiresAt) {
-        jdbc.update("INSERT INTO api_access_tokens (token_hash, api_key_id, expires_at) VALUES (?, ?, ?)",
+        jdbc.update("INSERT INTO public_api_tokens (token_hash, api_key_id, expires_at) VALUES (?, ?, ?)",
                 tokenHash, keyId, Timestamp.from(expiresAt));
     }
 
@@ -96,7 +96,7 @@ class JdbcApiKeyRepository implements ApiKeyRepository {
     public Optional<TokenGrant> findToken(String tokenHash) {
         return jdbc.query("""
                 SELECT k.id, k.account_id, k.scopes, t.expires_at
-                  FROM api_access_tokens t JOIN api_keys k ON k.id = t.api_key_id
+                  FROM public_api_tokens t JOIN public_api_keys k ON k.id = t.api_key_id
                  WHERE t.token_hash = ?
                 """, (rs, row) -> new TokenGrant(rs.getObject("id", UUID.class), rs.getObject("account_id", UUID.class),
                 List.of((String[]) rs.getArray("scopes").getArray()), rs.getTimestamp("expires_at").toInstant()), tokenHash)
@@ -105,11 +105,11 @@ class JdbcApiKeyRepository implements ApiKeyRepository {
 
     @Override
     public void touch(UUID keyId) {
-        jdbc.update("UPDATE api_keys SET last_used_at = now() WHERE id = ? AND (last_used_at IS NULL OR last_used_at < now() - interval '1 minute')", keyId);
+        jdbc.update("UPDATE public_api_keys SET last_used_at = now() WHERE id = ? AND (last_used_at IS NULL OR last_used_at < now() - interval '1 minute')", keyId);
     }
 
     @Override
     public void purgeExpiredTokens(Instant now) {
-        jdbc.update("DELETE FROM api_access_tokens WHERE expires_at < ?", Timestamp.from(now));
+        jdbc.update("DELETE FROM public_api_tokens WHERE expires_at < ?", Timestamp.from(now));
     }
 }
