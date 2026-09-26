@@ -20,6 +20,7 @@ export const icons = {
   reembolsos: <Icon><path d="M4 12a8 8 0 1 0 2.5-5.8" /><path d="M4 4v4.5h4.5" /><path d="M12 8v8M9.5 10.5c0-1 1-1.6 2.5-1.6s2.5.7 2.5 1.6-1 1.4-2.5 1.6-2.5.7-2.5 1.6 1 1.6 2.5 1.6 2.5-.6 2.5-1.6" /></Icon>,
   relatorios: <Icon><path d="M5 20V11M12 20V4M19 20v-7" /></Icon>,
   colaboradores: <Icon><circle cx="9" cy="8" r="3" /><path d="M3.500 19c.5-3.400 2.600-5 5.500-5s5 1.600 5.500 5" /><circle cx="17" cy="9" r="2.300" /><path d="M16 14c2.500 0 4 1.400 4.500 4" /></Icon>,
+  ajuda: <Icon><circle cx="12" cy="12" r="9" /><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.7.400-1 .9-1 1.700M12 17v.01" /></Icon>,
   menu: <Icon><path d="M4 7h16M4 12h16M4 17h16" /></Icon>,
   fechar: <Icon><path d="M6 6l12 12M18 6 6 18" /></Icon>,
   usuario: <Icon><circle cx="12" cy="8.5" r="3.6" /><path d="M4.5 20.5c.6-4 3.4-6.2 7.5-6.2s6.9 2.2 7.5 6.2" /></Icon>,

@@ -72,7 +72,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {icons[childIcon]}<span>{childLabel}</span>
             </Link>)}
         </div>;
-      })}</nav>
+      })}
+        <div className="shell-group">
+          <a href="/ajuda" target="_blank" rel="noopener noreferrer">{icons.ajuda}<span>Ajuda</span><span className="sr-only"> (abre em uma nova guia)</span></a>
+        </div>
+      </nav>
     </aside>
     <button type="button" className="shell-scrim" aria-label="Fechar menu" tabIndex={-1} onClick={() => setDrawer(false)} />
     <main className="shell-main content" id="conteudo" tabIndex={-1}>{children}</main>
