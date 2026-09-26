@@ -912,3 +912,26 @@ button { cursor: pointer; }
 .aj-foot { padding: var(--esp-8) 0; border-top: 1px solid var(--paysi-linha); background: #fff; text-align: center; }
 .aj-foot p { margin: var(--esp-2) 0 0; color: #4B5563; font-size: 14px; }
 @media (max-width: 800px) { .aj-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Apps e API ---------- */
+.apps-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--esp-5); }
+.apps-card { display: flex; align-items: center; justify-content: center; gap: var(--esp-4); min-height: 140px; padding: var(--esp-6); border-radius: 20px; background: #fff; color: var(--paysi-texto); font-size: 28px; font-weight: 700; text-decoration: none; box-shadow: 0 1px 2px rgba(15,42,78,.05), 0 8px 24px rgba(15,42,78,.04); transition: transform .12s ease, box-shadow .12s ease; }
+.apps-card:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(15,42,78,.06), 0 12px 28px rgba(15,42,78,.08); }
+.api-title { margin-bottom: var(--esp-6); }
+.api-drawer-body { display: grid; gap: var(--esp-4); align-content: start; height: calc(100vh - 150px); }
+.api-help { margin: 0; padding: var(--esp-4); border-left: 4px solid var(--blue-700); background: var(--blue-50); }
+.api-scopes { display: grid; gap: var(--esp-2); }
+.api-sub { margin-left: var(--esp-5); }
+.api-foot { display: flex; justify-content: flex-end; gap: var(--esp-3); padding: var(--esp-4) var(--esp-5); border-top: 1px solid var(--paysi-linha); }
+.col-info a, .api-help a { color: var(--blue-700); text-decoration: underline; }
+@media (max-width: 900px) { .apps-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Documentação da API ---------- */
+.aj-doc { padding: var(--esp-8) 0; max-width: 860px; }
+.aj-doc h1 { margin: 0 0 var(--esp-3); }
+.aj-doc h2 { margin: var(--esp-8) 0 var(--esp-3); font-size: 22px; }
+.aj-doc pre { margin: var(--esp-3) 0; padding: var(--esp-4); overflow-x: auto; border-radius: 12px; background: #0F2A4E; color: #E5E7EB; font-size: 13px; line-height: 1.5; }
+.aj-doc code { font-size: 13px; }
+.aj-doc table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; font-size: 14px; }
+.aj-doc th, .aj-doc td { padding: var(--esp-3) var(--esp-4); border-bottom: 1px solid var(--paysi-linha); text-align: left; vertical-align: top; }
+.aj-doc th { background: var(--gray-50); font-weight: 600; }

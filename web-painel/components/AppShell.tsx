@@ -15,7 +15,7 @@ type NavItem = readonly [href: string, label: string, icon: keyof typeof icons, 
 const sellerLinks: readonly NavItem[] = [
   ["/inicio", "Dashboard", "inicio"], ["/produtos", "Produtos", "produtos"], ["/vendas", "Vendas", "vendas", [["/vendas/reembolsos", "Reembolsos", "reembolsos"]]],
   ["/assinaturas", "Assinaturas", "assinaturas"], ["/afiliados", "Afiliados", "afiliados"],
-  ["/saldo", "Financeiro", "financeiro"], ["/relatorios", "Relatórios", "relatorios"], ["/colaboradores", "Colaboradores", "colaboradores"], ["/integracoes", "Integrações", "integracoes"],
+  ["/saldo", "Financeiro", "financeiro"], ["/relatorios", "Relatórios", "relatorios"], ["/colaboradores", "Colaboradores", "colaboradores"], ["/apps", "Apps", "apps"], ["/integracoes", "Integrações", "integracoes"],
 ];
 const affiliateLinks: readonly NavItem[] = [
   ["/inicio", "Dashboard", "inicio"], ["/vitrine", "Marketplace", "vitrine"], ["/meus-links", "Meus links", "links"],
