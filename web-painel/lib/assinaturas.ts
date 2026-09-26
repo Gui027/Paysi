@@ -1,75 +1,129 @@
-import { apiRequest, CursorPage } from "./api";
+import { apiRequest } from "./api";
+import { downloadCsv, SaleDetail, SaleMethod, SaleStatus } from "./vendas";
 
 export type SubscriptionStatus = "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED";
+export type SubscriptionCycle = "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "ANNUAL";
+export type SubscriptionsTab = "active" | "canceled" | "all";
 
-export type ChargeStatus = "PENDING" | "PAID" | "FAILED" | "EXPIRED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "CHARGEBACK";
-
-export type Subscription = {
+export type SubscriptionRow = {
   id: string;
-  orderId: string;
-  offerId: string;
-  status: SubscriptionStatus;
-  cycleNumber: number;
-  trialEndsAt: string | null;
-  nextChargeAt: string | null;
-  canceledAt: string | null;
-  cancelPending: boolean;
-  hasPaymentMethod: boolean;
+  code: string;
   createdAt: string;
+  status: SubscriptionStatus;
+  cancelPending: boolean;
+  productName: string;
+  productId: string;
+  offerName: string | null;
+  cycle: SubscriptionCycle;
+  buyerName: string;
+  buyerEmail: string;
+  /** Líquido do vendedor na cobrança mais recente; nulo enquanto não houve cobrança (teste grátis). */
+  netCents: number | null;
+  nextChargeAt: string | null;
 };
 
-export type SubscriptionCharge = {
-  id: string;
+export type SubscriptionsPage = {
+  items: SubscriptionRow[];
+  page: number;
+  size: number;
+  total: number;
+  totalPages: number;
+  summary: { activeCount: number; monthlyRecurringCents: number };
+};
+
+export type SubscriptionPayment = {
+  chargeId: string;
   cycleNumber: number;
-  amountCents: number;
-  status: ChargeStatus;
-  attemptCount: number;
-  nextRetryAt: string | null;
-  paidAt: string | null;
   createdAt: string;
+  paidAt: string | null;
+  status: SaleStatus;
+  netCents: number;
 };
 
 export type SubscriptionDetail = {
-  subscription: Subscription;
-  charges: SubscriptionCharge[];
+  id: string;
+  code: string;
+  status: SubscriptionStatus;
+  cancelPending: boolean;
+  type: "PRODUCER";
+  createdAt: string;
+  accessUntil: string | null;
+  trialEndsAt: string | null;
+  nextChargeAt: string | null;
+  canceledAt: string | null;
+  productName: string;
+  productId: string;
+  offerName: string | null;
+  cycle: SubscriptionCycle;
+  netCents: number | null;
+  installments: number;
+  method: SaleMethod;
+  approvedCharges: number;
+  buyer: SaleDetail["buyer"];
+  payments: SubscriptionPayment[];
+  canCancel: boolean;
 };
+
+export type SubscriptionsQuery = {
+  tab: SubscriptionsTab;
+  q: string;
+  statuses: SubscriptionStatus[];
+  cycle: "" | SubscriptionCycle;
+  method: "" | SaleMethod;
+  productId: string;
+  from: string;
+  to: string;
+  page: number;
+};
+
+export const emptySubscriptionsQuery: SubscriptionsQuery = { tab: "active", q: "", statuses: [], cycle: "", method: "", productId: "", from: "", to: "", page: 1 };
 
 export const subscriptionStatusLabel: Record<SubscriptionStatus, string> = {
-  TRIAL: "Em teste grátis",
-  ACTIVE: "Ativa",
-  PAST_DUE: "Pagamento em atraso",
-  CANCELED: "Cancelada",
+  ACTIVE: "Ativo",
+  TRIAL: "Em teste",
+  PAST_DUE: "Em atraso",
+  CANCELED: "Cancelado",
 };
 
-export const chargeStatusLabel: Record<ChargeStatus, string> = {
-  PENDING: "Aguardando",
-  PAID: "Paga",
-  FAILED: "Recusada",
-  EXPIRED: "Expirada",
-  PARTIALLY_REFUNDED: "Reembolso parcial",
-  REFUNDED: "Reembolsada",
-  CHARGEBACK: "Contestada",
-};
+export const cycleLabel: Record<SubscriptionCycle, string> = { MONTHLY: "Mensal", QUARTERLY: "Trimestral", SEMIANNUAL: "Semestral", ANNUAL: "Anual" };
+export const cycleUnit: Record<SubscriptionCycle, string> = { MONTHLY: "mês", QUARTERLY: "trimestre", SEMIANNUAL: "semestre", ANNUAL: "ano" };
 
-/** Régua de retentativa fixa do backend (BE-10.2): D+1, D+3, D+7, D+14 a partir da 1ª falha. */
-export const DUNNING_SCHEDULE_DAYS = [1, 3, 7, 14] as const;
+/** Texto do status na lista: um cancelamento agendado ainda está ativo, mas o vendedor precisa ver que vai acabar. */
+export function statusText(subscription: { status: SubscriptionStatus; cancelPending: boolean }): string {
+  return subscription.cancelPending ? "Cancelamento agendado" : subscriptionStatusLabel[subscription.status];
+}
 
-export function listSubscriptions(cursor?: string, limit = 20) {
-  const query = new URLSearchParams({ limit: String(limit) });
-  if (cursor) query.set("cursor", cursor);
-  return apiRequest<CursorPage<Subscription>>(`/v1/accounts/me/subscriptions?${query}`);
+export function planName(subscription: { offerName: string | null; cycle: SubscriptionCycle }): string {
+  return subscription.offerName?.trim() || `Plano ${cycleLabel[subscription.cycle]}`;
+}
+
+/** Só monta a query string; o faturamento recorrente e os líquidos vêm prontos do backend. */
+export function subscriptionsParams(query: SubscriptionsQuery, paged = true): URLSearchParams {
+  const params = new URLSearchParams({ tab: query.tab });
+  if (query.q.trim()) params.set("q", query.q.trim());
+  query.statuses.forEach(status => params.append("status", status));
+  if (query.cycle) params.set("cycle", query.cycle);
+  if (query.method) params.set("method", query.method);
+  if (query.productId) params.set("productId", query.productId);
+  if (query.from) params.set("from", query.from);
+  if (query.to) params.set("to", query.to);
+  if (paged) params.set("page", String(query.page));
+  return params;
+}
+
+export function listSubscriptions(query: SubscriptionsQuery) {
+  return apiRequest<SubscriptionsPage>(`/v1/subscriptions?${subscriptionsParams(query)}`);
 }
 
 export function getSubscription(subscriptionId: string) {
-  return apiRequest<SubscriptionDetail>(`/v1/subscriptions/${encodeURIComponent(subscriptionId)}`);
+  return apiRequest<SubscriptionDetail>(`/v1/subscriptions/${encodeURIComponent(subscriptionId)}/details`);
 }
 
+/** O cancelamento vale ao fim do período já pago: o cliente mantém o acesso até lá. */
 export function cancelSubscription(subscriptionId: string) {
-  return apiRequest<void>(`/v1/subscriptions/${encodeURIComponent(subscriptionId)}/cancel`, {
-    method: "POST",
-  });
+  return apiRequest<void>(`/v1/subscriptions/${encodeURIComponent(subscriptionId)}/cancel`, { method: "POST" });
 }
 
-export function isTrialWithoutCard(subscription: Subscription): boolean {
-  return subscription.status === "TRIAL" && !subscription.hasPaymentMethod;
+export function downloadSubscriptionsCsv(query: SubscriptionsQuery): Promise<Blob> {
+  return downloadCsv(`/api/v1/subscriptions/export?${subscriptionsParams(query, false)}`);
 }

@@ -197,7 +197,7 @@ export function downloadRefundsCsv(query: RefundsQuery): Promise<Blob> {
   return downloadCsv(`/api/v1/refunds/export?${refundsParams(query, false)}`);
 }
 
-async function downloadCsv(url: string): Promise<Blob> {
+export async function downloadCsv(url: string): Promise<Blob> {
   const response = await fetch(url, {
     credentials: "include",
     headers: { Accept: "text/csv" },
