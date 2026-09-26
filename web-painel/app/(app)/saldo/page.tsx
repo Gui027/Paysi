@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { Skeleton } from "../../../components/ui";
-import { SaldoPage } from "./SaldoPage";
+import { FinanceiroPage } from "./FinanceiroPage";
 
-export const metadata = { title: "Saldo e extrato" };
+export const metadata = { title: "Financeiro" };
 
 export default function Page() {
-  return <Suspense fallback={<Skeleton label="Carregando saldo" />}><SaldoPage /></Suspense>;
+  return <Suspense fallback={<Skeleton label="Carregando financeiro" />}><FinanceiroPage /></Suspense>;
 }

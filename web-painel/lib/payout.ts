@@ -86,7 +86,7 @@ export function createBankAccount(input: BankAccountInput, challengeId: string) 
   });
 }
 
-export function requestPayout(amountCents: number, bankAccountId: string, challengeId: string, idempotencyKey: string) {
+export function requestPayout(amountCents: number, bankAccountId: string, challengeId: string | null, idempotencyKey: string) {
   return apiRequest<PayoutResult>("/v1/accounts/me/payouts", {
     method: "POST",
     headers: { "Idempotency-Key": idempotencyKey },

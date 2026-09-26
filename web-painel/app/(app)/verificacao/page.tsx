@@ -1,9 +1,7 @@
-import { Suspense } from "react";
-import { Skeleton } from "../../../components/ui";
-import { Verificacao } from "./Verificacao";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Verificação de identidade" };
-
-export default function Page() {
-  return <Suspense fallback={<Skeleton label="Carregando verificação de identidade" />}><Verificacao /></Suspense>;
+// A verificação de identidade agora é a aba Identidade do Financeiro; o ?next= continua valendo.
+export default async function Page({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next } = await searchParams;
+  redirect(next ? `/saldo?aba=identidade&next=${encodeURIComponent(next)}` : "/saldo?aba=identidade");
 }

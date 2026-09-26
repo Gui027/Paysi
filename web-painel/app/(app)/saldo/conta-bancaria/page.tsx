@@ -1,9 +1,6 @@
-import { Suspense } from "react";
-import { Skeleton } from "../../../../components/ui";
-import { BankAccountPage } from "./BankAccountPage";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Conta bancária" };
-
+// A conta de recebimento (chave Pix) fica na aba Dados bancários do Financeiro.
 export default function Page() {
-  return <Suspense fallback={<Skeleton label="Carregando conta bancária" />}><BankAccountPage /></Suspense>;
+  redirect("/saldo?aba=dados");
 }

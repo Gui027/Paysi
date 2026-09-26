@@ -95,7 +95,7 @@ public class LedgerReleaseProcessor {
         return new LedgerEntry(due.accountId(), bucket, direction, amount, due.origin(), releaseAt);
     }
 
-    private static int reserveBps(String payoutDelay) {
+    public static int reserveBps(String payoutDelay) {
         return switch (payoutDelay) {
             case "D32" -> 400;
             case "D15" -> 600;

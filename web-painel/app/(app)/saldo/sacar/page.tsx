@@ -1,9 +1,6 @@
-import { Suspense } from "react";
-import { Skeleton } from "../../../../components/ui";
-import { SaquePage } from "./SaquePage";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Solicitar saque" };
-
+// O saque agora é uma janela dentro do Financeiro.
 export default function Page() {
-  return <Suspense fallback={<Skeleton label="Carregando saque" />}><SaquePage /></Suspense>;
+  redirect("/saldo?sacar=1");
 }

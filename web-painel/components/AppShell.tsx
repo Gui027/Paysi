@@ -16,11 +16,10 @@ const sellerLinks: readonly NavItem[] = [
   ["/inicio", "Dashboard", "inicio"], ["/produtos", "Produtos", "produtos"], ["/vendas", "Vendas", "vendas", [["/vendas/reembolsos", "Reembolsos", "reembolsos"]]],
   ["/assinaturas", "Assinaturas", "assinaturas"], ["/afiliados", "Afiliados", "afiliados"],
   ["/saldo", "Financeiro", "financeiro"], ["/integracoes", "Integrações", "integracoes"],
-  ["/verificacao", "Verificação", "verificacao"],
 ];
 const affiliateLinks: readonly NavItem[] = [
   ["/inicio", "Dashboard", "inicio"], ["/vitrine", "Marketplace", "vitrine"], ["/meus-links", "Meus links", "links"],
-  ["/saldo", "Financeiro", "financeiro"], ["/verificacao", "Verificação", "verificacao"],
+  ["/saldo", "Financeiro", "financeiro"],
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -54,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <details className="shell-user">
         <summary aria-label="Menu da conta"><span className="shell-avatar">{icons.usuario}</span><span className="shell-caret">{icons.seta}</span></summary>
         <div className="shell-user-menu">
-          <Link href="/verificacao">Verificação de identidade</Link>
+          <Link href="/saldo?aba=identidade">Verificação de identidade</Link>
           <LogoutButton />
         </div>
       </details>

@@ -6,7 +6,7 @@ import java.util.Objects;
 
 /** Fonte única da divisão. Vendedor recebe o residual exato. */
 public final class SplitEngine {
-    private static final long PLATFORM_FIXED_FEE_CENTS = 200;
+    public static final long PLATFORM_FIXED_FEE_CENTS = 200;
     private static final int MAX_COMMISSION_BPS = 5_000;
 
     private SplitEngine() {}
