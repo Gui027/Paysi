@@ -18,6 +18,7 @@ export const icons = {
   vitrine: <Icon><path d="M4 9h16l-1.2-4.5H5.2L4 9Z" /><path d="M5 9v10.5h14V9" /><path d="M10 19.5v-5h4v5" /></Icon>,
   links: <Icon><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></Icon>,
   reembolsos: <Icon><path d="M4 12a8 8 0 1 0 2.5-5.8" /><path d="M4 4v4.5h4.5" /><path d="M12 8v8M9.5 10.5c0-1 1-1.6 2.5-1.6s2.5.7 2.5 1.6-1 1.4-2.5 1.6-2.5.7-2.5 1.6 1 1.6 2.5 1.6 2.5-.6 2.5-1.6" /></Icon>,
+  relatorios: <Icon><path d="M5 20V11M12 20V4M19 20v-7" /></Icon>,
   menu: <Icon><path d="M4 7h16M4 12h16M4 17h16" /></Icon>,
   fechar: <Icon><path d="M6 6l12 12M18 6 6 18" /></Icon>,
   usuario: <Icon><circle cx="12" cy="8.5" r="3.6" /><path d="M4.5 20.5c.6-4 3.4-6.2 7.5-6.2s6.9 2.2 7.5 6.2" /></Icon>,
