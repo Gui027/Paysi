@@ -38,7 +38,10 @@ export type RefundRow = {
   productName: string;
   buyerName: string;
   buyerEmail: string;
+  buyerPhone: string | null;
   amountCents: number;
+  /** Líquido da venda que voltou ao comprador: a coluna "Valor líquido" da lista. */
+  sellerCents: number;
   reason: string | null;
   status: "PENDING" | "SUCCEEDED" | "FAILED";
   requestedBy: "BUYER" | "SELLER" | "ADMIN" | "SYSTEM";
@@ -117,8 +120,18 @@ export const saleStatusTone: Record<SaleStatus, "success" | "warning" | "danger"
 
 export const saleMethodLabel: Record<SaleMethod, string> = { PIX: "Pix", CARD: "Cartão de crédito", BOLETO: "Boleto" };
 
-export const refundStatusLabel: Record<RefundRow["status"], string> = { SUCCEEDED: "Concluído", PENDING: "Em processamento", FAILED: "Falhou" };
-export const refundOriginLabel: Record<RefundRow["requestedBy"], string> = { SELLER: "Você", BUYER: "Comprador", ADMIN: "Paysi", SYSTEM: "Sistema" };
+export const refundStatusLabel: Record<RefundRow["status"], string> = { SUCCEEDED: "Reembolsado", PENDING: "Em processamento", FAILED: "Falhou" };
+export const refundOriginLabel: Record<RefundRow["requestedBy"], string> = { SELLER: "Vendedor", BUYER: "Comprador", ADMIN: "Paysi", SYSTEM: "Paysi" };
+
+/** Autores como a tela os mostra: "Paysi" reúne os reembolsos feitos pela plataforma e pelo sistema. */
+export const refundOriginGroups: { label: string; origins: RefundRow["requestedBy"][] }[] = [
+  { label: "Vendedor", origins: ["SELLER"] },
+  { label: "Comprador", origins: ["BUYER"] },
+  { label: "Paysi", origins: ["ADMIN", "SYSTEM"] },
+];
+
+export type RefundsQuery = { q: string; statuses: RefundRow["status"][]; origins: RefundRow["requestedBy"][]; from: string; to: string; page: number };
+export const emptyRefundsQuery: RefundsQuery = { q: "", statuses: [], origins: [], from: "", to: "", page: 1 };
 
 export const payoutLabel: Record<PayoutState, string> = {
   WAITING_PAYMENT: "Aguardando pagamento",
@@ -149,11 +162,19 @@ export function getSale(chargeId: string) {
   return apiRequest<SaleDetail>(`/v1/sales/${encodeURIComponent(chargeId)}`);
 }
 
-export function listRefunds(q: string, statuses: RefundRow["status"][], page: number) {
-  const params = new URLSearchParams({ page: String(page) });
-  if (q.trim()) params.set("q", q.trim());
-  statuses.forEach(status => params.append("status", status));
-  return apiRequest<RefundsPage>(`/v1/refunds?${params}`);
+export function refundsParams(query: RefundsQuery, paged = true): URLSearchParams {
+  const params = new URLSearchParams();
+  if (query.q.trim()) params.set("q", query.q.trim());
+  query.statuses.forEach(status => params.append("status", status));
+  query.origins.forEach(origin => params.append("origin", origin));
+  if (query.from) params.set("from", query.from);
+  if (query.to) params.set("to", query.to);
+  if (paged) params.set("page", String(query.page));
+  return params;
+}
+
+export function listRefunds(query: RefundsQuery) {
+  return apiRequest<RefundsPage>(`/v1/refunds?${refundsParams(query)}`);
 }
 
 export type RefundResult = { refundId: string; status: string; chargeStatus: string; chargeRefundedCents: number };
@@ -168,8 +189,16 @@ export function refundSale(chargeId: string, amountCents: number | null, reason:
 }
 
 /** Baixa o CSV do filtro atual (o servidor limita a 10.000 linhas). */
-export async function downloadSalesCsv(query: SalesQuery): Promise<Blob> {
-  const response = await fetch(`/api/v1/sales/export?${salesParams(query, false)}`, {
+export function downloadSalesCsv(query: SalesQuery): Promise<Blob> {
+  return downloadCsv(`/api/v1/sales/export?${salesParams(query, false)}`);
+}
+
+export function downloadRefundsCsv(query: RefundsQuery): Promise<Blob> {
+  return downloadCsv(`/api/v1/refunds/export?${refundsParams(query, false)}`);
+}
+
+async function downloadCsv(url: string): Promise<Blob> {
+  const response = await fetch(url, {
     credentials: "include",
     headers: { Accept: "text/csv" },
   });

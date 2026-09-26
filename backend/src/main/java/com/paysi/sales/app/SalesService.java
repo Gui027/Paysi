@@ -3,6 +3,8 @@ package com.paysi.sales.app;
 import com.paysi.core.error.NotFoundException;
 import com.paysi.core.error.ValidationException;
 import com.paysi.sales.app.SalesModels.PayoutState;
+import com.paysi.sales.app.SalesModels.RefundFilter;
+import com.paysi.sales.app.SalesModels.RefundRow;
 import com.paysi.sales.app.SalesModels.RefundsPage;
 import com.paysi.sales.app.SalesModels.SaleDetail;
 import com.paysi.sales.app.SalesModels.SaleRow;
@@ -28,6 +30,7 @@ public class SalesService {
     public static final int MAX_PAGE_SIZE = 50;
     public static final int MAX_EXPORT_ROWS = 10_000;
     private static final Set<String> REFUND_STATUSES = Set.of("PENDING", "SUCCEEDED", "FAILED");
+    private static final Set<String> REFUND_ORIGINS = Set.of("BUYER", "SELLER", "ADMIN", "SYSTEM");
 
     private final SalesQueryRepository repository;
     private final Clock clock;
@@ -108,28 +111,46 @@ public class SalesService {
         return repository.list(sellerId, filter, MAX_EXPORT_ROWS, 0);
     }
 
-    @Transactional(readOnly = true)
-    public RefundsPage refunds(UUID sellerId, String query, List<String> statuses, Integer requestedPage,
-                               Integer requestedSize) {
-        Set<String> parsed = new LinkedHashSet<>();
-        for (String status : statuses == null ? List.<String>of() : statuses) {
-            String normalized = status == null ? "" : status.strip().toUpperCase();
-            if (normalized.isEmpty()) continue;
-            if (!REFUND_STATUSES.contains(normalized)) {
-                throw new ValidationException("REFUND_STATUS_INVALID", "Status de reembolso inválido", "status");
-            }
-            parsed.add(normalized);
-        }
+    /** Valida o que veio da URL e monta o filtro de reembolsos. */
+    public RefundFilter refundFilter(String query, List<String> statuses, List<String> origins, String from, String to) {
+        Set<String> parsedStatuses = parse(statuses, REFUND_STATUSES, "REFUND_STATUS_INVALID", "Status de reembolso inválido", "status");
+        Set<String> parsedOrigins = parse(origins, REFUND_ORIGINS, "REFUND_ORIGIN_INVALID", "Autor do reembolso inválido", "origin");
         String text = query == null || query.isBlank() ? null : query.strip();
         if (text != null && text.length() > 120) {
             throw new ValidationException("SALES_QUERY_TOO_LONG", "A busca deve ter no máximo 120 caracteres", "q");
         }
+        LocalDate start = date(from, "from");
+        LocalDate end = date(to, "to");
+        if (start != null && end != null && end.isBefore(start)) {
+            throw new ValidationException("SALES_PERIOD_INVALID", "A data final deve ser igual ou posterior à inicial", "to");
+        }
+        return new RefundFilter(text, parsedStatuses, parsedOrigins, start, end);
+    }
+
+    @Transactional(readOnly = true)
+    public RefundsPage refunds(UUID sellerId, RefundFilter filter, Integer requestedPage, Integer requestedSize) {
         int size = size(requestedSize);
-        long total = repository.countRefunds(sellerId, text, parsed);
+        long total = repository.countRefunds(sellerId, filter);
         int totalPages = pages(total, size);
         int page = page(requestedPage, totalPages);
-        return new RefundsPage(repository.listRefunds(sellerId, text, parsed, size, (page - 1) * size),
+        return new RefundsPage(repository.listRefunds(sellerId, filter, size, (page - 1) * size),
                 page, size, total, totalPages);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RefundRow> exportRefunds(UUID sellerId, RefundFilter filter) {
+        return repository.listRefunds(sellerId, filter, MAX_EXPORT_ROWS, 0);
+    }
+
+    private static Set<String> parse(List<String> values, Set<String> allowed, String code, String message, String field) {
+        Set<String> parsed = new LinkedHashSet<>();
+        for (String value : values == null ? List.<String>of() : values) {
+            String normalized = value == null ? "" : value.strip().toUpperCase();
+            if (normalized.isEmpty()) continue;
+            if (!allowed.contains(normalized)) throw new ValidationException(code, message, field);
+            parsed.add(normalized);
+        }
+        return parsed;
     }
 
     private static LocalDate date(String value, String field) {

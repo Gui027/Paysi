@@ -1,6 +1,7 @@
 package com.paysi.sales.web;
 
 import com.paysi.identity.session.app.SessionService;
+import com.paysi.sales.app.RefundsCsv;
 import com.paysi.sales.app.SalesCsv;
 import com.paysi.sales.app.SalesModels.RefundsPage;
 import com.paysi.sales.app.SalesModels.SaleDetail;
@@ -86,9 +87,30 @@ public class SalesController {
     public RefundsPage refunds(@CookieValue(name = COOKIE_NAME, required = false) String token,
                                @RequestParam(name = "q", required = false) String query,
                                @RequestParam(name = "status", required = false) List<String> statuses,
+                               @RequestParam(name = "origin", required = false) List<String> origins,
+                               @RequestParam(required = false) String from,
+                               @RequestParam(required = false) String to,
                                @RequestParam(required = false) Integer page,
                                @RequestParam(required = false) Integer size) {
-        return sales.refunds(accountId(token), query, statuses, page, size);
+        return sales.refunds(accountId(token), sales.refundFilter(query, statuses, origins, from, to), page, size);
+    }
+
+    @GetMapping("/v1/refunds/export")
+    @Operation(summary = "Exportar os reembolsos do filtro em CSV")
+    public ResponseEntity<byte[]> exportRefunds(@CookieValue(name = COOKIE_NAME, required = false) String token,
+                                                @RequestParam(name = "q", required = false) String query,
+                                                @RequestParam(name = "status", required = false) List<String> statuses,
+                                                @RequestParam(name = "origin", required = false) List<String> origins,
+                                                @RequestParam(required = false) String from,
+                                                @RequestParam(required = false) String to) {
+        var rows = sales.exportRefunds(accountId(token), sales.refundFilter(query, statuses, origins, from, to));
+        byte[] body = RefundsCsv.build(rows).getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename("reembolsos-paysi-" + LocalDate.now() + ".csv").build().toString())
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(body);
     }
 
     private UUID accountId(String token) {

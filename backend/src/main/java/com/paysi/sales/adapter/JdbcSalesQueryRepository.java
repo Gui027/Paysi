@@ -3,6 +3,7 @@ package com.paysi.sales.adapter;
 import com.paysi.sales.app.SalesModels.Amounts;
 import com.paysi.sales.app.SalesModels.Buyer;
 import com.paysi.sales.app.SalesModels.Participant;
+import com.paysi.sales.app.SalesModels.RefundFilter;
 import com.paysi.sales.app.SalesModels.RefundRow;
 import com.paysi.sales.app.SalesModels.SaleDetail;
 import com.paysi.sales.app.SalesModels.SaleRow;
@@ -106,8 +107,8 @@ class JdbcSalesQueryRepository implements SalesQueryRepository {
     }
 
     @Override
-    public List<RefundRow> listRefunds(UUID sellerId, String query, Set<String> statuses, int limit, int offset) {
-        Where where = refundWhere(sellerId, query, statuses);
+    public List<RefundRow> listRefunds(UUID sellerId, RefundFilter filter, int limit, int offset) {
+        Where where = refundWhere(sellerId, filter);
         List<Object> params = new ArrayList<>(where.params());
         params.add(limit);
         params.add(offset);
@@ -116,8 +117,8 @@ class JdbcSalesQueryRepository implements SalesQueryRepository {
     }
 
     @Override
-    public long countRefunds(UUID sellerId, String query, Set<String> statuses) {
-        Where where = refundWhere(sellerId, query, statuses);
+    public long countRefunds(UUID sellerId, RefundFilter filter) {
+        Where where = refundWhere(sellerId, filter);
         Long total = jdbc.queryForObject("SELECT COUNT(*) " + refundFrom() + where.sql(), Long.class,
                 where.params().toArray());
         return total == null ? 0 : total;
@@ -155,15 +156,27 @@ class JdbcSalesQueryRepository implements SalesQueryRepository {
         return new Where(sql.toString(), params);
     }
 
-    private static Where refundWhere(UUID sellerId, String query, Set<String> statuses) {
+    private static Where refundWhere(UUID sellerId, RefundFilter filter) {
         StringBuilder sql = new StringBuilder(" WHERE p.seller_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(sellerId);
-        if (!statuses.isEmpty()) {
-            sql.append(" AND r.status IN (").append(placeholders(statuses.size())).append(")");
-            params.addAll(new TreeSet<>(statuses));
+        if (!filter.statuses().isEmpty()) {
+            sql.append(" AND r.status IN (").append(placeholders(filter.statuses().size())).append(")");
+            params.addAll(new TreeSet<>(filter.statuses()));
         }
-        appendSearch(sql, params, query, "c");
+        if (!filter.origins().isEmpty()) {
+            sql.append(" AND r.requested_by IN (").append(placeholders(filter.origins().size())).append(")");
+            params.addAll(new TreeSet<>(filter.origins()));
+        }
+        if (filter.from() != null) {
+            sql.append(" AND (r.created_at AT TIME ZONE 'America/Sao_Paulo')::date >= ?");
+            params.add(java.sql.Date.valueOf(filter.from()));
+        }
+        if (filter.to() != null) {
+            sql.append(" AND (r.created_at AT TIME ZONE 'America/Sao_Paulo')::date <= ?");
+            params.add(java.sql.Date.valueOf(filter.to()));
+        }
+        appendSearch(sql, params, filter.query(), "c");
         return new Where(sql.toString(), params);
     }
 
@@ -248,16 +261,18 @@ class JdbcSalesQueryRepository implements SalesQueryRepository {
 
     private static String refundSelect() {
         return """
-                SELECT r.id, r.charge_id, r.amount_cents, r.reason, r.status, r.requested_by, r.created_at,
-                       r.settled_at, p.name AS product_name, b.name AS buyer_name, b.email::text AS buyer_email
+                SELECT r.id, r.charge_id, r.amount_cents, r.seller_cents, r.reason, r.status, r.requested_by,
+                       r.created_at, r.settled_at, p.name AS product_name, b.name AS buyer_name,
+                       b.email::text AS buyer_email, o.buyer_phone
                 """ + refundFrom();
     }
 
     private static RefundRow refundRow(ResultSet rs) throws SQLException {
         UUID chargeId = rs.getObject("charge_id", UUID.class);
         return new RefundRow(rs.getObject("id", UUID.class), chargeId, code(chargeId), rs.getString("product_name"),
-                rs.getString("buyer_name"), rs.getString("buyer_email"), rs.getLong("amount_cents"),
-                rs.getString("reason"), rs.getString("status"), rs.getString("requested_by"),
-                instant(rs, "created_at"), instant(rs, "settled_at"));
+                rs.getString("buyer_name"), rs.getString("buyer_email"), rs.getString("buyer_phone"),
+                rs.getLong("amount_cents"), rs.getLong("seller_cents"), rs.getString("reason"),
+                rs.getString("status"), rs.getString("requested_by"), instant(rs, "created_at"),
+                instant(rs, "settled_at"));
     }
 }

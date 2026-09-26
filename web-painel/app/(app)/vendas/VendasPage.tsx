@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EmptyState, Skeleton, Toast } from "../../../components/ui";
 import { Paginacao } from "../../../components/Paginacao";
@@ -40,7 +41,10 @@ export function VendasPage() {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Vindo de Reembolsos ("Ver venda"), a venda já abre no painel de detalhes.
+  const [openId, setOpenId] = useState<string | null>(searchParams.get("venda"));
   const requestId = useRef(0);
 
   const load = useCallback(async (current: SalesQuery) => {
@@ -169,6 +173,6 @@ export function VendasPage() {
       </div>
     </section>
 
-    <VendaDrawer saleId={openId} onClose={() => setOpenId(null)} onChanged={() => void load(query)} />
+    <VendaDrawer saleId={openId} onClose={() => { setOpenId(null); if (searchParams.get("venda")) router.replace("/vendas"); }} onChanged={() => void load(query)} />
   </div>;
 }

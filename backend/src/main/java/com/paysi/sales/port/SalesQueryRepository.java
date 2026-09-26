@@ -1,5 +1,6 @@
 package com.paysi.sales.port;
 
+import com.paysi.sales.app.SalesModels.RefundFilter;
 import com.paysi.sales.app.SalesModels.RefundRow;
 import com.paysi.sales.app.SalesModels.SaleDetail;
 import com.paysi.sales.app.SalesModels.SaleRow;
@@ -8,7 +9,6 @@ import com.paysi.sales.app.SalesModels.SalesSummary;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 public interface SalesQueryRepository {
@@ -19,7 +19,7 @@ public interface SalesQueryRepository {
 
     Optional<SaleDetail> find(UUID sellerId, UUID chargeId);
 
-    List<RefundRow> listRefunds(UUID sellerId, String query, Set<String> statuses, int limit, int offset);
+    List<RefundRow> listRefunds(UUID sellerId, RefundFilter filter, int limit, int offset);
 
-    long countRefunds(UUID sellerId, String query, Set<String> statuses);
+    long countRefunds(UUID sellerId, RefundFilter filter);
 }

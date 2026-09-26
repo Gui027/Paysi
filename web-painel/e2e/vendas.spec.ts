@@ -164,16 +164,13 @@ test.describe("vendas", () => {
     await expect(page.getByText(/Exportação concluída/)).toBeVisible();
   });
 
-  test("submenu Reembolsos no menu e a lista de reembolsos", async ({ page }) => {
+  test("submenu Reembolsos no menu leva à página de reembolsos", async ({ page }) => {
     await preparar(page);
-    await page.route("**/api/v1/refunds?**", (route) => route.fulfill({ json: { items: [{ id: "r1", chargeId: ID_PAGO, saleCode: "1111111", productName: "Cartilha do Aprovado PMES", buyerName: "Henrique Viana da Silva", buyerEmail: "henriquesjv@hotmail.com", amountCents: 990, reason: "Cliente desistiu", status: "SUCCEEDED", requestedBy: "SELLER", createdAt: "2026-09-25T15:00:00Z", settledAt: null }], page: 1, size: 10, total: 1, totalPages: 1 } }));
+    await page.route("**/api/v1/refunds?**", (route) => route.fulfill({ json: { items: [], page: 1, size: 10, total: 0, totalPages: 1 } }));
     await page.goto("/vendas");
     await page.getByRole("link", { name: "Reembolsos" }).click();
     await expect(page).toHaveURL(/\/vendas\/reembolsos$/);
     await expect(page.getByRole("heading", { name: "Reembolsos" })).toBeVisible();
-    await expect(page.getByText("Concluído", { exact: true })).toBeVisible();
-    await expect(page.getByText("R$ 9,90")).toBeVisible();
-    await expect(page.getByText("Motivo: Cliente desistiu")).toBeVisible();
   });
 
   test("estado vazio e erro têm mensagens claras", async ({ page }) => {

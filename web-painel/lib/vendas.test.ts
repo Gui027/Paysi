@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  emptyRefundsQuery,
   emptySalesQuery,
+  refundsParams,
   formatDocumento,
   formatTelefone,
   paginasVisiveis,
@@ -43,4 +45,14 @@ test("paginação numerada com reticências", () => {
   assert.deepEqual(paginasVisiveis(17, 33), [1, "…", 16, 17, 18, "…", 33]);
   assert.deepEqual(paginasVisiveis(33, 33), [1, "…", 29, 30, 31, 32, 33]);
   assert.deepEqual(paginasVisiveis(1, 1), [1]);
+});
+
+test("monta a query dos reembolsos com status, autor, período e página", () => {
+  const params = refundsParams({ ...emptyRefundsQuery, q: " fulano ", statuses: ["SUCCEEDED"], origins: ["ADMIN", "SYSTEM"], from: "2026-07-01", to: "2026-07-31", page: 2 });
+  assert.equal(params.get("q"), "fulano");
+  assert.deepEqual(params.getAll("status"), ["SUCCEEDED"]);
+  assert.deepEqual(params.getAll("origin"), ["ADMIN", "SYSTEM"]);
+  assert.equal(params.get("from"), "2026-07-01");
+  assert.equal(params.get("page"), "2");
+  assert.equal(refundsParams(emptyRefundsQuery, false).toString(), "");
 });

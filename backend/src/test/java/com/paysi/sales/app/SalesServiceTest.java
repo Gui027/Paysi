@@ -23,7 +23,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -96,12 +95,35 @@ class SalesServiceTest {
     }
 
     @Test
-    void refundListValidatesStatusesAndPaginates() {
-        when(repository.countRefunds(eq(SELLER), any(), any())).thenReturn(21L);
-        var page = service.refunds(SELLER, null, List.of("succeeded"), 3, 10);
+    void refundFilterValidatesStatusesOriginsAndPeriod() {
+        var filter = service.refundFilter("  maria ", List.of("succeeded"), List.of("seller", "admin"), "2026-09-01", "2026-09-30");
+        assertThat(filter.query()).isEqualTo("maria");
+        assertThat(filter.statuses()).containsExactly("SUCCEEDED");
+        assertThat(filter.origins()).containsExactlyInAnyOrder("SELLER", "ADMIN");
+
+        assertThatThrownBy(() -> service.refundFilter(null, List.of("NOPE"), null, null, null)).isInstanceOf(ValidationException.class);
+        assertThatThrownBy(() -> service.refundFilter(null, null, List.of("ALIEN"), null, null)).isInstanceOf(ValidationException.class);
+        assertThatThrownBy(() -> service.refundFilter(null, null, null, "2026-09-30", "2026-09-01")).isInstanceOf(ValidationException.class);
+    }
+
+    @Test
+    void refundListPaginatesAndExportsWithTheSameFilter() {
+        var filter = service.refundFilter(null, null, null, null, null);
+        when(repository.countRefunds(SELLER, filter)).thenReturn(21L);
+        var page = service.refunds(SELLER, filter, 3, 10);
         assertThat(page.totalPages()).isEqualTo(3);
-        verify(repository).listRefunds(SELLER, null, Set.of("SUCCEEDED"), 10, 20);
-        assertThatThrownBy(() -> service.refunds(SELLER, null, List.of("NOPE"), 1, 10)).isInstanceOf(ValidationException.class);
+        verify(repository).listRefunds(SELLER, filter, 10, 20);
+        service.exportRefunds(SELLER, filter);
+        verify(repository).listRefunds(SELLER, filter, SalesService.MAX_EXPORT_ROWS, 0);
+    }
+
+    @Test
+    void refundCsvUsesTheScreenLabelsAndNeutralizesFormulas() {
+        var row = new SalesModels.RefundRow(UUID.randomUUID(), CHARGE, "3F9A2C1", "Curso", "Maria", "m@x.com", null,
+                4_700, 4_075, "=SOMA(A1)", "SUCCEEDED", "ADMIN", NOW, NOW);
+        String csv = RefundsCsv.build(List.of(row));
+        assertThat(csv).startsWith("\uFEFFSolicitação;ID da venda;");
+        assertThat(csv).contains(";Reembolsado;Paysi;40,75;47,00;'=SOMA(A1)");
     }
 
     @Test

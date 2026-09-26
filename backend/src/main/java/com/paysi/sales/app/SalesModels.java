@@ -35,9 +35,14 @@ public final class SalesModels {
 
     public record Participant(String name, String role, long amountCents) { }
 
+    /** {@code sellerCents} é o líquido da venda que volta ao comprador (a coluna "Valor líquido" da tela). */
     public record RefundRow(UUID id, UUID chargeId, String saleCode, String productName, String buyerName,
-                            String buyerEmail, long amountCents, String reason, String status,
-                            String requestedBy, Instant createdAt, Instant settledAt) { }
+                            String buyerEmail, String buyerPhone, long amountCents, long sellerCents,
+                            String reason, String status, String requestedBy, Instant createdAt,
+                            Instant settledAt) { }
+
+    public record RefundFilter(String query, Set<String> statuses, Set<String> origins, LocalDate from,
+                               LocalDate to) { }
 
     public record RefundsPage(List<RefundRow> items, int page, int size, long total, int totalPages) { }
 
