@@ -2,6 +2,7 @@ import { FormEvent, useRef, useState } from "react";
 import { CheckoutContract, PaymentMethod, PersonType } from "../lib/checkout";
 import { ApiRequestError } from "../lib/api";
 import { ChaveCampo, comoChaveCampo, validarCampo } from "../lib/camposComprador";
+import { Campo } from "../componentes/Campo";
 import { CamposComprador } from "../componentes/CamposComprador";
 import { CampoDeCartao } from "../componentes/CampoDeCartao";
 import { DesafioTresDS } from "../componentes/DesafioTresDS";
@@ -110,6 +111,9 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
       const error = validarCampo(key, values[key] ?? "", personType);
       if (error) nextErrors[key] = error;
     }
+    // Celular é opcional, mas quando vem precisa ter DDD (o vendedor usa para falar com o cliente).
+    const telefone = (values.phone ?? "").replace(/\D/g, "");
+    if (telefone && (telefone.length < 10 || telefone.length > 13)) nextErrors.phone = "Informe o celular com DDD.";
     const hasTermsError = !termsAccepted;
     const hasCouponError = couponVisible && Boolean(coupon.trim()) && !simulacao;
     const hasCardError = metodo === "cartao" && !dadosCartao;
@@ -127,7 +131,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
       const termsHash = await calcularTermosHash(contract.legalTexts.termsUrl);
       termsHashRef.current = termsHash;
       const payload = {
-        buyer: montarComprador(values, personType, campos),
+        buyer: { ...montarComprador(values, personType, campos), ...(telefone ? { phone: telefone } : {}) },
         method: paymentMethod,
         installments: selectedInstallments,
         coupon: couponVisible && coupon.trim() ? coupon.trim() : null,
@@ -234,6 +238,11 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
         </label>
       </fieldset>
       <CamposComprador campos={campos} values={values} errors={errors} personType={personType} onChange={change} />
+      <div className="field-grid">
+        <Campo id="phone" label="Celular / WhatsApp (opcional)" type="tel" inputMode="tel" autoComplete="tel" full
+          placeholder="(11) 99999-9999" value={values.phone ?? ""} error={errors.phone}
+          onChange={event => { setValues(current => ({ ...current, phone: event.target.value })); setErrors(current => ({ ...current, phone: undefined })); }} />
+      </div>
 
       <div className="section-title"><span className="step">2</span><h2>Cupom de desconto</h2></div>
       {!couponVisible ? (

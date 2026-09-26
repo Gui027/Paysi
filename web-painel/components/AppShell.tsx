@@ -8,12 +8,12 @@ import { icons } from "./Icons";
 import { LogoutButton } from "./LogoutButton";
 import "./shell.css";
 
-type NavItem = readonly [href: string, label: string, icon: keyof typeof icons];
+type NavItem = readonly [href: string, label: string, icon: keyof typeof icons, children?: readonly NavItem[]];
 
 // Menu enxuto por modo. As rotas que saíram (perfil, plano, componentes, cupons) continuam
 // existindo — só não ocupam o menu. Cupons abre pelo botão na lista de Produtos.
 const sellerLinks: readonly NavItem[] = [
-  ["/inicio", "Dashboard", "inicio"], ["/produtos", "Produtos", "produtos"], ["/vendas", "Vendas", "vendas"],
+  ["/inicio", "Dashboard", "inicio"], ["/produtos", "Produtos", "produtos"], ["/vendas", "Vendas", "vendas", [["/vendas/reembolsos", "Reembolsos", "reembolsos"]]],
   ["/assinaturas", "Assinaturas", "assinaturas"], ["/afiliados", "Afiliados", "afiliados"],
   ["/saldo", "Financeiro", "financeiro"], ["/integracoes", "Integrações", "integracoes"],
   ["/verificacao", "Verificação", "verificacao"],
@@ -60,10 +60,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </details>
     </header>
     <aside className="shell-side" id="shell-nav">
-      <nav aria-label="Navegação principal">{items.map(([href, label, icon]) =>
-        <Link key={href} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? "page" : undefined}>
-          {icons[icon]}<span>{label}</span>
-        </Link>)}</nav>
+      <nav aria-label="Navegação principal">{items.map(([href, label, icon, children]) => {
+        const inside = pathname === href || pathname.startsWith(`${href}/`);
+        const childActive = children?.some(([childHref]) => pathname === childHref || pathname.startsWith(`${childHref}/`)) ?? false;
+        return <div key={href} className="shell-group">
+          <Link href={href} aria-current={inside && !childActive ? "page" : undefined}>
+            {icons[icon]}<span>{label}</span>
+            {children && <span className="shell-chevron" aria-hidden="true">{inside ? "⌃" : "⌄"}</span>}
+          </Link>
+          {children && inside && children.map(([childHref, childLabel, childIcon]) =>
+            <Link key={childHref} href={childHref} className="shell-sub" aria-current={pathname === childHref || pathname.startsWith(`${childHref}/`) ? "page" : undefined}>
+              {icons[childIcon]}<span>{childLabel}</span>
+            </Link>)}
+        </div>;
+      })}</nav>
     </aside>
     <button type="button" className="shell-scrim" aria-label="Fechar menu" tabIndex={-1} onClick={() => setDrawer(false)} />
     <main className="shell-main content" id="conteudo" tabIndex={-1}>{children}</main>

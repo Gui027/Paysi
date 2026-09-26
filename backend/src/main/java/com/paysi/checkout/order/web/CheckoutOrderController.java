@@ -40,7 +40,7 @@ public class CheckoutOrderController {
             @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateOrderRequest request, HttpServletRequest httpRequest) {
         rateLimit.checkOrderAttempt(clientIp(httpRequest), request.buyer().taxId(), request.visitorKey());
-        OrderResult result = orders.create(slug, idempotencyKey, request.toCommand());
+        OrderResult result = orders.create(slug, idempotencyKey, request.toCommand().withIp(clientIp(httpRequest)));
         return ResponseEntity.status(result.replay() ? HttpStatus.OK : HttpStatus.CREATED)
                 .body(OrderResponse.from(result.order()));
     }

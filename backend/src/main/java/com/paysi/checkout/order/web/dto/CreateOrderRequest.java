@@ -40,7 +40,7 @@ public record CreateOrderRequest(
         return new CreateOrderCommand(buyer.name(), buyer.email(), buyer.personType(),
                 buyer.taxId(), buyer.legalName(), buyer.municipalReg(), buyer.address(),
                 method, installments == null ? 1 : installments, cardToken, coupon,
-                visitorKey, termsHash, reference);
+                visitorKey, termsHash, reference, buyer.phone(), null);
     }
 
     public record BuyerRequest(
@@ -51,6 +51,7 @@ public record CreateOrderRequest(
             @Size(max = 200) String legalName,
             @Size(max = 32) String municipalReg,
             @Valid BuyerAddress address,
+            @Size(max = 32) String phone,
             @JsonAnySetter Map<String, Object> unknown
     ) {
         public BuyerRequest {

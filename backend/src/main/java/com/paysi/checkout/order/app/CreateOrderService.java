@@ -111,7 +111,7 @@ public class CreateOrderService {
                 attribution == null ? null : attribution.affiliationId(),
                 snapshot(buyer, command.termsHash()), quote.grossCents(), quote.discountCents(),
                 quote.discount().couponId(), quote.paidCents(), quote.method(), quote.installments(),
-                OrderStatus.PENDING, idempotencyKey, requestHash, clock.instant(), command.reference());
+                OrderStatus.PENDING, idempotencyKey, requestHash, clock.instant(), command.reference(), command.phone(), command.ip());
 
         if (!orders.insertIfAbsent(order)) {
             return OrderResult.replayed(previous(offer.id(), idempotencyKey, requestHash));

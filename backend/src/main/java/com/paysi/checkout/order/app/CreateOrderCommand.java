@@ -26,12 +26,23 @@ public record CreateOrderCommand(
         String coupon,
         String visitorKey,
         String termsHash,
-        String reference
+        String reference,
+        String phone,
+        String ip
 ) {
     /** Identificador do cliente no sistema do vendedor (opcional, até 128 caracteres). */
     public static final int REFERENCE_MAX_LENGTH = 128;
 
     public CreateOrderCommand {
+        if (phone != null) {
+            phone = phone.replaceAll("\\D", "");
+            if (phone.isEmpty()) phone = null;
+            else if (phone.length() < 10 || phone.length() > 13) {
+                throw new com.paysi.core.error.ValidationException("PHONE_INVALID",
+                        "Informe o celular com DDD (10 a 13 dígitos)", "phone");
+            }
+        }
+        if (ip != null && ip.length() > 64) ip = ip.substring(0, 64);
         if (reference != null) {
             reference = reference.strip();
             if (reference.isEmpty()) reference = null;
@@ -42,13 +53,28 @@ public record CreateOrderCommand(
         }
     }
 
+    /** Pedido com referência, sem celular nem IP. */
+    public CreateOrderCommand(String name, String email, PersonType personType, String taxId, String legalName,
+                              String municipalReg, BuyerAddress address, OfferPaymentMethod method,
+                              int installments, String cardToken, String coupon, String visitorKey,
+                              String termsHash, String reference) {
+        this(name, email, personType, taxId, legalName, municipalReg, address, method, installments, cardToken,
+                coupon, visitorKey, termsHash, reference, null, null);
+    }
+
+    /** Devolve o comando com o IP de origem (preenchido pelo controller, nunca pelo corpo). */
+    public CreateOrderCommand withIp(String clientIp) {
+        return new CreateOrderCommand(name, email, personType, taxId, legalName, municipalReg, address, method,
+                installments, cardToken, coupon, visitorKey, termsHash, reference, phone, clientIp);
+    }
+
     /** Pedido sem referência externa; mantém a assinatura anterior. */
     public CreateOrderCommand(String name, String email, PersonType personType, String taxId, String legalName,
                               String municipalReg, BuyerAddress address, OfferPaymentMethod method,
                               int installments, String cardToken, String coupon, String visitorKey,
                               String termsHash) {
         this(name, email, personType, taxId, legalName, municipalReg, address, method, installments, cardToken,
-                coupon, visitorKey, termsHash, null);
+                coupon, visitorKey, termsHash, null, null, null);
     }
 
     @Override

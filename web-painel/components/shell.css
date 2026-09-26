@@ -52,3 +52,7 @@
   .shell[data-drawer="open"] .shell-scrim { display: block; position: fixed; inset: 0; z-index: 50; border: 0; background: rgba(15,42,78,.5); }
 }
 @media (prefers-reduced-motion: reduce) { .shell-side { transition: none; } }
+
+.shell-group { display: grid; gap: 2px; }
+.shell-chevron { margin-left: auto; opacity: .7; }
+.shell-side a.shell-sub { min-height: 40px; margin-left: var(--esp-4); padding-left: var(--esp-3); font-weight: 400; }

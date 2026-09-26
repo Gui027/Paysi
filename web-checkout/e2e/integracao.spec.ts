@@ -87,3 +87,47 @@ test.describe("checkout — integração com o sistema do vendedor", () => {
     await expect(page).toHaveURL(/app\.exemplo\.com\/obrigado\?paysi_status=approved&ref=user_123/);
   });
 });
+
+test.describe("checkout — celular opcional do comprador", () => {
+  test("envia o celular só com dígitos quando informado", async ({ page }) => {
+    await mockOferta(page);
+    let corpo: { buyer?: Record<string, unknown> } | null = null;
+    await page.route(`**/v1/checkout/${OFERTA_SLUG}/orders`, async (route) => {
+      corpo = route.request().postDataJSON();
+      await route.fulfill({ json: { orderId: "order_tel_1", status: "CREATED" } });
+    });
+    await mockTokenizacaoCartao(page);
+    await mockCobranca(page, COBRANCA_CARTAO_APROVADA);
+    await page.goto(`/${OFERTA_SLUG}`);
+    await page.getByLabel(/nome completo/i).fill("Maria Compradora");
+    await page.getByLabel(/e-mail/i).fill("maria@example.com");
+    await page.getByLabel(/cpf/i).fill("39053344705");
+    await page.getByLabel(/celular \/ whatsapp/i).fill("(27) 99951-3505");
+    await page.getByRole("radio", { name: "Cartão" }).check();
+    await page.getByLabel(/nome impresso no cartão/i).fill("MARIA COMPRADORA");
+    await page.getByLabel(/número do cartão/i).fill("4111111111111111");
+    await page.getByLabel(/validade/i).fill("1230");
+    await page.getByLabel(/cvv/i).fill("123");
+    await preencherTitularDoCartao(page);
+    await aceitarTermos(page);
+    await page.getByRole("button", { name: /pagar agora/i }).click();
+    await expect(page.getByRole("heading", { name: /pagamento aprovado/i })).toBeVisible();
+    expect(corpo?.buyer).toMatchObject({ phone: "27999513505" });
+  });
+
+  test("celular curto demais é recusado antes de criar o pedido", async ({ page }) => {
+    await mockOferta(page);
+    let pedidos = 0;
+    await page.route(`**/v1/checkout/${OFERTA_SLUG}/orders`, async (route) => { pedidos += 1; await route.fulfill({ json: { orderId: "x", status: "CREATED" } }); });
+    await page.goto(`/${OFERTA_SLUG}`);
+    await page.getByLabel(/nome completo/i).fill("Maria Compradora");
+    await page.getByLabel(/e-mail/i).fill("maria@example.com");
+    await page.getByLabel(/cpf/i).fill("39053344705");
+    await page.getByLabel(/celular \/ whatsapp/i).fill("123");
+    await page.getByRole("radio", { name: "Pix" }).check();
+    await aceitarTermos(page);
+    await page.getByRole("button", { name: /pagar agora/i }).click();
+    await expect(page.getByText("Informe o celular com DDD.")).toBeVisible();
+    expect(pedidos).toBe(0);
+  });
+});

@@ -19,6 +19,7 @@ export type CompradorInput = {
   legalName?: string;
   municipalReg?: string;
   address?: EnderecoInput;
+  phone?: string;
 };
 
 export type PedidoInput = {

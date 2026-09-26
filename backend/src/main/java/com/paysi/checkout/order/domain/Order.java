@@ -30,14 +30,25 @@ public record Order(
         String idempotencyKey,
         String requestHash,
         Instant createdAt,
-        String externalRef
+        String externalRef,
+        String buyerPhone,
+        String buyerIp
 ) {
+    /** Pedido sem celular nem IP; mantém a assinatura anterior. */
+    public Order(UUID id, UUID offerId, UUID buyerId, UUID affiliationId, String buyerSnapshot, long grossCents,
+                 long discountCents, UUID couponId, long paidCents, OfferPaymentMethod method, int installments,
+                 OrderStatus status, String idempotencyKey, String requestHash, Instant createdAt,
+                 String externalRef) {
+        this(id, offerId, buyerId, affiliationId, buyerSnapshot, grossCents, discountCents, couponId, paidCents,
+                method, installments, status, idempotencyKey, requestHash, createdAt, externalRef, null, null);
+    }
+
     /** Pedido sem referência externa; mantém a assinatura anterior. */
     public Order(UUID id, UUID offerId, UUID buyerId, UUID affiliationId, String buyerSnapshot, long grossCents,
                  long discountCents, UUID couponId, long paidCents, OfferPaymentMethod method, int installments,
                  OrderStatus status, String idempotencyKey, String requestHash, Instant createdAt) {
         this(id, offerId, buyerId, affiliationId, buyerSnapshot, grossCents, discountCents, couponId, paidCents,
-                method, installments, status, idempotencyKey, requestHash, createdAt, null);
+                method, installments, status, idempotencyKey, requestHash, createdAt, null, null, null);
     }
 
     public Order {

@@ -30,14 +30,14 @@ class JdbcOrderRepository implements OrderRepository {
                 INSERT INTO orders
                   (id, offer_id, buyer_id, affiliation_id, buyer_snapshot, gross_cents,
                    discount_cents, coupon_id, paid_cents, method, installments, status,
-                   idempotency_key, request_hash, created_at, external_ref)
-                VALUES (?, ?, ?, ?, cast(? as jsonb), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   idempotency_key, request_hash, created_at, external_ref, buyer_phone, buyer_ip)
+                VALUES (?, ?, ?, ?, cast(? as jsonb), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (offer_id, idempotency_key) DO NOTHING
                 """, order.id(), order.offerId(), order.buyerId(), order.affiliationId(),
                 order.buyerSnapshot(), order.grossCents(), order.discountCents(),
                 order.couponId(), order.paidCents(), order.method().name(), order.installments(),
                 order.status().name(), order.idempotencyKey(), order.requestHash(),
-                Timestamp.from(order.createdAt()), order.externalRef()) == 1;
+                Timestamp.from(order.createdAt()), order.externalRef(), order.buyerPhone(), order.buyerIp()) == 1;
     }
 
     @Override
@@ -54,6 +54,7 @@ class JdbcOrderRepository implements OrderRepository {
                 rs.getLong("paid_cents"), OfferPaymentMethod.valueOf(rs.getString("method")),
                 rs.getInt("installments"), OrderStatus.valueOf(rs.getString("status")),
                 rs.getString("idempotency_key"), rs.getString("request_hash"),
-                rs.getTimestamp("created_at").toInstant(), rs.getString("external_ref"));
+                rs.getTimestamp("created_at").toInstant(), rs.getString("external_ref"),
+                rs.getString("buyer_phone"), rs.getString("buyer_ip"));
     }
 }

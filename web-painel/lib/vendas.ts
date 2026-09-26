@@ -1,193 +1,221 @@
-import { apiRequest, CursorPage } from "./api";
+import { apiRequest, ApiRequestError } from "./api";
 
-export type OrderStatus =
-  | "PENDING"
-  | "PAID"
-  | "REFUNDED"
-  | "PARTIALLY_REFUNDED"
-  | "CHARGEBACK"
-  | "FAILED";
+export type SaleStatus = "PENDING" | "PAID" | "FAILED" | "EXPIRED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "CHARGEBACK";
+export type SaleMethod = "PIX" | "CARD" | "BOLETO";
+export type SalesTab = "approved" | "all";
 
-export type PaymentMethod = "PIX" | "BOLETO" | "CARD";
-
-export type OrderSummary = {
+export type SaleRow = {
   id: string;
-  buyerNameMasked: string;
+  code: string;
+  createdAt: string;
+  approvedAt: string | null;
+  status: SaleStatus;
   productName: string;
   productId: string;
-  method: PaymentMethod;
-  status: OrderStatus;
-  paidCents: number;
-  grossCents: number;
-  discountCents: number;
-  chargesCount: number;
+  offerName: string | null;
+  method: SaleMethod;
+  installments: number;
+  buyerName: string;
+  buyerEmail: string;
+  netCents: number;
+};
+
+export type SalesPage = {
+  items: SaleRow[];
+  page: number;
+  size: number;
+  total: number;
+  totalPages: number;
+  summary: { count: number; netCents: number };
+};
+
+export type PayoutState = "WAITING_PAYMENT" | "TO_RELEASE" | "RELEASED" | "REFUNDED" | "NOT_APPLICABLE";
+
+export type RefundRow = {
+  id: string;
+  chargeId: string;
+  saleCode: string;
+  productName: string;
+  buyerName: string;
+  buyerEmail: string;
+  amountCents: number;
+  reason: string | null;
+  status: "PENDING" | "SUCCEEDED" | "FAILED";
+  requestedBy: "BUYER" | "SELLER" | "ADMIN" | "SYSTEM";
   createdAt: string;
+  settledAt: string | null;
 };
 
-export type SplitParticipant = {
-  recipient: string;
-  role: "SELLER" | "AFFILIATE" | "PLATFORM";
-  amountCents: number;
-};
+export type RefundsPage = { items: RefundRow[]; page: number; size: number; total: number; totalPages: number };
 
-export type ReceivableDetail = {
+export type SaleDetail = {
   id: string;
-  installmentNumber: number;
-  amountCents: number;
-  bucket: "GUARANTEE" | "PENDING" | "RESERVE" | "AVAILABLE";
-  availableAt: string;
-  status: "SCHEDULED" | "AVAILABLE" | "PAID";
-};
-
-export type ThreeDsEvidence = {
-  version: string;
-  eci: string;
-  cavvPresent: boolean;
-  liabilityShifted: boolean;
-};
-
-export type ChargeEvent = {
-  id: string;
-  type: string;
-  description: string;
-  occurredAt: string;
-};
-
-export type ChargeDetail = {
-  id: string;
-  sequence: number;
-  status: OrderStatus;
-  method: PaymentMethod;
-  amountCents: number;
-  refundedCents: number;
-  confirmedAt: string | null;
-  split: SplitParticipant[];
-  receivables: ReceivableDetail[];
-  threeDS: ThreeDsEvidence | null;
-  events: ChargeEvent[];
-};
-
-export type OrderDetail = {
-  id: string;
-  buyer: {
-    nameMasked: string;
-    emailMasked: string;
-    documentMasked: string;
-  };
-  product: {
-    id: string;
-    name: string;
-  };
-  offer: {
-    id: string;
-    title: string;
-    slug: string;
-  };
-  affiliation: {
-    id: string;
-    affiliateName: string;
-    commissionCents: number;
-    rateBps: number;
-  } | null;
-  terms: {
-    version: string;
-    acceptedAt: string;
-  } | null;
-  grossCents: number;
-  discountCents: number;
-  paidCents: number;
-  status: OrderStatus;
-  createdAt: string;
-  charges: ChargeDetail[];
-};
-
-export type OrderPeriodPreset = "" | "today" | "7d" | "30d";
-
-export type OrderFilters = {
-  query: string;
-  status: "" | OrderStatus;
-  method: "" | PaymentMethod;
+  code: string;
+  status: SaleStatus;
+  type: "PRODUCER";
+  productName: string;
   productId: string;
-  period: OrderPeriodPreset;
+  offerName: string | null;
+  method: SaleMethod;
+  installments: number;
+  createdAt: string;
+  approvedAt: string | null;
+  availableAt: string | null;
+  reference: string | null;
+  cycleNumber: number | null;
+  subscriptionId: string | null;
+  couponCode: string | null;
+  buyer: { name: string; email: string; phone: string | null; taxId: string; personType: "PF" | "PJ"; ip: string | null };
+  amounts: {
+    basePriceCents: number;
+    discountCents: number;
+    paidCents: number;
+    feesCents: number;
+    affiliateCents: number;
+    sellerCents: number;
+    refundedCents: number;
+    netCents: number;
+  };
+  split: { name: string; role: "SELLER" | "AFFILIATE"; amountCents: number }[];
+  payoutState: PayoutState;
+  canRefund: boolean;
+  refunds: RefundRow[];
 };
 
-export const orderStatusLabel: Record<OrderStatus, string> = {
+export type SalesQuery = {
+  tab: SalesTab;
+  q: string;
+  statuses: SaleStatus[];
+  method: "" | SaleMethod;
+  productId: string;
+  from: string;
+  to: string;
+  page: number;
+};
+
+export const emptySalesQuery: SalesQuery = { tab: "approved", q: "", statuses: [], method: "", productId: "", from: "", to: "", page: 1 };
+
+export const saleStatusLabel: Record<SaleStatus, string> = {
+  PAID: "Pago",
   PENDING: "Aguardando pagamento",
-  PAID: "Paga",
-  REFUNDED: "Reembolsada",
+  FAILED: "Recusado",
+  EXPIRED: "Expirado",
   PARTIALLY_REFUNDED: "Reembolso parcial",
-  CHARGEBACK: "Contestada",
-  FAILED: "Falhou",
+  REFUNDED: "Reembolsado",
+  CHARGEBACK: "Chargeback",
 };
 
-export const paymentMethodLabel: Record<PaymentMethod, string> = {
-  PIX: "Pix",
-  BOLETO: "Boleto",
-  CARD: "Cartão de crédito",
+export const saleStatusTone: Record<SaleStatus, "success" | "warning" | "danger" | "neutral"> = {
+  PAID: "success",
+  PENDING: "warning",
+  FAILED: "danger",
+  EXPIRED: "neutral",
+  PARTIALLY_REFUNDED: "warning",
+  REFUNDED: "neutral",
+  CHARGEBACK: "danger",
 };
 
-export const splitRoleLabel: Record<SplitParticipant["role"], string> = {
-  SELLER: "Vendedor",
-  AFFILIATE: "Afiliado",
-  PLATFORM: "Plataforma",
+export const saleMethodLabel: Record<SaleMethod, string> = { PIX: "Pix", CARD: "Cartão de crédito", BOLETO: "Boleto" };
+
+export const refundStatusLabel: Record<RefundRow["status"], string> = { SUCCEEDED: "Concluído", PENDING: "Em processamento", FAILED: "Falhou" };
+export const refundOriginLabel: Record<RefundRow["requestedBy"], string> = { SELLER: "Você", BUYER: "Comprador", ADMIN: "Paysi", SYSTEM: "Sistema" };
+
+export const payoutLabel: Record<PayoutState, string> = {
+  WAITING_PAYMENT: "Aguardando pagamento",
+  TO_RELEASE: "A liberar",
+  RELEASED: "Liberado",
+  REFUNDED: "Devolvido ao comprador",
+  NOT_APPLICABLE: "Sem repasse",
 };
 
-export function maskName(name: string): string {
-  if (!name) return "";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) {
-    const first = parts[0];
-    return first.length > 2 ? `${first.slice(0, 2)}***` : `${first}*`;
+/** Só monta a query string; toda conta com dinheiro (líquido, total, taxas) vem pronta do backend. */
+export function salesParams(query: SalesQuery, paged = true): URLSearchParams {
+  const params = new URLSearchParams({ tab: query.tab });
+  if (query.q.trim()) params.set("q", query.q.trim());
+  query.statuses.forEach(status => params.append("status", status));
+  if (query.method) params.set("method", query.method);
+  if (query.productId) params.set("productId", query.productId);
+  if (query.from) params.set("from", query.from);
+  if (query.to) params.set("to", query.to);
+  if (paged) params.set("page", String(query.page));
+  return params;
+}
+
+export function listSales(query: SalesQuery) {
+  return apiRequest<SalesPage>(`/v1/sales?${salesParams(query)}`);
+}
+
+export function getSale(chargeId: string) {
+  return apiRequest<SaleDetail>(`/v1/sales/${encodeURIComponent(chargeId)}`);
+}
+
+export function listRefunds(q: string, statuses: RefundRow["status"][], page: number) {
+  const params = new URLSearchParams({ page: String(page) });
+  if (q.trim()) params.set("q", q.trim());
+  statuses.forEach(status => params.append("status", status));
+  return apiRequest<RefundsPage>(`/v1/refunds?${params}`);
+}
+
+export type RefundResult = { refundId: string; status: string; chargeStatus: string; chargeRefundedCents: number };
+
+/** amountCents nulo reembolsa o valor total que ainda pode ser devolvido. */
+export function refundSale(chargeId: string, amountCents: number | null, reason: string, idempotencyKey: string) {
+  return apiRequest<RefundResult>(`/v1/charges/${encodeURIComponent(chargeId)}/refunds`, {
+    method: "POST",
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: JSON.stringify({ amountCents, reason: reason.trim() || null }),
+  });
+}
+
+/** Baixa o CSV do filtro atual (o servidor limita a 10.000 linhas). */
+export async function downloadSalesCsv(query: SalesQuery): Promise<Blob> {
+  const response = await fetch(`/api/v1/sales/export?${salesParams(query, false)}`, {
+    credentials: "include",
+    headers: { Accept: "text/csv" },
+  });
+  if (!response.ok) {
+    const body = response.headers.get("content-type")?.includes("json") ? await response.json() : {};
+    throw new ApiRequestError(response.status, body);
   }
-  return `${parts[0]} ${parts[parts.length - 1].slice(0, 1)}***`;
+  return response.blob();
 }
 
-export function maskEmail(email: string): string {
-  if (!email || !email.includes("@")) return "";
-  const [local, domain] = email.split("@");
-  const visible = local.length > 2 ? local.slice(0, 2) : local.slice(0, 1);
-  return `${visible}***@${domain}`;
+// ---------- formatação (só texto) ----------
+
+export function formatDocumento(value: string | null | undefined): string {
+  const digits = (value ?? "").replace(/\D/g, "");
+  if (digits.length === 11) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+  if (digits.length === 14) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  return value ?? "";
 }
 
-export function maskDocument(doc: string): string {
-  const clean = doc.replace(/\D/g, "");
-  if (clean.length === 11) {
-    return `***.${clean.slice(3, 6)}.${clean.slice(6, 9)}-**`;
-  }
-  if (clean.length === 14) {
-    return `**.${clean.slice(2, 5)}.${clean.slice(5, 8)}/****-**`;
-  }
-  return "***";
+/** Celular guardado só com dígitos (com ou sem 55) -> "+55 27 99951-3505". */
+export function formatTelefone(value: string | null | undefined): string {
+  let digits = (value ?? "").replace(/\D/g, "");
+  if (digits.length >= 12 && digits.startsWith("55")) digits = digits.slice(2);
+  if (digits.length === 11) return `+55 ${digits.slice(0, 2)} ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `+55 ${digits.slice(0, 2)} ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return value ?? "";
 }
 
-export function orderMatchesFilters(order: OrderSummary, filters: OrderFilters): boolean {
-  const q = filters.query.trim().toLowerCase();
-  const matchesQuery =
-    !q ||
-    order.id.toLowerCase().includes(q) ||
-    order.productName.toLowerCase().includes(q) ||
-    order.buyerNameMasked.toLowerCase().includes(q);
-
-  const matchesStatus = !filters.status || order.status === filters.status;
-  const matchesMethod = !filters.method || order.method === filters.method;
-  const matchesProduct = !filters.productId || order.productId === filters.productId;
-
-  return matchesQuery && matchesStatus && matchesMethod && matchesProduct;
+export function whatsappUrl(value: string | null | undefined): string | null {
+  let digits = (value ?? "").replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  if (digits.length <= 11) digits = `55${digits}`;
+  return `https://wa.me/${digits}`;
 }
 
-export function listOrders(filters?: Partial<OrderFilters>, cursor?: string, limit = 20) {
-  const query = new URLSearchParams({ limit: String(limit) });
-  if (cursor) query.set("cursor", cursor);
-  if (filters?.status) query.set("status", filters.status);
-  if (filters?.method) query.set("method", filters.method);
-  if (filters?.productId) query.set("productId", filters.productId);
-  if (filters?.period) query.set("period", filters.period);
-  if (filters?.query) query.set("query", filters.query);
-
-  return apiRequest<CursorPage<OrderSummary>>(`/v1/orders?${query}`);
+/** Números de página a exibir: 1 2 3 4 5 … 33, sempre com a atual visível. */
+export function paginasVisiveis(atual: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+  const pages = new Set<number>([1, total, atual - 1, atual, atual + 1]);
+  if (atual <= 3) [2, 3, 4, 5].forEach(page => pages.add(page));
+  if (atual >= total - 2) [total - 1, total - 2, total - 3, total - 4].forEach(page => pages.add(page));
+  const sorted = [...pages].filter(page => page >= 1 && page <= total).sort((a, b) => a - b);
+  const result: (number | "…")[] = [];
+  sorted.forEach((page, index) => {
+    if (index > 0 && page - sorted[index - 1]! > 1) result.push("…");
+    result.push(page);
+  });
+  return result;
 }
-
-export function getOrder(orderId: string) {
-  return apiRequest<OrderDetail>(`/v1/orders/${encodeURIComponent(orderId)}`);
-}
-
