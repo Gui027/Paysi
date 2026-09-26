@@ -98,3 +98,29 @@ export type DashboardView = {
 export function getDashboard(period: DashboardPeriodPreset = "today") {
   return apiRequest<DashboardView>(`/v1/accounts/me/dashboard?period=${encodeURIComponent(period)}`);
 }
+
+// ---------- Dashboard do afiliado ----------
+
+export type AffiliateEarnings = { commissionCents: number; sales: number; clicks: number; conversionPercent: string | null };
+export type AffiliationCounts = { active: number; pending: number };
+export type TopProduct = { productId: string; productName: string; sales: number; commissionCents: number };
+export type RecentCommission = { id: string; productName: string; commissionCents: number; status: string; occurredAt: string };
+
+export type AffiliateDashboardView = {
+  period: { preset: DashboardPeriodPreset; from: string; to: string };
+  earnings: DashboardBlock<AffiliateEarnings>;
+  balance: DashboardBlock<BalanceView>;
+  nextReceivables: DashboardBlock<UpcomingReceivable[]>;
+  affiliations: DashboardBlock<AffiliationCounts>;
+  alerts: DashboardBlock<DashboardAlert[]>;
+  topProducts: DashboardBlock<TopProduct[]>;
+  recentCommissions: DashboardBlock<RecentCommission[]>;
+};
+
+export const commissionStatusLabel: Record<string, string> = {
+  PAID: "Aprovada", PARTIALLY_REFUNDED: "Reembolso parcial", REFUNDED: "Reembolsada", CHARGEBACK: "Chargeback",
+};
+
+export function getAffiliateDashboard(period: DashboardPeriodPreset = "today") {
+  return apiRequest<AffiliateDashboardView>(`/v1/accounts/me/dashboard/affiliate?period=${encodeURIComponent(period)}`);
+}
