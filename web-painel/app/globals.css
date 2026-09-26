@@ -876,3 +876,9 @@ button { cursor: pointer; }
 .rel-formats { display: grid; gap: var(--esp-3); margin-top: var(--esp-4); }
 .rel-wa { min-height: 36px; padding: 0 var(--esp-3); font-size: 13px; text-decoration: none; }
 @media (max-width: 900px) { .rel-hub { grid-template-columns: 1fr; } .rel-popover { right: auto; left: 0; } }
+
+/* ---------- Colaboradores ---------- */
+.col-actions { width: 1%; text-align: right; }
+.prod-menu-list .col-item { color: var(--paysi-texto); }
+.col-wide { width: 100%; }
+.col-info { margin: var(--esp-5) 0 0; text-align: center; font-size: 14px; color: #4B5563; }
