@@ -36,6 +36,7 @@ export type MarketplaceItem = {
   guaranteeDays: number;
   payoutDelayDays: number;
   attributionDays: number;
+  maxCommissionCents?: number | null;
 };
 
 export const affiliationStatusLabel: Record<AffiliationStatus, string> = {

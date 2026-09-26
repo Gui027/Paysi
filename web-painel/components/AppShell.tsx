@@ -19,7 +19,7 @@ const sellerLinks: readonly NavItem[] = [
   ["/verificacao", "Verificação", "verificacao"],
 ];
 const affiliateLinks: readonly NavItem[] = [
-  ["/inicio", "Dashboard", "inicio"], ["/vitrine", "Vitrine", "vitrine"], ["/meus-links", "Meus links", "links"],
+  ["/inicio", "Dashboard", "inicio"], ["/vitrine", "Marketplace", "vitrine"], ["/meus-links", "Meus links", "links"],
   ["/saldo", "Financeiro", "financeiro"], ["/verificacao", "Verificação", "verificacao"],
 ];
 

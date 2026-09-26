@@ -17,11 +17,18 @@ public record MarketplaceItemResponse(
         Integer suggestedCommissionBps,
         int guaranteeDays,
         int payoutDelayDays,
-        int attributionDays
+        int attributionDays,
+        Long maxCommissionCents
 ) {
     public static MarketplaceItemResponse from(MarketplaceItem item) {
         return new MarketplaceItemResponse(item.productId(), item.product(), item.description(), item.seller(),
                 item.segment(), item.chargeType(), item.startingPriceCents(), item.suggestedCommissionBps(),
-                item.guaranteeDays(), item.payoutDelayDays(), item.attributionDays());
+                item.guaranteeDays(), item.payoutDelayDays(), item.attributionDays(), maxCommission(item));
+    }
+
+    /** Quanto o afiliado recebe, no máximo, por venda ao preço inicial (arredonda para baixo). */
+    private static Long maxCommission(MarketplaceItem item) {
+        Integer bps = item.suggestedCommissionBps();
+        return bps == null ? null : Math.multiplyExact(item.startingPriceCents(), (long) bps) / 10_000;
     }
 }

@@ -68,6 +68,7 @@ class AffiliateControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].productId").value(PRODUCT.toString()))
                 .andExpect(jsonPath("$.items[0].startingPriceCents").value(10_000))
+                .andExpect(jsonPath("$.items[0].maxCommissionCents").value(1_500))
                 .andExpect(jsonPath("$.items[0].suggestedCommissionBps").value(1_500))
                 .andExpect(jsonPath("$.items[0].payoutDelayDays").value(32))
                 .andExpect(jsonPath("$.items[0].attributionDays").value(60))
