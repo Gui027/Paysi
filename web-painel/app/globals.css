@@ -738,3 +738,10 @@ button { cursor: pointer; }
 .mk-facts > div:first-child { border-top: 0; }
 .mk-facts dt { color: #4B5563; font-size: 14px; } .mk-facts dd { margin: 0; font-weight: 500; }
 .mk-earn { color: #0B6B3A; font-weight: 700; }
+.af-product { max-width: 320px; flex: 1 1 220px; }
+.af-actions { position: relative; margin-left: auto; }
+.af-menu { right: 0; min-width: 160px; }
+.af-menu-ok { color: #0B6B3A !important; }
+.af-check { width: 44px; }
+.af-check input { width: 18px; height: 18px; }
+.af-pill-bad { background: #FFE4E1; color: #B42318; }
