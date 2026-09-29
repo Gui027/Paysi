@@ -18,7 +18,7 @@ public interface KycStore {
 
     ComplianceProfile complianceProfile(UUID accountId);
 
-    void saveComplianceProfile(UUID accountId, String postalCode, java.time.LocalDate birthDate);
+    void saveComplianceProfile(UUID accountId, String postalCode, java.time.LocalDate birthDate, Long incomeValueCents);
 
     /** Apaga o processo/pendências guardados — próxima chamada a {@code start} chama o provedor de novo. */
     void clearProcess(UUID accountId);

@@ -33,8 +33,8 @@ class AsaasKycProviderTest {
     private static final UUID ACCOUNT_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-09-29T12:00:00Z");
     private static final LocalDate BIRTH_DATE = LocalDate.of(1990, 5, 20);
-    private static final ComplianceProfile COMPLETE = new ComplianceProfile("01310100", BIRTH_DATE);
-    private static final ComplianceProfile INCOMPLETE = new ComplianceProfile(null, null);
+    private static final ComplianceProfile COMPLETE = new ComplianceProfile("01310100", BIRTH_DATE, 150_000L);
+    private static final ComplianceProfile INCOMPLETE = new ComplianceProfile(null, null, null);
 
     private final AccountRepository accounts = mock(AccountRepository.class);
     private final KycStore store = mock(KycStore.class);
@@ -57,7 +57,7 @@ class AsaasKycProviderTest {
         assertThat(process.requirements()).hasSize(1);
         assertThat(process.requirements().get(0).code()).isEqualTo("CONTACT_INFO");
         assertThat(process.requirements().get(0).status()).isEqualTo("PENDING");
-        verify(subaccounts, never()).createSubaccount(eq("Ana Vendedora"), eq("ana@example.com"), eq("52998224725"), eq("01310100"), eq(BIRTH_DATE));
+        verify(subaccounts, never()).createSubaccount(eq("Ana Vendedora"), eq("ana@example.com"), eq("52998224725"), eq("01310100"), eq(BIRTH_DATE), eq(150_000L));
     }
 
     @Test
@@ -65,7 +65,7 @@ class AsaasKycProviderTest {
         when(store.complianceProfile(ACCOUNT_ID)).thenReturn(COMPLETE);
         when(wallets.walletId(ACCOUNT_ID)).thenReturn(Optional.empty());
         when(accounts.findById(ACCOUNT_ID)).thenReturn(Optional.of(account()));
-        when(subaccounts.createSubaccount("Ana Vendedora", "ana@example.com", "52998224725", "01310100", BIRTH_DATE))
+        when(subaccounts.createSubaccount("Ana Vendedora", "ana@example.com", "52998224725", "01310100", BIRTH_DATE, 150_000L))
                 .thenReturn(new SubaccountResult("acc_1", "wallet_1"));
 
         var process = provider.createProcess(ACCOUNT_ID);
@@ -85,7 +85,7 @@ class AsaasKycProviderTest {
         String walletId = provider.ensureSubaccount(ACCOUNT_ID);
 
         assertThat(walletId).isEqualTo("wallet_existing");
-        verify(subaccounts, never()).createSubaccount(eq("Ana Vendedora"), eq("ana@example.com"), eq("52998224725"), eq("01310100"), eq(BIRTH_DATE));
+        verify(subaccounts, never()).createSubaccount(eq("Ana Vendedora"), eq("ana@example.com"), eq("52998224725"), eq("01310100"), eq(BIRTH_DATE), eq(150_000L));
         verify(store, never()).attachProviderAccount(eq(ACCOUNT_ID), eq("wallet_existing"));
     }
 

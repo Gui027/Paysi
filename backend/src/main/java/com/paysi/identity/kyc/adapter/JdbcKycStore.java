@@ -55,16 +55,16 @@ public class JdbcKycStore implements KycStore {
 
     @Override
     public com.paysi.identity.kyc.domain.ComplianceProfile complianceProfile(UUID accountId) {
-        return jdbc.query("select postal_code, birth_date from accounts where id = ?",
+        return jdbc.query("select postal_code, birth_date, income_value_cents from accounts where id = ?",
                 (rs, row) -> new com.paysi.identity.kyc.domain.ComplianceProfile(rs.getString(1),
-                        rs.getObject(2, java.time.LocalDate.class)), accountId)
-                .stream().findFirst().orElse(new com.paysi.identity.kyc.domain.ComplianceProfile(null, null));
+                        rs.getObject(2, java.time.LocalDate.class), rs.getObject(3, Long.class)), accountId)
+                .stream().findFirst().orElse(new com.paysi.identity.kyc.domain.ComplianceProfile(null, null, null));
     }
 
     @Override
-    public void saveComplianceProfile(UUID accountId, String postalCode, java.time.LocalDate birthDate) {
-        jdbc.update("update accounts set postal_code = ?, birth_date = ? where id = ?",
-                postalCode, birthDate == null ? null : java.sql.Date.valueOf(birthDate), accountId);
+    public void saveComplianceProfile(UUID accountId, String postalCode, java.time.LocalDate birthDate, Long incomeValueCents) {
+        jdbc.update("update accounts set postal_code = ?, birth_date = ?, income_value_cents = ? where id = ?",
+                postalCode, birthDate == null ? null : java.sql.Date.valueOf(birthDate), incomeValueCents, accountId);
     }
 
     @Override

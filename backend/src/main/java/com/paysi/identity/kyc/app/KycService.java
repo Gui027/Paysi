@@ -50,14 +50,19 @@ public class KycService {
     }
 
     /**
-     * Completa CEP e data de nascimento (exigidos pela Asaas para criar a subconta) e invalida o processo
-     * guardado, para que a próxima chamada a {@link #start} tente de novo em vez de repetir a pendência.
+     * Completa CEP, data de nascimento e renda/faturamento (exigidos pela Asaas para criar a subconta) e
+     * invalida o processo guardado, para que a próxima chamada a {@link #start} tente de novo em vez de
+     * repetir a pendência. {@code incomeValueCents} já vem calculado do painel (o mesmo padrão de
+     * {@code parseMoneyToCents} usado no resto do sistema) — aqui só se valida que não é negativo.
      */
     @Transactional
-    public KycView saveComplianceProfile(UUID accountId, String postalCode, String birthDateRaw) {
+    public KycView saveComplianceProfile(UUID accountId, String postalCode, String birthDateRaw, Long incomeValueCents) {
         store.lockAccount(accountId);
         accounts.findById(accountId).orElseThrow(() -> unavailable());
-        store.saveComplianceProfile(accountId, normalizePostalCode(postalCode), parseBirthDate(birthDateRaw));
+        if (incomeValueCents == null || incomeValueCents < 0) {
+            throw new ValidationException("INVALID_INCOME_VALUE", "Informe uma renda/faturamento válido", "incomeValueCents");
+        }
+        store.saveComplianceProfile(accountId, normalizePostalCode(postalCode), parseBirthDate(birthDateRaw), incomeValueCents);
         store.clearProcess(accountId);
         return current(accountId);
     }

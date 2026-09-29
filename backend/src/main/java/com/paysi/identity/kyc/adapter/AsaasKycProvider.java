@@ -84,7 +84,7 @@ public class AsaasKycProvider implements KycProvider {
             Account account = accounts.findById(accountId)
                     .orElseThrow(() -> new IllegalStateException("Conta não encontrada para criar subconta na Asaas"));
             var created = subaccounts.createSubaccount(account.fullName(), account.email(), account.taxId().digits(),
-                    profile.postalCode(), profile.birthDate());
+                    profile.postalCode(), profile.birthDate(), profile.incomeValueCents());
             store.attachProviderAccount(accountId, created.walletId());
             return created.walletId();
         });

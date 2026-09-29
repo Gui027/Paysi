@@ -227,7 +227,10 @@ test.describe("financeiro", () => {
     await page.getByLabel("CEP").fill("01310100");
     await page.getByLabel("Data de nascimento").fill("1990-05-20");
     await page.getByRole("button", { name: "Salvar e continuar" }).click();
-    await expect.poll(() => salvou).toEqual({ postalCode: "01310-100", birthDate: "1990-05-20" });
+    await expect(page.getByText("Informe uma renda/faturamento válido.")).toBeVisible();
+    await page.getByLabel("Renda/faturamento mensal em reais").fill("1500,00");
+    await page.getByRole("button", { name: "Salvar e continuar" }).click();
+    await expect.poll(() => salvou).toEqual({ postalCode: "01310-100", birthDate: "1990-05-20", incomeValueCents: 150000 });
     await expect(page.getByRole("heading", { name: "Verificação em análise" })).toBeVisible();
   });
 

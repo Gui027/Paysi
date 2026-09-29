@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton, Toast } from "../../../components/ui";
 import { ApiRequestError } from "../../../lib/api";
+import { parseMoneyToCents } from "../../../lib/ofertas";
 import { getKyc, KycView, kycStatusLabel, maskCep, requirementStatusLabel, saveComplianceProfile, startKyc } from "../../../lib/kyc";
 
 const POLL_INTERVAL_MS = 4000;
@@ -23,19 +24,22 @@ function formatEstimatedAt(value: string | null) {
   return value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(new Date(value)) : null;
 }
 
-/** CEP e data de nascimento: a Asaas exige os dois pra criar a subconta que recebe o repasse do vendedor. */
+/** CEP, data de nascimento e renda/faturamento: a Asaas exige os três pra criar a subconta que recebe o repasse do vendedor. */
 function CompleteProfileForm({ onSaved }: { onSaved: () => void }) {
   const [postalCode, setPostalCode] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [income, setIncome] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
     if (saving) return;
+    const incomeValueCents = parseMoneyToCents(income);
+    if (incomeValueCents === null) { setError("Informe uma renda/faturamento válido."); return; }
     setSaving(true);
     setError(null);
     try {
-      await saveComplianceProfile(postalCode, birthDate);
+      await saveComplianceProfile(postalCode, birthDate, incomeValueCents);
       onSaved();
     } catch (saveError) {
       setError(saveError instanceof ApiRequestError ? saveError.message : "Não foi possível salvar. Confira os dados e tente de novo.");
@@ -50,6 +54,8 @@ function CompleteProfileForm({ onSaved }: { onSaved: () => void }) {
         onChange={event => setPostalCode(maskCep(event.target.value))} /></label>
     <label className="pe-field"><span>Data de nascimento</span>
       <input type="date" autoComplete="bday" value={birthDate} onChange={event => setBirthDate(event.target.value)} /></label>
+    <label className="pe-field"><span>Renda/faturamento mensal</span>
+      <span className="pe-money"><span aria-hidden="true">R$</span><input inputMode="decimal" placeholder="0,00" aria-label="Renda/faturamento mensal em reais" value={income} onChange={event => setIncome(event.target.value)} /></span></label>
     {error && <p className="pe-error" role="alert">{error}</p>}
     <div className="ui-actions">
       <button type="button" className="ui-button ui-button-primary" disabled={saving} onClick={() => void submit()}>{saving ? "Salvando…" : "Salvar e continuar"}</button>

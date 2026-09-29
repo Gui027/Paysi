@@ -18,9 +18,10 @@ public class AsaasSubaccountProvider implements SubaccountProvider {
     }
 
     @Override
-    public SubaccountResult createSubaccount(String name, String email, String taxIdDigits, String postalCode, LocalDate birthDate) {
+    public SubaccountResult createSubaccount(String name, String email, String taxIdDigits, String postalCode, LocalDate birthDate, long incomeValueCents) {
         try {
-            var response = client.createSubaccount(new AsaasSubaccountRequest(name, email, taxIdDigits, postalCode, birthDate));
+            var response = client.createSubaccount(new AsaasSubaccountRequest(name, email, taxIdDigits, postalCode, birthDate,
+                    AsaasMapper.toReais(incomeValueCents)));
             return new SubaccountResult(response.id(), response.walletId());
         } catch (AsaasApiException error) {
             throw new SubaccountCreationException(error.getMessage(), error);

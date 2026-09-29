@@ -54,23 +54,27 @@ class KycServiceTest {
     void savingTheComplianceProfileNormalizesThePostalCodeAndClearsTheCachedProcess() {
         var fixture = fixture(KycStatus.SUBMITTED, Optional.empty());
 
-        fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "1990-05-20");
+        fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "1990-05-20", 150000L);
 
-        verify(fixture.store).saveComplianceProfile(ACCOUNT_ID, "01310100", java.time.LocalDate.of(1990, 5, 20));
+        verify(fixture.store).saveComplianceProfile(ACCOUNT_ID, "01310100", java.time.LocalDate.of(1990, 5, 20), 150000L);
         verify(fixture.store).clearProcess(ACCOUNT_ID);
     }
 
     @Test
-    void rejectsAnIncompletePostalCodeOrAFutureBirthDate() {
+    void rejectsAnIncompletePostalCodeAFutureBirthDateOrAMissingIncomeValue() {
         var fixture = fixture(KycStatus.PENDING, Optional.empty());
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "123", "1990-05-20"))
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "123", "1990-05-20", 150000L))
                 .isInstanceOf(com.paysi.core.error.ValidationException.class);
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "2099-01-01"))
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "2099-01-01", 150000L))
                 .isInstanceOf(com.paysi.core.error.ValidationException.class);
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "não-é-data"))
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "não-é-data", 150000L))
                 .isInstanceOf(com.paysi.core.error.ValidationException.class);
-        verify(fixture.store, never()).saveComplianceProfile(any(), any(), any());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "1990-05-20", null))
+                .isInstanceOf(com.paysi.core.error.ValidationException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "1990-05-20", -1L))
+                .isInstanceOf(com.paysi.core.error.ValidationException.class);
+        verify(fixture.store, never()).saveComplianceProfile(any(), any(), any(), any());
     }
 
     private static Fixture fixture(KycStatus status, Optional<KycProcess> existing) {

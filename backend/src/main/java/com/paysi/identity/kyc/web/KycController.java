@@ -19,7 +19,7 @@ public class KycController {
     private final SessionService sessions;
     public KycController(KycService kyc, SessionService sessions) { this.kyc = kyc; this.sessions = sessions; }
 
-    public record ComplianceProfileRequest(String postalCode, String birthDate) { }
+    public record ComplianceProfileRequest(String postalCode, String birthDate, Long incomeValueCents) { }
 
     @GetMapping
     public KycView current(@CookieValue(name = COOKIE_NAME, required = false) String token) {
@@ -34,6 +34,6 @@ public class KycController {
     @PutMapping("/kyc/contact-info")
     public KycView saveComplianceProfile(@CookieValue(name = COOKIE_NAME, required = false) String token,
                                          @RequestBody ComplianceProfileRequest request) {
-        return kyc.saveComplianceProfile(sessions.authenticate(token).session().accountId(), request.postalCode(), request.birthDate());
+        return kyc.saveComplianceProfile(sessions.authenticate(token).session().accountId(), request.postalCode(), request.birthDate(), request.incomeValueCents());
     }
 }
