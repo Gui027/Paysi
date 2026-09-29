@@ -50,8 +50,12 @@ export function Toast({ tone = "success", children }: { tone?: "success" | "dang
   return <div className={`ui-toast ui-toast-${tone}`} role={tone === "danger" ? "alert" : "status"}>{children}</div>;
 }
 
+/** Carregamento de tela inteira: gira no centro e embaça o que já estiver renderizado atrás. */
 export function Skeleton({ label = "Carregando conteúdo" }: { label?: string }) {
-  return <div className="ui-skeleton" role="status" aria-label={label}><span /><span /><span /></div>;
+  return <div className="ui-skeleton" role="status">
+    <span className="ui-skeleton-spinner" aria-hidden="true" />
+    <span className="ui-skeleton-label">{label}</span>
+  </div>;
 }
 
 export function EmptyState({ title, description, action, headingLevel = "h2" }: { title: string; description: string; action?: ReactNode; headingLevel?: "h2" | "h3" }) {

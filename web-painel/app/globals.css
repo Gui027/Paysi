@@ -147,9 +147,10 @@ button { cursor: pointer; }
 .ui-toast { margin-top: var(--esp-4); padding: var(--esp-3) var(--esp-4); border-radius: var(--raio-sm); }
 .ui-toast-success { color: var(--sucesso); background: var(--sucesso-superficie); }
 .ui-toast-danger { color: var(--erro); background: var(--erro-superficie); }
-.ui-skeleton { display: grid; gap: var(--esp-2); margin: var(--esp-5) 0; }
-.ui-skeleton span { height: 14px; border-radius: var(--raio-sm); background: linear-gradient(90deg, var(--fundo-secao), var(--borda), var(--fundo-secao)); background-size: 200% 100%; animation: skeleton 1.3s infinite linear; }
-.ui-skeleton span:nth-child(2) { width: 80%; }.ui-skeleton span:nth-child(3) { width: 60%; }
+.ui-skeleton { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; gap: var(--esp-4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); background: rgba(255,255,255,.55); }
+.ui-skeleton-spinner { width: 48px; height: 48px; border-radius: 50%; border: 4px solid var(--blue-100); border-top-color: var(--paysi-primaria); animation: ui-spin .8s linear infinite; }
+.ui-skeleton-label { font-size: 14px; font-weight: 500; color: var(--paysi-texto-secundario); }
+@media (prefers-reduced-motion: reduce) { .ui-skeleton-spinner { animation-duration: 2.4s; } }
 .ui-empty { min-height: 220px; display: grid; place-content: center; justify-items: center; text-align: center; }
 .ui-empty > span { font-size: 36px; color: var(--texto-apoio); }.ui-empty h2 { margin: var(--esp-3) 0 var(--esp-2); }.ui-empty p { margin: 0 0 var(--esp-5); color: var(--texto-apoio); }
 .products-heading { gap: var(--esp-5); }
@@ -192,7 +193,7 @@ button { cursor: pointer; }
 .product-form-actions { margin-top: var(--esp-6); }
 .product-form-actions .ui-button { display: inline-flex; align-items: center; }
 .unsaved-indicator { color: var(--atencao); font-size: 13px; }
-@keyframes skeleton { to { background-position: -200% 0; } }
+@keyframes ui-spin { to { transform: rotate(360deg); } }
 
 .appearance-form { max-width: 960px; }
 .appearance-form .ui-toast { margin: 0 0 var(--esp-5); }

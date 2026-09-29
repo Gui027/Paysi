@@ -87,28 +87,25 @@ public class JdbcDashboardQueryRepository implements DashboardQueryRepository {
                 rs.getString(4), rs.getString(5), rs.getTimestamp(6).toInstant()), sellerId, limit);
     }
 
+    /** Sempre a aba Identidade da Paysi — nunca a URL externa do provedor (fica nula até um processo existir). */
+    private static final String KYC_ACTION_URL = "/saldo?aba=identidade";
+
     @Override
     public List<DashboardAlert> accountAlerts(UUID sellerId) {
         var alerts = new java.util.ArrayList<DashboardAlert>();
-        jdbc.query("""
-                SELECT a.kyc_status, kp.provider_url
-                  FROM accounts a
-                  LEFT JOIN kyc_processes kp ON kp.account_id = a.id
-                 WHERE a.id = ?
-                """, (ResultSetExtractor<Void>) rs -> {
+        jdbc.query("SELECT kyc_status FROM accounts WHERE id = ?", (ResultSetExtractor<Void>) rs -> {
             if (!rs.next()) return null;
             String status = rs.getString(1);
-            String providerUrl = rs.getString(2);
             switch (status) {
                 case "PENDING" -> alerts.add(new DashboardAlert("kyc", "warning",
                         "Verificação de identidade pendente",
-                        "Inicie a verificação para poder publicar ofertas e receber pagamentos.", providerUrl));
+                        "Inicie a verificação para poder publicar ofertas e receber pagamentos.", KYC_ACTION_URL));
                 case "SUBMITTED" -> alerts.add(new DashboardAlert("kyc", "warning",
                         "Verificação em análise",
-                        "Seus documentos estão em análise pelo provedor. Isso pode levar alguns dias.", providerUrl));
+                        "Seus documentos estão em análise pelo provedor. Isso pode levar alguns dias.", KYC_ACTION_URL));
                 case "REJECTED" -> alerts.add(new DashboardAlert("kyc", "danger",
                         "Verificação de identidade recusada",
-                        "Revise os requisitos pendentes e reenvie os documentos.", providerUrl));
+                        "Revise os requisitos pendentes e reenvie os documentos.", KYC_ACTION_URL));
                 default -> { }
             }
             return null;
