@@ -7,18 +7,19 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Adaptador real da Asaas para {@link PaymentProvider}. Duas lacunas conhecidas,
- * deixadas explícitas em vez de escondidas atrás de uma implementação "completa":
+ * Adaptador real da Asaas para {@link PaymentProvider}. Uma lacuna conhecida, deixada
+ * explícita em vez de escondida atrás de uma implementação "completa":
  *
  * <ol>
- *   <li><b>Split</b>: não é enviado à Asaas ainda (ver {@link AsaasMapper}) — falta
- *       modelar {@code walletId} por subconta no domínio.</li>
  *   <li><b>3DS</b>: a Asaas não tem um endpoint de "confirmar desafio com token" como
  *       este contrato assume (herdado do {@code FakePaymentProvider}). Na Asaas, o
  *       comprador completa o desafio na {@code threeDSecureChallengeUrl} pelo navegador
  *       e o resultado chega depois por webhook. {@link #confirmThreeDs} aqui faz o
  *       melhor possível: relê o status atual da cobrança na Asaas.</li>
  * </ol>
+ *
+ * <p>Split: enviado de verdade à Asaas quando o vendedor/afiliado já tem subconta
+ * (ver {@link AsaasMapper#toSplit}); sem subconta, o valor cheio cai na conta mestre.</p>
  */
 @Component
 @ConditionalOnProperty(name = "paysi.provider", havingValue = "asaas")

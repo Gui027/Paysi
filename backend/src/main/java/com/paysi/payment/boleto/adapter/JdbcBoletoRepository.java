@@ -24,14 +24,18 @@ public class JdbcBoletoRepository implements BoletoRepository {
                 select c.id,o.id,c.amount_cents,b.name,b.email::text,b.person_type,b.tax_id,
                        c.seller_amount_cents,c.affiliate_fee_cents,c.platform_fee_cents,
                        c.provider_charge_id,c.provider_status,c.boleto_barcode,c.boleto_pdf_url,
-                       c.payment_expires_at
+                       c.payment_expires_at,seller.provider_account_id,aff.provider_account_id
                   from charges c join orders o on o.id=c.order_id join buyers b on b.id=o.buyer_id
+                       join offers f on f.id=o.offer_id join products p on p.id=f.product_id
+                       join accounts seller on seller.id=p.seller_id
+                       left join affiliations af on af.id=o.affiliation_id
+                       left join accounts aff on aff.id=af.affiliate_id
                  where c.id=? and o.method='BOLETO' for update of c,o
                 """, (rs, row) -> new BoletoChargeContext(
                 rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getLong(3),
                 new ProviderBuyer(rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7)),
-                new ProviderSplit(rs.getLong(8), rs.getLong(9), rs.getLong(10)), rs.getString(11),
-                status(rs.getString(12)), rs.getString(13), rs.getString(14), instant(rs.getTimestamp(15))),
+                new ProviderSplit(rs.getLong(8), rs.getLong(9), rs.getLong(10), rs.getString(16), rs.getString(17)),
+                rs.getString(11), status(rs.getString(12)), rs.getString(13), rs.getString(14), instant(rs.getTimestamp(15))),
                 chargeId).stream().findFirst();
     }
 

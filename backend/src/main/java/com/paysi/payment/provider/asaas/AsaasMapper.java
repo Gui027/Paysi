@@ -8,17 +8,18 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Tradução pura entre o domínio de pagamento do Paysi e o formato da API da Asaas.
  * Sem Spring, sem HTTP — só conversão, para poder ser testado em isolamento.
  *
- * <p><b>Split real ainda não é enviado à Asaas.</b> {@link ProviderSplit} só carrega
- * valores em centavos; a Asaas precisa de {@code walletId} por recebedor (subconta),
- * conceito que o domínio do Paysi ainda não modela. Até isso existir, o valor cheio
- * é cobrado na conta mestre e o rateio permanece só na contabilidade interna
- * ({@code payment.split}) — nenhum valor é de fato roteado para subcontas na Asaas.
+ * <p><b>Split real:</b> {@link ProviderSplit} carrega o {@code walletId} da subconta do vendedor e do
+ * afiliado (quando existem). {@link #toSplit} monta a lista {@code split} da Asaas só com as fatias que
+ * têm subconta cadastrada; a fatia da plataforma nunca entra na lista (ela é o que sobra na conta mestre
+ * depois do split, comportamento padrão da Asaas). Sem nenhuma subconta, a lista fica vazia/nula e o valor
+ * cheio cai na conta mestre — mesmo comportamento de antes desta divisão existir.</p>
  */
 final class AsaasMapper {
     private AsaasMapper() {
@@ -45,7 +46,19 @@ final class AsaasMapper {
                 installment ? amount : null,
                 installment ? request.installments() : null,
                 dueDate, "Pedido " + request.orderId(), request.orderId().toString(),
-                creditCardToken, null);
+                creditCardToken, toSplit(request.split()));
+    }
+
+    /** Só entra na lista quem tem subconta (walletId) e valor positivo; sem isso a Asaas não faz split. */
+    static List<AsaasPaymentCreateRequest.SplitItem> toSplit(ProviderSplit split) {
+        List<AsaasPaymentCreateRequest.SplitItem> items = new ArrayList<>();
+        if (split.sellerWalletId() != null && !split.sellerWalletId().isBlank() && split.sellerCents() > 0) {
+            items.add(new AsaasPaymentCreateRequest.SplitItem(split.sellerWalletId(), toReais(split.sellerCents())));
+        }
+        if (split.affiliateWalletId() != null && !split.affiliateWalletId().isBlank() && split.affiliateCents() > 0) {
+            items.add(new AsaasPaymentCreateRequest.SplitItem(split.affiliateWalletId(), toReais(split.affiliateCents())));
+        }
+        return items.isEmpty() ? null : items;
     }
 
     static ProviderPaymentResult toChargeResult(AsaasPaymentResponse response, ProviderPaymentMethod method,

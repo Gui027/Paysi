@@ -73,6 +73,19 @@ class SubscriptionRetryProcessorTest {
     }
 
     @Test
+    void retrySendsTheSellerWalletIdWhenTheAccountHasASubaccount() {
+        var fixture = fixture();
+        when(fixture.wallets.walletId(SELLER)).thenReturn(Optional.of("wallet_seller"));
+        when(fixture.repository.claimDueRetry(NOW)).thenReturn(Optional.of(retry(2)));
+        when(fixture.provider.charge(any())).thenReturn(result(ProviderChargeStatus.APPROVED));
+
+        fixture.processor.processNext();
+
+        verify(fixture.provider).charge(argThat(request -> "wallet_seller".equals(request.split().sellerWalletId())
+                && request.split().affiliateWalletId() == null));
+    }
+
+    @Test
     void nothingDueReturnsFalse() {
         var fixture = fixture();
         when(fixture.repository.claimDueRetry(NOW)).thenReturn(Optional.empty());
@@ -86,10 +99,12 @@ class SubscriptionRetryProcessorTest {
         var plans = mock(PlatformPlanReader.class);
         var provider = mock(PaymentProvider.class);
         var saleLedger = mock(SaleLedgerService.class);
+        var wallets = mock(WalletLookup.class);
         when(plans.currentPlan(SELLER)).thenReturn("TRANSACIONAL");
-        var processor = new SubscriptionRetryProcessor(repository, plans, provider, saleLedger,
+        when(wallets.walletId(any())).thenReturn(Optional.empty());
+        var processor = new SubscriptionRetryProcessor(repository, plans, provider, saleLedger, wallets,
                 Clock.fixed(NOW, ZoneOffset.UTC));
-        return new Fixture(processor, repository, provider);
+        return new Fixture(processor, repository, provider, wallets);
     }
 
     private static SubscriptionRepository.DueRetry retry(int attemptCount) {
@@ -110,6 +125,6 @@ class SubscriptionRetryProcessorTest {
     }
 
     private record Fixture(SubscriptionRetryProcessor processor, SubscriptionRepository repository,
-                           PaymentProvider provider) {
+                           PaymentProvider provider, WalletLookup wallets) {
     }
 }

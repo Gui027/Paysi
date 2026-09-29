@@ -14,6 +14,48 @@ class AsaasMapperTest {
     private static final ProviderBuyer BUYER = new ProviderBuyer("Buyer", "buyer@example.com", "PF", "52998224725");
 
     @Test
+    void withoutAnySubaccountTheSplitIsOmittedAndTheFullValueStaysInTheMasterAccount() {
+        var request = new ProviderPaymentRequest(UUID.randomUUID(), 10_000, ProviderPaymentMethod.PIX,
+                1, null, BUYER, new ProviderSplit(8_000, 500, 1_500));
+        var created = AsaasMapper.toCreateRequest(request, "cus_123");
+
+        assertThat(created.split()).isNull();
+    }
+
+    @Test
+    void withBothSubaccountsTheSplitCarriesEachWalletInReais() {
+        var split = new ProviderSplit(8_000, 500, 1_500, "wallet_seller", "wallet_affiliate");
+        var request = new ProviderPaymentRequest(UUID.randomUUID(), 10_000, ProviderPaymentMethod.PIX, 1, null, BUYER, split);
+        var created = AsaasMapper.toCreateRequest(request, "cus_123");
+
+        assertThat(created.split()).hasSize(2);
+        assertThat(created.split().get(0).walletId()).isEqualTo("wallet_seller");
+        assertThat(created.split().get(0).fixedValue()).isEqualByComparingTo("80.00");
+        assertThat(created.split().get(1).walletId()).isEqualTo("wallet_affiliate");
+        assertThat(created.split().get(1).fixedValue()).isEqualByComparingTo("5.00");
+    }
+
+    @Test
+    void withOnlyTheSellerSubaccountOnlyTheSellerEntersTheSplitAndThePlatformCutNeverDoes() {
+        var split = new ProviderSplit(8_000, 500, 1_500, "wallet_seller", null);
+        var request = new ProviderPaymentRequest(UUID.randomUUID(), 10_000, ProviderPaymentMethod.PIX, 1, null, BUYER, split);
+        var created = AsaasMapper.toCreateRequest(request, "cus_123");
+
+        assertThat(created.split()).hasSize(1);
+        assertThat(created.split().get(0).walletId()).isEqualTo("wallet_seller");
+    }
+
+    @Test
+    void aZeroCentsShareIsNeverSentEvenWithAWallet() {
+        var split = new ProviderSplit(10_000, 0, 0, "wallet_seller", "wallet_affiliate");
+        var request = new ProviderPaymentRequest(UUID.randomUUID(), 10_000, ProviderPaymentMethod.PIX, 1, null, BUYER, split);
+        var created = AsaasMapper.toCreateRequest(request, "cus_123");
+
+        assertThat(created.split()).hasSize(1);
+        assertThat(created.split().get(0).walletId()).isEqualTo("wallet_seller");
+    }
+
+    @Test
     void singlePaymentUsesValueNotTotalValue() {
         var request = new ProviderPaymentRequest(UUID.randomUUID(), 10_000, ProviderPaymentMethod.PIX,
                 1, null, BUYER, new ProviderSplit(8_000, 500, 1_500));

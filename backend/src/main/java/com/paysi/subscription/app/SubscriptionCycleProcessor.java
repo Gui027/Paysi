@@ -28,21 +28,30 @@ public class SubscriptionCycleProcessor {
     private final PlatformPlanReader plans;
     private final PaymentProvider provider;
     private final SaleLedgerService saleLedger;
+    private final WalletLookup wallets;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public SubscriptionCycleProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                       PaymentProvider provider, SaleLedgerService saleLedger) {
-        this(subscriptions, plans, provider, saleLedger, Clock.systemUTC());
+                                       PaymentProvider provider, SaleLedgerService saleLedger, WalletLookup wallets) {
+        this(subscriptions, plans, provider, saleLedger, wallets, Clock.systemUTC());
     }
 
     SubscriptionCycleProcessor(SubscriptionRepository subscriptions, PlatformPlanReader plans,
-                                PaymentProvider provider, SaleLedgerService saleLedger, Clock clock) {
+                                PaymentProvider provider, SaleLedgerService saleLedger, WalletLookup wallets, Clock clock) {
         this.subscriptions = subscriptions;
         this.plans = plans;
         this.provider = provider;
         this.saleLedger = saleLedger;
+        this.wallets = wallets;
         this.clock = clock;
+    }
+
+    private ProviderSplit split(Split split, UUID sellerId, UUID affiliateId) {
+        String sellerWalletId = wallets.walletId(sellerId).orElse(null);
+        String affiliateWalletId = affiliateId == null ? null : wallets.walletId(affiliateId).orElse(null);
+        return new ProviderSplit(split.sellerCents(), split.affiliateCents(), split.sellerFeeCents(),
+                sellerWalletId, affiliateWalletId);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -83,7 +92,7 @@ public class SubscriptionCycleProcessor {
         var buyer = new ProviderBuyer(cycle.buyerName(), cycle.buyerEmail(), cycle.personType(), cycle.taxId());
         var result = provider.charge(new ProviderPaymentRequest(cycle.orderId(), cycle.priceCents(),
                 ProviderPaymentMethod.CARD, 1, cycle.providerToken(), buyer,
-                new ProviderSplit(split.sellerCents(), split.affiliateCents(), split.sellerFeeCents())));
+                split(split, cycle.sellerId(), cycle.affiliateId())));
 
         boolean approved = result.status() == ProviderChargeStatus.APPROVED;
         subscriptions.saveChargeResult(chargeId, approved ? "PAID" : "FAILED", result.providerChargeId(),
@@ -109,7 +118,7 @@ public class SubscriptionCycleProcessor {
         var buyer = new ProviderBuyer(cycle.buyerName(), cycle.buyerEmail(), cycle.personType(), cycle.taxId());
         var result = provider.charge(new ProviderPaymentRequest(cycle.orderId(), cycle.priceCents(),
                 ProviderPaymentMethod.BOLETO, 1, null, buyer,
-                new ProviderSplit(split.sellerCents(), split.affiliateCents(), split.sellerFeeCents()),
+                split(split, cycle.sellerId(), cycle.affiliateId()),
                 cycle.boletoDueDays()));
 
         // Boleto não confirma na hora: fica PENDING até o inbox do provedor liquidar ou expirar

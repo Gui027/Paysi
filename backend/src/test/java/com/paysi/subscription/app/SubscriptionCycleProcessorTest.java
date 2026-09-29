@@ -74,6 +74,36 @@ class SubscriptionCycleProcessorTest {
     }
 
     @Test
+    void cardRenewalSendsWalletIdsWhenSellerAndAffiliateHaveSubaccounts() {
+        var fixture = fixture();
+        UUID affiliate = UUID.randomUUID();
+        when(fixture.wallets.walletId(SELLER)).thenReturn(Optional.of("wallet_seller"));
+        when(fixture.wallets.walletId(affiliate)).thenReturn(Optional.of("wallet_affiliate"));
+        when(fixture.repository.claimDueCancellation(NOW)).thenReturn(Optional.empty());
+        when(fixture.repository.claimDueCycle(NOW)).thenReturn(Optional.of(cycleWithAffiliate("CARD", 1, "tok_1", affiliate)));
+        when(fixture.provider.charge(any())).thenReturn(cardResult(ProviderChargeStatus.APPROVED));
+
+        fixture.processor.processNextCycle();
+
+        verify(fixture.provider).charge(argThat(request ->
+                "wallet_seller".equals(request.split().sellerWalletId())
+                        && "wallet_affiliate".equals(request.split().affiliateWalletId())));
+    }
+
+    @Test
+    void cardRenewalWithoutAffiliateNeverLooksUpAWalletForANullId() {
+        var fixture = fixture();
+        when(fixture.repository.claimDueCancellation(NOW)).thenReturn(Optional.empty());
+        when(fixture.repository.claimDueCycle(NOW)).thenReturn(Optional.of(cycle("CARD", 1, "tok_1")));
+        when(fixture.provider.charge(any())).thenReturn(cardResult(ProviderChargeStatus.APPROVED));
+
+        fixture.processor.processNextCycle();
+
+        verify(fixture.wallets, never()).walletId(null);
+        verify(fixture.provider).charge(argThat(request -> request.split().affiliateWalletId() == null));
+    }
+
+    @Test
     void declinedCardRenewalSchedulesFirstRetry() {
         var fixture = fixture();
         when(fixture.repository.claimDueCancellation(NOW)).thenReturn(Optional.empty());
@@ -92,16 +122,23 @@ class SubscriptionCycleProcessorTest {
         var plans = mock(PlatformPlanReader.class);
         var provider = mock(PaymentProvider.class);
         var saleLedger = mock(SaleLedgerService.class);
+        var wallets = mock(WalletLookup.class);
         when(plans.currentPlan(SELLER)).thenReturn("TRANSACIONAL");
-        var processor = new SubscriptionCycleProcessor(repository, plans, provider, saleLedger,
+        when(wallets.walletId(any())).thenReturn(Optional.empty());
+        var processor = new SubscriptionCycleProcessor(repository, plans, provider, saleLedger, wallets,
                 Clock.fixed(NOW, ZoneOffset.UTC));
-        return new Fixture(processor, repository, provider);
+        return new Fixture(processor, repository, provider, wallets);
     }
 
     private static SubscriptionRepository.DueCycle cycle(String orderMethod, int nextCycleNumber, String token) {
+        return cycleWithAffiliate(orderMethod, nextCycleNumber, token, null);
+    }
+
+    private static SubscriptionRepository.DueCycle cycleWithAffiliate(String orderMethod, int nextCycleNumber,
+                                                                       String token, UUID affiliateId) {
         return new SubscriptionRepository.DueCycle(SUBSCRIPTION, UUID.randomUUID(), UUID.randomUUID(), SELLER,
                 10_000, "MONTHLY", orderMethod, 3, 7, "Comprador", "buyer@example.com", "PF", "52998224725",
-                token, nextCycleNumber, nextCycleNumber == 1, null, 0, false);
+                token, nextCycleNumber, nextCycleNumber == 1, affiliateId, 0, false);
     }
 
     private static ProviderPaymentResult cardResult(ProviderChargeStatus status) {
@@ -115,6 +152,6 @@ class SubscriptionCycleProcessorTest {
     }
 
     private record Fixture(SubscriptionCycleProcessor processor, SubscriptionRepository repository,
-                           PaymentProvider provider) {
+                           PaymentProvider provider, WalletLookup wallets) {
     }
 }

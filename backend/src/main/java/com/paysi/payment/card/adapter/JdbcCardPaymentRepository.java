@@ -25,13 +25,17 @@ public class JdbcCardPaymentRepository implements CardPaymentRepository {
                 select c.id,o.id,c.amount_cents,o.installments,b.name,b.email::text,b.person_type,b.tax_id,
                        c.seller_amount_cents,c.affiliate_fee_cents,c.platform_fee_cents,
                        c.provider_charge_id,c.provider_status,c.three_ds_result,c.three_ds_challenge_url,
-                       c.three_ds_eci,c.pix_fallback_expires_at
+                       c.three_ds_eci,c.pix_fallback_expires_at,seller.provider_account_id,aff.provider_account_id
                   from charges c join orders o on o.id=c.order_id join buyers b on b.id=o.buyer_id
+                       join offers f on f.id=o.offer_id join products p on p.id=f.product_id
+                       join accounts seller on seller.id=p.seller_id
+                       left join affiliations af on af.id=o.affiliation_id
+                       left join accounts aff on aff.id=af.affiliate_id
                  where c.id=? for update of c,o
                 """, (rs, row) -> new CardChargeContext(
                 rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getLong(3), rs.getInt(4),
                 new ProviderBuyer(rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8)),
-                new ProviderSplit(rs.getLong(9), rs.getLong(10), rs.getLong(11)),
+                new ProviderSplit(rs.getLong(9), rs.getLong(10), rs.getLong(11), rs.getString(18), rs.getString(19)),
                 rs.getString(12), status(rs.getString(13)), rs.getString(14), rs.getString(15),
                 rs.getString(16), instant(rs.getTimestamp(17))), chargeId).stream().findFirst();
     }
