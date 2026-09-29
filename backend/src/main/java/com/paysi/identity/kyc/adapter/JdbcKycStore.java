@@ -66,10 +66,10 @@ public class JdbcKycStore implements KycStore {
 
     @Override
     public Optional<String> decryptedAccessToken(UUID accountId) {
-        return jdbc.query("select provider_access_token_enc from accounts where id = ?",
-                (rs, row) -> rs.getBytes(1), accountId).stream().findFirst()
-                .filter(bytes -> bytes != null)
-                .map(bytes -> new String(secrets.decrypt(bytes), StandardCharsets.UTF_8));
+        List<byte[]> rows = jdbc.query("select provider_access_token_enc from accounts where id = ?",
+                (rs, row) -> rs.getBytes(1), accountId);
+        byte[] encrypted = rows.isEmpty() ? null : rows.get(0);
+        return encrypted == null ? Optional.empty() : Optional.of(new String(secrets.decrypt(encrypted), StandardCharsets.UTF_8));
     }
 
     @Override
