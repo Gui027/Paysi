@@ -208,6 +208,29 @@ test.describe("financeiro", () => {
     await expect.poll(() => iniciou).toBe(true);
   });
 
+  test("verificação pendindo de CEP/nascimento mostra o formulário em vez do botão", async ({ page }) => {
+    await preparar(page, { ...OVERVIEW, kycStatus: "PENDING" });
+    let salvou: Record<string, unknown> | null = null;
+    let carregouDeNovo = false;
+    await page.route("**/api/v1/accounts/me", (route) => {
+      if (carregouDeNovo) return route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [] } });
+      return route.fulfill({ json: { accountId: "a", kycStatus: "PENDING", providerUrl: null, requirements: [{ code: "CONTACT_INFO", label: "CEP e data de nascimento", status: "PENDING", reason: "Complete seu CEP e data de nascimento para continuarmos a verificação.", estimatedAt: null }] } });
+    });
+    await page.route("**/api/v1/accounts/me/kyc/contact-info", async (route) => {
+      salvou = JSON.parse(route.request().postData()!);
+      carregouDeNovo = true;
+      return route.fulfill({ json: { accountId: "a", kycStatus: "PENDING", providerUrl: null, requirements: [] } });
+    });
+    await page.goto("/saldo?aba=identidade");
+    await expect(page.getByText("Complete seu CEP e data de nascimento")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Iniciar verificação" })).toHaveCount(0);
+    await page.getByLabel("CEP").fill("01310100");
+    await page.getByLabel("Data de nascimento").fill("1990-05-20");
+    await page.getByRole("button", { name: "Salvar e continuar" }).click();
+    await expect.poll(() => salvou).toEqual({ postalCode: "01310-100", birthDate: "1990-05-20" });
+    await expect(page.getByRole("heading", { name: "Verificação em análise" })).toBeVisible();
+  });
+
   test("rotas antigas redirecionam para o Financeiro", async ({ page }) => {
     await preparar(page);
     await page.goto("/saldo/conta-bancaria");

@@ -1,8 +1,10 @@
 package com.paysi.payment.provider;
 
+import java.time.LocalDate;
+
 /** Cria a subconta do provedor (hoje só a Asaas) para um vendedor/afiliado poder receber split de verdade. */
 public interface SubaccountProvider {
-    SubaccountResult createSubaccount(String name, String email, String taxIdDigits);
+    SubaccountResult createSubaccount(String name, String email, String taxIdDigits, String postalCode, LocalDate birthDate);
 
     record SubaccountResult(String accountId, String walletId) {
     }

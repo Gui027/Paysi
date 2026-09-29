@@ -959,3 +959,6 @@ button { cursor: pointer; }
 .dash-kpi-amber { background: #FFF1D6; } .dash-kpi-amber strong { color: #8A4B00; }
 .dash-links { margin: var(--esp-4) 0 0; font-size: 14px; color: #4B5563; }
 .dash-links a { color: var(--blue-700); text-decoration: underline; }
+
+/* ---------- Identidade: completar CEP/nascimento ---------- */
+.id-complete-profile { display: grid; gap: var(--esp-4); width: 100%; max-width: 320px; margin: 0 auto; text-align: left; }

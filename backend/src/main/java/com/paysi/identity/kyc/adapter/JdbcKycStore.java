@@ -53,5 +53,25 @@ public class JdbcKycStore implements KycStore {
                 providerAccountId, accountId);
     }
 
+    @Override
+    public com.paysi.identity.kyc.domain.ComplianceProfile complianceProfile(UUID accountId) {
+        return jdbc.query("select postal_code, birth_date from accounts where id = ?",
+                (rs, row) -> new com.paysi.identity.kyc.domain.ComplianceProfile(rs.getString(1),
+                        rs.getObject(2, java.time.LocalDate.class)), accountId)
+                .stream().findFirst().orElse(new com.paysi.identity.kyc.domain.ComplianceProfile(null, null));
+    }
+
+    @Override
+    public void saveComplianceProfile(UUID accountId, String postalCode, java.time.LocalDate birthDate) {
+        jdbc.update("update accounts set postal_code = ?, birth_date = ? where id = ?",
+                postalCode, birthDate == null ? null : java.sql.Date.valueOf(birthDate), accountId);
+    }
+
+    @Override
+    public void clearProcess(UUID accountId) {
+        jdbc.update("delete from kyc_requirements where account_id = ?", accountId);
+        jdbc.update("delete from kyc_processes where account_id = ?", accountId);
+    }
+
     private static Instant nullableInstant(Timestamp timestamp) { return timestamp == null ? null : timestamp.toInstant(); }
 }

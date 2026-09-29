@@ -50,6 +50,29 @@ class KycServiceTest {
         verify(fixture.store).saveStarted(eq(ACCOUNT_ID), any());
     }
 
+    @Test
+    void savingTheComplianceProfileNormalizesThePostalCodeAndClearsTheCachedProcess() {
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.empty());
+
+        fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "1990-05-20");
+
+        verify(fixture.store).saveComplianceProfile(ACCOUNT_ID, "01310100", java.time.LocalDate.of(1990, 5, 20));
+        verify(fixture.store).clearProcess(ACCOUNT_ID);
+    }
+
+    @Test
+    void rejectsAnIncompletePostalCodeOrAFutureBirthDate() {
+        var fixture = fixture(KycStatus.PENDING, Optional.empty());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "123", "1990-05-20"))
+                .isInstanceOf(com.paysi.core.error.ValidationException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "2099-01-01"))
+                .isInstanceOf(com.paysi.core.error.ValidationException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.saveComplianceProfile(ACCOUNT_ID, "01310-100", "não-é-data"))
+                .isInstanceOf(com.paysi.core.error.ValidationException.class);
+        verify(fixture.store, never()).saveComplianceProfile(any(), any(), any());
+    }
+
     private static Fixture fixture(KycStatus status, Optional<KycProcess> existing) {
         AccountRepository accounts = mock(AccountRepository.class);
         KycStore store = mock(KycStore.class);

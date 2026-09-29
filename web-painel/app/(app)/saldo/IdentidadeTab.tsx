@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton, Toast } from "../../../components/ui";
-import { getKyc, KycView, kycStatusLabel, requirementStatusLabel, startKyc } from "../../../lib/kyc";
+import { ApiRequestError } from "../../../lib/api";
+import { getKyc, KycView, kycStatusLabel, maskCep, requirementStatusLabel, saveComplianceProfile, startKyc } from "../../../lib/kyc";
 
 const POLL_INTERVAL_MS = 4000;
 const POLL_MAX_ATTEMPTS = 30; // ~2 minutos: evita consultar para sempre enquanto o provedor analisa.
@@ -20,6 +21,40 @@ const pillFor = { neutral: "", success: "pe-pill-on", warning: "vd-pill-warn", d
 
 function formatEstimatedAt(value: string | null) {
   return value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(new Date(value)) : null;
+}
+
+/** CEP e data de nascimento: a Asaas exige os dois pra criar a subconta que recebe o repasse do vendedor. */
+function CompleteProfileForm({ onSaved }: { onSaved: () => void }) {
+  const [postalCode, setPostalCode] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await saveComplianceProfile(postalCode, birthDate);
+      onSaved();
+    } catch (saveError) {
+      setError(saveError instanceof ApiRequestError ? saveError.message : "Não foi possível salvar. Confira os dados e tente de novo.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return <div className="id-complete-profile">
+    <label className="pe-field"><span>CEP</span>
+      <input inputMode="numeric" placeholder="00000-000" autoComplete="postal-code" value={postalCode}
+        onChange={event => setPostalCode(maskCep(event.target.value))} /></label>
+    <label className="pe-field"><span>Data de nascimento</span>
+      <input type="date" autoComplete="bday" value={birthDate} onChange={event => setBirthDate(event.target.value)} /></label>
+    {error && <p className="pe-error" role="alert">{error}</p>}
+    <div className="ui-actions">
+      <button type="button" className="ui-button ui-button-primary" disabled={saving} onClick={() => void submit()}>{saving ? "Salvando…" : "Salvar e continuar"}</button>
+    </div>
+  </div>;
 }
 
 /** Aba Identidade: mostra "Identidade verificada" ou leva o vendedor pelo passo a passo da verificação (KYC). */
@@ -91,6 +126,7 @@ export function IdentidadeTab({ onStatus }: { onStatus?: (status: KycView["kycSt
 
   const rejected = kyc.requirements.filter(item => requirementTone(item.status) === "danger");
   const approved = kyc.kycStatus === "APPROVED";
+  const needsProfile = kyc.requirements.some(item => item.code === "CONTACT_INFO" && item.status.toUpperCase() === "PENDING");
 
   return <section className="pe-section">
     <div className="pe-section-intro"><h2>Verifique a sua identidade</h2><p>A verificação é exigida para publicar ofertas e sacar o seu saldo.</p></div>
@@ -113,7 +149,8 @@ export function IdentidadeTab({ onStatus }: { onStatus?: (status: KycView["kycSt
             {estimated && <p>Previsão: {estimated}</p>}
           </li>;
         })}</ul>}
-        <div className="ui-actions"><button type="button" className="ui-button ui-button-primary" disabled={starting || polling} onClick={() => void handleStart()}>{starting ? "Iniciando…" : kyc.kycStatus === "PENDING" ? "Iniciar verificação" : "Continuar verificação"}</button></div>
+        {needsProfile ? <CompleteProfileForm onSaved={() => { setLoading(true); load().finally(() => setLoading(false)); }} /> :
+          <div className="ui-actions"><button type="button" className="ui-button ui-button-primary" disabled={starting || polling} onClick={() => void handleStart()}>{starting ? "Iniciando…" : kyc.kycStatus === "PENDING" ? "Iniciar verificação" : "Continuar verificação"}</button></div>}
       </>}
     </div>
   </section>;

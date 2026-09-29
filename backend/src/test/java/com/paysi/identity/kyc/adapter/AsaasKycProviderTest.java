@@ -6,6 +6,7 @@ import com.paysi.identity.domain.KycStatus;
 import com.paysi.identity.domain.PayoutDelay;
 import com.paysi.identity.domain.PersonType;
 import com.paysi.identity.domain.TaxId;
+import com.paysi.identity.kyc.domain.ComplianceProfile;
 import com.paysi.identity.kyc.port.KycStore;
 import com.paysi.identity.port.AccountRepository;
 import com.paysi.payment.provider.SubaccountProvider;
@@ -15,11 +16,13 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -29,6 +32,9 @@ import static org.mockito.Mockito.when;
 class AsaasKycProviderTest {
     private static final UUID ACCOUNT_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-09-29T12:00:00Z");
+    private static final LocalDate BIRTH_DATE = LocalDate.of(1990, 5, 20);
+    private static final ComplianceProfile COMPLETE = new ComplianceProfile("01310100", BIRTH_DATE);
+    private static final ComplianceProfile INCOMPLETE = new ComplianceProfile(null, null);
 
     private final AccountRepository accounts = mock(AccountRepository.class);
     private final KycStore store = mock(KycStore.class);
@@ -43,16 +49,29 @@ class AsaasKycProviderTest {
     }
 
     @Test
-    void creatingTheSubaccountNeverApprovesTheAccountByItself() {
+    void withoutPostalCodeOrBirthDateNeverCallsAsaasAndAsksToCompleteTheProfile() {
+        when(store.complianceProfile(ACCOUNT_ID)).thenReturn(INCOMPLETE);
+
+        var process = provider.createProcess(ACCOUNT_ID);
+
+        assertThat(process.requirements()).hasSize(1);
+        assertThat(process.requirements().get(0).code()).isEqualTo("CONTACT_INFO");
+        assertThat(process.requirements().get(0).status()).isEqualTo("PENDING");
+        verify(subaccounts, never()).createSubaccount(eq("Ana Vendedora"), eq("ana@example.com"), eq("52998224725"), eq("01310100"), eq(BIRTH_DATE));
+    }
+
+    @Test
+    void withACompleteProfileCreatesTheSubaccountAndNeverApprovesByItself() {
+        when(store.complianceProfile(ACCOUNT_ID)).thenReturn(COMPLETE);
         when(wallets.walletId(ACCOUNT_ID)).thenReturn(Optional.empty());
         when(accounts.findById(ACCOUNT_ID)).thenReturn(Optional.of(account()));
-        when(subaccounts.createSubaccount("Ana Vendedora", "ana@example.com", "52998224725"))
+        when(subaccounts.createSubaccount("Ana Vendedora", "ana@example.com", "52998224725", "01310100", BIRTH_DATE))
                 .thenReturn(new SubaccountResult("acc_1", "wallet_1"));
 
         var process = provider.createProcess(ACCOUNT_ID);
 
         assertThat(process.providerProcessId()).isEqualTo("wallet_1");
-        assertThat(process.providerUrl()).isNull();
+        assertThat(process.providerUrl()).isNotNull();
         assertThat(process.requirements()).hasSize(2);
         assertThat(process.requirements().get(0).status()).isEqualTo("APPROVED");
         assertThat(process.requirements().get(1).status()).isEqualTo("PENDING");
@@ -66,8 +85,16 @@ class AsaasKycProviderTest {
         String walletId = provider.ensureSubaccount(ACCOUNT_ID);
 
         assertThat(walletId).isEqualTo("wallet_existing");
-        verify(subaccounts, never()).createSubaccount(eq("Ana Vendedora"), eq("ana@example.com"), eq("52998224725"));
+        verify(subaccounts, never()).createSubaccount(eq("Ana Vendedora"), eq("ana@example.com"), eq("52998224725"), eq("01310100"), eq(BIRTH_DATE));
         verify(store, never()).attachProviderAccount(eq(ACCOUNT_ID), eq("wallet_existing"));
+    }
+
+    @Test
+    void ensureSubaccountRefusesWithoutAWalletOrACompleteProfile() {
+        when(wallets.walletId(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(store.complianceProfile(ACCOUNT_ID)).thenReturn(INCOMPLETE);
+
+        assertThatThrownBy(() -> provider.ensureSubaccount(ACCOUNT_ID)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

@@ -5,6 +5,8 @@ import com.paysi.payment.provider.asaas.dto.AsaasSubaccountRequest;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+
 /** Adaptador real da Asaas para {@link SubaccountProvider}: cria a subconta white-label (POST /v3/accounts). */
 @Component
 @ConditionalOnProperty(name = "paysi.provider", havingValue = "asaas")
@@ -16,9 +18,9 @@ public class AsaasSubaccountProvider implements SubaccountProvider {
     }
 
     @Override
-    public SubaccountResult createSubaccount(String name, String email, String taxIdDigits) {
+    public SubaccountResult createSubaccount(String name, String email, String taxIdDigits, String postalCode, LocalDate birthDate) {
         try {
-            var response = client.createSubaccount(new AsaasSubaccountRequest(name, email, taxIdDigits));
+            var response = client.createSubaccount(new AsaasSubaccountRequest(name, email, taxIdDigits, postalCode, birthDate));
             return new SubaccountResult(response.id(), response.walletId());
         } catch (AsaasApiException error) {
             throw new SubaccountCreationException(error.getMessage(), error);

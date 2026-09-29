@@ -48,3 +48,16 @@ export function getKyc() {
 export function startKyc() {
   return apiRequest<KycView>("/v1/accounts/me/kyc", { method: "POST" });
 }
+
+/** postalCode: CEP (com ou sem máscara); birthDate: "AAAA-MM-DD". Exigidos pela Asaas pra criar a subconta. */
+export function saveComplianceProfile(postalCode: string, birthDate: string) {
+  return apiRequest<KycView>("/v1/accounts/me/kyc/contact-info", {
+    method: "PUT",
+    body: JSON.stringify({ postalCode, birthDate }),
+  });
+}
+
+export function maskCep(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  return digits.replace(/^(\d{5})(\d)/, "$1-$2");
+}
