@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton, Toast } from "../../../components/ui";
 import { ApiRequestError } from "../../../lib/api";
 import { parseMoneyToCents } from "../../../lib/ofertas";
-import { getKyc, KycView, kycStatusLabel, maskCep, requirementStatusLabel, saveComplianceProfile, startKyc } from "../../../lib/kyc";
+import { getKyc, getPendingDocuments, KycView, kycStatusLabel, maskCep, PendingDocument, requirementStatusLabel, saveComplianceProfile, startKyc, submitDocument } from "../../../lib/kyc";
 
 const POLL_INTERVAL_MS = 4000;
 const POLL_MAX_ATTEMPTS = 30; // ~2 minutos: evita consultar para sempre enquanto o provedor analisa.
@@ -61,6 +61,62 @@ function CompleteProfileForm({ onSaved }: { onSaved: () => void }) {
       <button type="button" className="ui-button ui-button-primary" disabled={saving} onClick={() => void submit()}>{saving ? "Salvando…" : "Salvar e continuar"}</button>
     </div>
   </div>;
+}
+
+/** Uma pendência de documento: upload direto pelo painel da Paysi (sem sair pra outro site). */
+function DocumentRow({ document, onSent }: { document: PendingDocument; onSent: () => void }) {
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  async function handleFile(file: File) {
+    setSending(true);
+    setError(null);
+    try {
+      await submitDocument(document.id, file);
+      setSent(true);
+      onSent();
+    } catch (sendError) {
+      setError(sendError instanceof ApiRequestError ? sendError.message : "Não foi possível enviar o documento. Tente de novo.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return <li className="kyc-document">
+    <div className="ui-labels"><strong>{document.description ?? document.type}</strong></div>
+    {sent ? <p className="pe-hint">Documento enviado — aguardando análise.</p> : document.externalUrl ? (
+      <p>Este documento precisa ser enviado por um link específico da Asaas: <a href={document.externalUrl} target="_blank" rel="noopener noreferrer">enviar documento</a></p>
+    ) : <>
+      <input ref={inputRef} type="file" accept="image/png,image/jpeg,application/pdf"
+        aria-label={`Enviar ${document.description ?? document.type}`}
+        onChange={event => { const file = event.target.files?.[0]; if (file) void handleFile(file); }} disabled={sending} />
+      {error && <p className="pe-error" role="alert">{error}</p>}
+    </>}
+  </li>;
+}
+
+/** Documentos pendentes na subconta da Asaas — 100% enviados pelo painel da Paysi, sem redirecionar o vendedor. */
+function DocumentsUploadSection() {
+  const [documents, setDocuments] = useState<PendingDocument[] | null>(null);
+  const [error, setError] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      setDocuments(await getPendingDocuments());
+    } catch {
+      setError(true);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  if (error) return <Toast tone="danger">Não foi possível carregar os documentos pendentes.</Toast>;
+  if (documents === null) return <Skeleton label="Carregando documentos pendentes" />;
+  if (documents.length === 0) return <p className="pe-hint">Nenhum documento pendente no momento. Se você acabou de iniciar a verificação, atualize esta página em instantes.</p>;
+
+  return <ul className="kyc-checklist">{documents.map(document => <DocumentRow key={document.id} document={document} onSent={() => void load()} />)}</ul>;
 }
 
 /** Aba Identidade: mostra "Identidade verificada" ou leva o vendedor pelo passo a passo da verificação (KYC). */
@@ -133,6 +189,7 @@ export function IdentidadeTab({ onStatus }: { onStatus?: (status: KycView["kycSt
   const rejected = kyc.requirements.filter(item => requirementTone(item.status) === "danger");
   const approved = kyc.kycStatus === "APPROVED";
   const needsProfile = kyc.requirements.some(item => item.code === "CONTACT_INFO" && item.status.toUpperCase() === "PENDING");
+  const needsDocuments = kyc.requirements.some(item => item.code === "ASAAS_VERIFICATION" && item.status.toUpperCase() === "PENDING");
 
   return <section className="pe-section">
     <div className="pe-section-intro"><h2>Verifique a sua identidade</h2><p>A verificação é exigida para publicar ofertas e sacar o seu saldo.</p></div>
@@ -145,7 +202,8 @@ export function IdentidadeTab({ onStatus }: { onStatus?: (status: KycView["kycSt
         <div className="id-head"><h3>{kyc.kycStatus === "REJECTED" ? "Verificação recusada" : kyc.kycStatus === "SUBMITTED" ? "Verificação em análise" : "Falta verificar a sua identidade"}</h3>
           <span className={`pe-pill ${kyc.kycStatus === "REJECTED" ? "af-pill-bad" : "vd-pill-warn"}`}>{kycStatusLabel[kyc.kycStatus]}</span></div>
         {kyc.kycStatus === "REJECTED" && <Toast tone="danger">A verificação foi recusada.{rejected.length > 0 ? " Corrija os itens abaixo e reenvie:" : " Reenvie para tentar novamente."}{rejected.length > 0 && <ul>{rejected.map(item => <li key={item.code}>{item.label}{item.reason ? `: ${item.reason}` : ""}</li>)}</ul>}</Toast>}
-        {polling && <Toast tone="success">Aguardando retorno do provedor de verificação…</Toast>}
+        {starting && <Skeleton label="Iniciando verificação…" />}
+        {polling && <Skeleton label="Aguardando retorno do provedor de verificação…" />}
         {pollTimedOut && <Toast tone="danger">A verificação ainda está em análise. Atualize esta página em alguns minutos para ver o resultado.</Toast>}
         {kyc.requirements.length === 0 ? <p className="pe-hint">Nenhuma pendência registrada até o momento.</p> : <ul className="kyc-checklist">{kyc.requirements.map(item => {
           const estimated = formatEstimatedAt(item.estimatedAt);
@@ -156,6 +214,7 @@ export function IdentidadeTab({ onStatus }: { onStatus?: (status: KycView["kycSt
           </li>;
         })}</ul>}
         {needsProfile ? <CompleteProfileForm onSaved={() => { setLoading(true); load().finally(() => setLoading(false)); }} /> :
+          needsDocuments ? <DocumentsUploadSection /> :
           <div className="ui-actions"><button type="button" className="ui-button ui-button-primary" disabled={starting || polling} onClick={() => void handleStart()}>{starting ? "Iniciando…" : kyc.kycStatus === "PENDING" ? "Iniciar verificação" : "Continuar verificação"}</button></div>}
       </>}
     </div>

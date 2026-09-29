@@ -21,8 +21,8 @@ class AsaasSubaccountProviderTest {
     void returnsTheAccountIdAndTheWalletIdFromTheAsaasResponseConvertingIncomeCentsToReais() {
         AsaasClient client = mock(AsaasClient.class);
         when(client.createSubaccount(new AsaasSubaccountRequest("Ana Vendedora", "ana@example.com", "52998224725", "01310100", BIRTH_DATE, new BigDecimal("1500.00"))))
-                .thenReturn(new AsaasAccountResponse("acc_123", "wallet_abc"));
-        var provider = new AsaasSubaccountProvider(client);
+                .thenReturn(new AsaasAccountResponse("acc_123", "wallet_abc", "sub_key_abc"));
+        var provider = new AsaasSubaccountProvider(client, mock(AsaasSubaccountDocumentsClient.class));
 
         var result = provider.createSubaccount("Ana Vendedora", "ana@example.com", "52998224725", "01310100", BIRTH_DATE, 150_000);
 
@@ -35,7 +35,7 @@ class AsaasSubaccountProviderTest {
         AsaasClient client = mock(AsaasClient.class);
         when(client.createSubaccount(any())).thenThrow(new AsaasApiException("INVALID_OBJECT",
                 "Asaas respondeu 400: É necessário informar a renda/faturamento.", false, null));
-        var provider = new AsaasSubaccountProvider(client);
+        var provider = new AsaasSubaccountProvider(client, mock(AsaasSubaccountDocumentsClient.class));
 
         assertThatThrownBy(() -> provider.createSubaccount("Ana", "ana@example.com", "52998224725", "01310100", BIRTH_DATE, 150_000))
                 .isInstanceOf(SubaccountCreationException.class)

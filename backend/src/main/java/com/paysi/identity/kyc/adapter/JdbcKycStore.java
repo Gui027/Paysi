@@ -3,8 +3,10 @@ package com.paysi.identity.kyc.adapter;
 import com.paysi.identity.kyc.domain.KycProcess;
 import com.paysi.identity.kyc.domain.KycRequirement;
 import com.paysi.identity.kyc.port.KycStore;
+import com.paysi.security.mfa.port.SecretProtector;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -14,7 +16,12 @@ import java.util.UUID;
 @Repository
 public class JdbcKycStore implements KycStore {
     private final JdbcTemplate jdbc;
-    public JdbcKycStore(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    private final SecretProtector secrets;
+
+    public JdbcKycStore(JdbcTemplate jdbc, SecretProtector secrets) {
+        this.jdbc = jdbc;
+        this.secrets = secrets;
+    }
 
     @Override
     public void lockAccount(UUID accountId) {
@@ -48,9 +55,21 @@ public class JdbcKycStore implements KycStore {
     }
 
     @Override
-    public void attachProviderAccount(UUID accountId, String providerAccountId) {
-        jdbc.update("update accounts set provider_account_id = coalesce(provider_account_id, ?) where id = ?",
-                providerAccountId, accountId);
+    public void attachProviderAccount(UUID accountId, String providerAccountId, String accessToken) {
+        byte[] encrypted = accessToken == null ? null : secrets.encrypt(accessToken.getBytes(StandardCharsets.UTF_8));
+        jdbc.update("""
+                update accounts set provider_account_id = coalesce(provider_account_id, ?),
+                                     provider_access_token_enc = coalesce(provider_access_token_enc, ?)
+                 where id = ?
+                """, providerAccountId, encrypted, accountId);
+    }
+
+    @Override
+    public Optional<String> decryptedAccessToken(UUID accountId) {
+        return jdbc.query("select provider_access_token_enc from accounts where id = ?",
+                (rs, row) -> rs.getBytes(1), accountId).stream().findFirst()
+                .filter(bytes -> bytes != null)
+                .map(bytes -> new String(secrets.decrypt(bytes), StandardCharsets.UTF_8));
     }
 
     @Override

@@ -61,3 +61,24 @@ export function maskCep(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 8);
   return digits.replace(/^(\d{5})(\d)/, "$1-$2");
 }
+
+export type PendingDocument = {
+  id: string;
+  status: string;
+  type: string;
+  description: string | null;
+  externalUrl: string | null;
+};
+
+export function getPendingDocuments() {
+  return apiRequest<PendingDocument[]>("/v1/accounts/me/kyc/documents");
+}
+
+export function submitDocument(documentGroupId: string, file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  return apiRequest<void>(`/v1/accounts/me/kyc/documents/${encodeURIComponent(documentGroupId)}`, {
+    method: "POST",
+    body,
+  });
+}

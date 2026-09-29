@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -66,7 +67,7 @@ class AsaasKycProviderTest {
         when(wallets.walletId(ACCOUNT_ID)).thenReturn(Optional.empty());
         when(accounts.findById(ACCOUNT_ID)).thenReturn(Optional.of(account()));
         when(subaccounts.createSubaccount("Ana Vendedora", "ana@example.com", "52998224725", "01310100", BIRTH_DATE, 150_000L))
-                .thenReturn(new SubaccountResult("acc_1", "wallet_1"));
+                .thenReturn(new SubaccountResult("acc_1", "wallet_1", "sub_api_key_1"));
 
         var process = provider.createProcess(ACCOUNT_ID);
 
@@ -75,7 +76,7 @@ class AsaasKycProviderTest {
         assertThat(process.requirements()).hasSize(2);
         assertThat(process.requirements().get(0).status()).isEqualTo("APPROVED");
         assertThat(process.requirements().get(1).status()).isEqualTo("PENDING");
-        verify(store).attachProviderAccount(ACCOUNT_ID, "wallet_1");
+        verify(store).attachProviderAccount(ACCOUNT_ID, "wallet_1", "sub_api_key_1");
     }
 
     @Test
@@ -86,7 +87,7 @@ class AsaasKycProviderTest {
 
         assertThat(walletId).isEqualTo("wallet_existing");
         verify(subaccounts, never()).createSubaccount(eq("Ana Vendedora"), eq("ana@example.com"), eq("52998224725"), eq("01310100"), eq(BIRTH_DATE), eq(150_000L));
-        verify(store, never()).attachProviderAccount(eq(ACCOUNT_ID), eq("wallet_existing"));
+        verify(store, never()).attachProviderAccount(eq(ACCOUNT_ID), eq("wallet_existing"), any());
     }
 
     @Test

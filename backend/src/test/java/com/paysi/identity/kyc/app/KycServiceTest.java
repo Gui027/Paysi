@@ -85,7 +85,8 @@ class KycServiceTest {
         when(store.findProcess(ACCOUNT_ID)).thenReturn(existing);
         when(store.requirements(ACCOUNT_ID)).thenReturn(existing.map(KycProcess::requirements).orElse(List.of()));
         when(provider.createProcess(ACCOUNT_ID)).thenReturn(process(NOW.plusSeconds(3600)));
-        return new Fixture(new KycService(accounts, store, provider, Clock.fixed(NOW, ZoneOffset.UTC)), store, provider);
+        var subaccounts = mock(com.paysi.payment.provider.SubaccountProvider.class);
+        return new Fixture(new KycService(accounts, store, provider, subaccounts, Clock.fixed(NOW, ZoneOffset.UTC)), store, provider);
     }
 
     private static KycProcess process(Instant expiresAt) {

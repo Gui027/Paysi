@@ -234,6 +234,30 @@ test.describe("financeiro", () => {
     await expect(page.getByRole("heading", { name: "Verificação em análise" })).toBeVisible();
   });
 
+  test("verificação da Asaas pendente de documento envia o arquivo direto pelo painel, sem sair pra outro site", async ({ page }) => {
+    await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
+    let enviado: { url: string; hasFile: boolean } | null = null;
+    await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
+      { code: "ASAAS_SUBACCOUNT", label: "Conta na Asaas", status: "APPROVED", reason: null, estimatedAt: null },
+      { code: "ASAAS_VERIFICATION", label: "Verificação de identidade na Asaas", status: "PENDING", reason: "Envie os documentos solicitados abaixo para concluirmos a verificação.", estimatedAt: null },
+    ] } }));
+    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => route.fulfill({ json: [
+      { id: "doc_1", status: "PENDING", type: "IDENTIFICATION", description: "Documento de identidade", externalUrl: null },
+    ] }));
+    await page.route("**/api/v1/accounts/me/kyc/documents/doc_1", async (route) => {
+      enviado = { url: route.request().url(), hasFile: (route.request().postData() ?? "").includes("Content-Disposition") };
+      return route.fulfill({ status: 204 });
+    });
+    await page.goto("/saldo?aba=identidade");
+    await expect(page.getByText("Envie os documentos solicitados abaixo")).toBeVisible();
+    await expect(page.getByText("Documento de identidade")).toBeVisible();
+    await page.locator('input[type="file"]').setInputFiles({ name: "rg.png", mimeType: "image/png", buffer: Buffer.from("fake-image") });
+    await expect(page.getByText("Documento enviado — aguardando análise.")).toBeVisible();
+    expect(enviado).not.toBeNull();
+    expect(enviado!.url).toContain("/kyc/documents/doc_1");
+    expect(enviado!.hasFile).toBe(true);
+  });
+
   test("rotas antigas redirecionam para o Financeiro", async ({ page }) => {
     await preparar(page);
     await page.goto("/saldo/conta-bancaria");

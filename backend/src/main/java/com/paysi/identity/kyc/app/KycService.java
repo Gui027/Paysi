@@ -1,32 +1,42 @@
 package com.paysi.identity.kyc.app;
 
+import com.paysi.core.error.ConflictException;
 import com.paysi.core.error.ForbiddenException;
 import com.paysi.core.error.ValidationException;
 import com.paysi.identity.domain.KycStatus;
 import com.paysi.identity.kyc.port.KycProvider;
 import com.paysi.identity.kyc.port.KycStore;
 import com.paysi.identity.port.AccountRepository;
+import com.paysi.payment.provider.SubaccountProvider;
+import com.paysi.payment.provider.SubaccountProvider.SubaccountCreationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.UUID;
 
 @Service
 public class KycService {
+    /** Só formatos comuns de imagem/PDF de documento — evita subir um arquivo qualquer pro provedor. */
+    private static final java.util.Set<String> ALLOWED_DOCUMENT_TYPES = java.util.Set.of(
+            "image/png", "image/jpeg", "application/pdf");
+    private static final long MAX_DOCUMENT_BYTES = 10L * 1024 * 1024;
+
     private final AccountRepository accounts;
     private final KycStore store;
     private final KycProvider provider;
+    private final SubaccountProvider subaccounts;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
-    public KycService(AccountRepository accounts, KycStore store, KycProvider provider) {
-        this(accounts, store, provider, Clock.systemUTC());
+    public KycService(AccountRepository accounts, KycStore store, KycProvider provider, SubaccountProvider subaccounts) {
+        this(accounts, store, provider, subaccounts, Clock.systemUTC());
     }
 
-    KycService(AccountRepository accounts, KycStore store, KycProvider provider, Clock clock) {
-        this.accounts = accounts; this.store = store; this.provider = provider; this.clock = clock;
+    KycService(AccountRepository accounts, KycStore store, KycProvider provider, SubaccountProvider subaccounts, Clock clock) {
+        this.accounts = accounts; this.store = store; this.provider = provider; this.subaccounts = subaccounts; this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -47,6 +57,45 @@ public class KycService {
         // ter virado APPROVED durante o createProcess acima; relê em vez de assumir SUBMITTED.
         var refreshed = accounts.findById(accountId).orElseThrow(() -> unavailable());
         return new KycView(accountId, refreshed.kycStatus(), process.providerUrl(), process.requirements());
+    }
+
+    /**
+     * Documentos de verificação pendentes da subconta (ex.: documento de identidade, selfie/prova de
+     * vida) — sempre consultados com a chave própria da subconta, nunca a da Paysi. Quando a conta ainda
+     * não tem subconta com chave salva (ex.: perdida antes desta funcionalidade existir), devolve vazio
+     * em vez de erro — o vendedor só vê "nenhuma pendência" até reiniciar a verificação.
+     */
+    @Transactional(readOnly = true)
+    public List<PendingDocumentView> pendingDocuments(UUID accountId) {
+        return store.decryptedAccessToken(accountId)
+                .map(token -> subaccounts.pendingDocuments(token).stream()
+                        .map(item -> new PendingDocumentView(item.id(), item.status(), item.type(), item.description(), item.externalUrl()))
+                        .toList())
+                .orElseGet(List::of);
+    }
+
+    /**
+     * Envia um documento para o provedor, em nome da subconta do próprio vendedor — nada sai da Paysi.
+     * {@code documentGroupId} precisa ser um dos ids devolvidos por {@link #pendingDocuments}.
+     */
+    @Transactional
+    public void submitDocument(UUID accountId, String documentGroupId, byte[] file, String filename, String contentType) {
+        String token = store.decryptedAccessToken(accountId)
+                .orElseThrow(() -> new ConflictException("KYC_NO_SUBACCOUNT", "Inicie a verificação antes de enviar documentos", null));
+        if (file == null || file.length == 0 || file.length > MAX_DOCUMENT_BYTES) {
+            throw new ValidationException("INVALID_DOCUMENT_FILE", "O arquivo deve ter até 10 MB", "file");
+        }
+        if (contentType == null || !ALLOWED_DOCUMENT_TYPES.contains(contentType)) {
+            throw new ValidationException("INVALID_DOCUMENT_TYPE", "Envie uma imagem (PNG/JPEG) ou PDF", "file");
+        }
+        if (documentGroupId == null || documentGroupId.isBlank()) {
+            throw new ValidationException("INVALID_DOCUMENT_ID", "Documento inválido", "documentGroupId");
+        }
+        try {
+            subaccounts.submitDocument(token, documentGroupId, file, filename == null ? "documento" : filename, contentType);
+        } catch (SubaccountCreationException error) {
+            throw new ConflictException("KYC_DOCUMENT_REJECTED", "Não foi possível enviar o documento: " + error.getMessage(), null);
+        }
     }
 
     /**
@@ -89,4 +138,6 @@ public class KycService {
     }
 
     private static ForbiddenException unavailable() { return new ForbiddenException("ACCOUNT_UNAVAILABLE", "Conta indisponível"); }
+
+    public record PendingDocumentView(String id, String status, String type, String description, String externalUrl) { }
 }

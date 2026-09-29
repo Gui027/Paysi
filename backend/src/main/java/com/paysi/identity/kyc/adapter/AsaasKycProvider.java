@@ -70,7 +70,7 @@ public class AsaasKycProvider implements KycProvider {
         List<KycRequirement> requirements = List.of(
                 new KycRequirement("ASAAS_SUBACCOUNT", "Conta na Asaas", "APPROVED", null, null),
                 new KycRequirement("ASAAS_VERIFICATION", "Verificação de identidade na Asaas", "PENDING",
-                        "Conclua a verificação de documento e a prova de vida diretamente no painel da Asaas.", null));
+                        "Envie os documentos solicitados abaixo para concluirmos a verificação.", null));
         return new KycProcess(walletId, null, clock.instant().plus(REQUIREMENT_HORIZON), requirements);
     }
 
@@ -85,7 +85,7 @@ public class AsaasKycProvider implements KycProvider {
                     .orElseThrow(() -> new IllegalStateException("Conta não encontrada para criar subconta na Asaas"));
             var created = subaccounts.createSubaccount(account.fullName(), account.email(), account.taxId().digits(),
                     profile.postalCode(), profile.birthDate(), profile.incomeValueCents());
-            store.attachProviderAccount(accountId, created.walletId());
+            store.attachProviderAccount(accountId, created.walletId(), created.apiKey());
             return created.walletId();
         });
     }

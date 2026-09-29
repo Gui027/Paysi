@@ -13,8 +13,15 @@ public interface KycStore {
     List<KycRequirement> requirements(UUID accountId);
     void saveStarted(UUID accountId, KycProcess process);
 
-    /** Só grava se a conta ainda não tinha subconta (coalesce) — nunca sobrescreve uma já existente. */
-    void attachProviderAccount(UUID accountId, String providerAccountId);
+    /**
+     * Só grava se a conta ainda não tinha subconta (coalesce) — nunca sobrescreve uma já existente.
+     * {@code accessToken}: chave própria da subconta (ex.: Asaas), já vem em claro — o adaptador cuida
+     * de criptografar antes de gravar. Pode ser nulo para provedores sem esse conceito.
+     */
+    void attachProviderAccount(UUID accountId, String providerAccountId, String accessToken);
+
+    /** Chave própria da subconta, já decriptada. Vazio quando a conta ainda não tem subconta com chave salva. */
+    Optional<String> decryptedAccessToken(UUID accountId);
 
     ComplianceProfile complianceProfile(UUID accountId);
 
