@@ -62,6 +62,11 @@ class AsaasClient {
                 AsaasPixQrCodeResponse.class, paymentId));
     }
 
+    /** POST /v3/accounts — cria a subconta white-label do vendedor/afiliado (RF do split real). */
+    AsaasAccountResponse createSubaccount(AsaasSubaccountRequest request) {
+        return execute(() -> http.postForObject("/accounts", request, AsaasAccountResponse.class));
+    }
+
     AsaasPaymentResponse refund(String paymentId, BigDecimal amount) {
         var body = amount == null ? java.util.Map.of() : java.util.Map.of("value", amount);
         return execute(() -> http.postForObject("/payments/{id}/refund", body,

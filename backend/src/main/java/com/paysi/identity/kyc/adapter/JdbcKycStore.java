@@ -47,5 +47,11 @@ public class JdbcKycStore implements KycStore {
         jdbc.update("update accounts set kyc_status = 'SUBMITTED' where id = ? and kyc_status in ('PENDING','REJECTED')", accountId);
     }
 
+    @Override
+    public void attachProviderAccount(UUID accountId, String providerAccountId) {
+        jdbc.update("update accounts set provider_account_id = coalesce(provider_account_id, ?) where id = ?",
+                providerAccountId, accountId);
+    }
+
     private static Instant nullableInstant(Timestamp timestamp) { return timestamp == null ? null : timestamp.toInstant(); }
 }

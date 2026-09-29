@@ -11,4 +11,7 @@ public interface KycStore {
     Optional<KycProcess> findProcess(UUID accountId);
     List<KycRequirement> requirements(UUID accountId);
     void saveStarted(UUID accountId, KycProcess process);
+
+    /** Só grava se a conta ainda não tinha subconta (coalesce) — nunca sobrescreve uma já existente. */
+    void attachProviderAccount(UUID accountId, String providerAccountId);
 }
