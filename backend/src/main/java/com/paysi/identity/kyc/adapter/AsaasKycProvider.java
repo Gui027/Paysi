@@ -31,13 +31,14 @@ import java.util.UUID;
  * pela mensagem de erro dela). Sem CEP/nascimento preenchidos, {@link #createProcess} nem chama a Asaas —
  * devolve uma pendência clara ({@code CONTACT_INFO}) pedindo pra completar o cadastro primeiro, em vez de
  * deixar a chamada falhar.</p>
+ *
+ * <p>{@code providerUrl} sempre nulo: é subconta white-label, não existe painel externo pra mandar o
+ * vendedor (o painel da Paysi não deve abrir aba nenhuma quando {@code providerUrl} é nulo).</p>
  */
 @Component
 @ConditionalOnProperty(name = "paysi.kyc.provider", havingValue = "asaas")
 public class AsaasKycProvider implements KycProvider {
     private static final Duration REQUIREMENT_HORIZON = Duration.ofDays(365);
-    /** Sem URL pública de verdade: é subconta white-label, o vendedor nunca vê o painel da Asaas. */
-    private static final String PLACEHOLDER_URL = "https://paysi.com.br/financeiro?aba=identidade";
 
     private final AccountRepository accounts;
     private final KycStore store;
@@ -61,7 +62,7 @@ public class AsaasKycProvider implements KycProvider {
     @Override
     public KycProcess createProcess(UUID accountId) {
         if (!store.complianceProfile(accountId).complete()) {
-            return new KycProcess("pending-" + accountId, PLACEHOLDER_URL, clock.instant().plus(REQUIREMENT_HORIZON),
+            return new KycProcess("pending-" + accountId, null, clock.instant().plus(REQUIREMENT_HORIZON),
                     List.of(new KycRequirement("CONTACT_INFO", "CEP e data de nascimento", "PENDING",
                             "Complete seu CEP e data de nascimento para continuarmos a verificação.", null)));
         }
@@ -70,7 +71,7 @@ public class AsaasKycProvider implements KycProvider {
                 new KycRequirement("ASAAS_SUBACCOUNT", "Conta na Asaas", "APPROVED", null, null),
                 new KycRequirement("ASAAS_VERIFICATION", "Verificação de identidade na Asaas", "PENDING",
                         "Conclua a verificação de documento e a prova de vida diretamente no painel da Asaas.", null));
-        return new KycProcess(walletId, PLACEHOLDER_URL, clock.instant().plus(REQUIREMENT_HORIZON), requirements);
+        return new KycProcess(walletId, null, clock.instant().plus(REQUIREMENT_HORIZON), requirements);
     }
 
     @Override

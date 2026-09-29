@@ -71,7 +71,7 @@ class AsaasKycProviderTest {
         var process = provider.createProcess(ACCOUNT_ID);
 
         assertThat(process.providerProcessId()).isEqualTo("wallet_1");
-        assertThat(process.providerUrl()).isNotNull();
+        assertThat(process.providerUrl()).isNull();
         assertThat(process.requirements()).hasSize(2);
         assertThat(process.requirements().get(0).status()).isEqualTo("APPROVED");
         assertThat(process.requirements().get(1).status()).isEqualTo("PENDING");
