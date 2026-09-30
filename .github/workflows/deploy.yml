@@ -1,8 +1,7 @@
 name: Deploy
 
 # Só roda depois que o CI da main passou. Publica as imagens no ghcr.io com a tag do commit e
-# manda o Portainer atualizar o stack (YAML vindo do git + PAYSI_IMAGE_TAG novo), sem tocar
-# nas demais variáveis do stack.
+# atualiza a stack do KVM2 por SSH, preservando as variáveis de produção no próprio servidor.
 on:
   workflow_run:
     workflows: [CI]
@@ -83,32 +82,6 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/paysi-kvm2 ~/.ssh/known_hosts
 
-      - name: Transferir configuração do Portainer antigo no primeiro deploy
-        env:
-          PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
-          PORTAINER_TOKEN: ${{ secrets.PORTAINER_TOKEN }}
-          STACK_ID: ${{ secrets.PORTAINER_STACK_ID }}
-          KVM2_HOST: ${{ secrets.KVM2_HOST }}
-          KVM2_USER: ${{ secrets.KVM2_USER }}
-        run: |
-          set -euo pipefail
-          for v in PORTAINER_URL PORTAINER_TOKEN STACK_ID KVM2_HOST KVM2_USER; do
-            [ -n "${!v}" ] || { echo "::error::secret $v não configurado"; exit 1; }
-          done
-          SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
-          if "${SSH[@]}" test -s /opt/paysi/.env; then
-            echo "Configuração segura já existe no KVM2"
-            exit 0
-          fi
-          curl -fsSk -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID" \
-            | jq -r '.Env | map(select(.name != "PAYSI_IMAGE_TAG"))[] | "\(.name)=\(.value | @json)"' \
-            > paysi.env
-          test -s paysi.env || { echo "::error::não foi possível obter as variáveis da stack antiga"; exit 1; }
-          scp -i ~/.ssh/paysi-kvm2 paysi.env "$KVM2_USER@$KVM2_HOST:/opt/paysi/.env"
-          "${SSH[@]}" chmod 600 /opt/paysi/.env
-          rm -f paysi.env
-          echo "Configuração transferida sem expor valores"
-
       - name: Publicar stack no KVM2
         env:
           KVM2_HOST: ${{ secrets.KVM2_HOST }}
@@ -119,6 +92,7 @@ jobs:
         run: |
           set -euo pipefail
           SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
+          "${SSH[@]}" test -s /opt/paysi/.env || { echo "::error::/opt/paysi/.env não encontrado"; exit 1; }
           scp -i ~/.ssh/paysi-kvm2 infra/kvm2-compose.yml "$KVM2_USER@$KVM2_HOST:/opt/paysi/compose.yml"
           printf '%s' "$GHCR_TOKEN" | "${SSH[@]}" docker login ghcr.io -u "$GHCR_USER" --password-stdin
           "${SSH[@]}" "cd /opt/paysi && PAYSI_IMAGE_TAG='$TAG' docker compose --env-file .env -f compose.yml up -d --pull always --remove-orphans"
