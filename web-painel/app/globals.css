@@ -814,13 +814,57 @@ button { cursor: pointer; }
 .pe-foot { display: flex; align-items: center; justify-content: space-between; margin-top: var(--esp-2); }
 .tx-list { display: grid; gap: var(--esp-2); margin: 0; padding: 0; list-style: none; font-weight: 400; }
 .tx-line { margin: 0; font-weight: 400; }
-.id-card { justify-items: center; text-align: center; }
-.id-done { display: grid; justify-items: center; gap: var(--esp-2); padding: var(--esp-4) 0; }
-.id-done h3 { margin: 0; font-size: 22px; } .id-done p { margin: 0; color: #4B5563; }
-.id-badge { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--blue-500); color: #fff; font-size: 28px; }
-.id-head { display: flex; align-items: center; gap: var(--esp-4); justify-content: center; flex-wrap: wrap; }
-.id-head h3 { margin: 0; }
-.id-card .kyc-checklist { width: 100%; text-align: left; }
+.id-section { max-width: 920px; }
+.id-overview { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--esp-5); padding: var(--esp-6); border: 1px solid #DCE7F7; background: linear-gradient(135deg, #fff 0%, #F6F9FE 100%); }
+.id-overview h3, .id-overview p { margin: 0; }
+.id-overview h3 { font-size: 20px; }
+.id-overview p { margin-top: var(--esp-1); color: #5C6472; }
+.id-overview.is-approved { border-color: #BCE4CB; background: linear-gradient(135deg, #fff 0%, #F0FBF4 100%); }
+.id-badge { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; background: var(--blue-500); color: #fff; font-size: 26px; font-weight: 700; box-shadow: 0 8px 20px rgba(37,99,235,.2); }
+.id-overview.is-approved .id-badge { background: #16834B; box-shadow: 0 8px 20px rgba(22,131,75,.18); }
+.id-steps { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; padding: 0 4px var(--esp-5); list-style: none; }
+.id-steps li { position: relative; display: grid; justify-items: center; gap: 6px; color: #7A8493; font-weight: 600; }
+.id-steps li:not(:last-child)::after { content: ""; position: absolute; z-index: 0; top: 15px; left: calc(50% + 20px); width: calc(100% - 40px); height: 2px; background: #DCE3ED; }
+.id-steps li.is-done:not(:last-child)::after { background: var(--blue-500); }
+.id-steps li > span { z-index: 1; display: grid; place-items: center; width: 32px; height: 32px; border: 2px solid #CBD5E1; border-radius: 50%; background: #fff; font-size: 13px; }
+.id-steps li.is-current { color: var(--blue-700); }
+.id-steps li.is-current > span, .id-steps li.is-done > span { border-color: var(--blue-500); background: var(--blue-500); color: #fff; }
+.id-step-panel { display: grid; gap: var(--esp-4); min-height: 250px; padding: var(--esp-5); border: 1px solid var(--paysi-linha); border-radius: 16px; background: #FAFBFD; }
+.id-step-heading { display: flex; align-items: center; gap: var(--esp-3); }
+.id-step-heading > span { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 12px; background: var(--blue-50); color: var(--blue-700); font-weight: 700; }
+.id-step-heading h3, .id-step-heading p { margin: 0; }
+.id-step-heading p { margin-top: 2px; color: #5C6472; font-size: 14px; }
+.id-step-copy { margin: 0; color: #5C6472; font-size: 14px; }
+.id-complete-profile { display: grid; grid-template-columns: 1fr 1fr; gap: var(--esp-4); width: 100%; max-width: none; margin: 0; text-align: left; }
+.id-complete-profile .id-step-copy, .id-complete-profile .pe-error, .id-complete-profile .id-next { grid-column: 1 / -1; }
+.id-complete-profile .pe-field:last-of-type { grid-column: 1 / -1; }
+.id-next { width: 100%; justify-content: center; }
+.id-simple-list { display: grid; gap: var(--esp-2); margin: 0; padding: 0; list-style: none; }
+.id-simple-list li { display: flex; gap: var(--esp-2); align-items: center; padding: var(--esp-3); border-radius: 10px; background: #fff; }
+.id-simple-list span { color: var(--blue-700); font-size: 20px; }
+.id-step-panel .kyc-checklist { width: 100%; }
+.id-step-panel .kyc-document { display: grid; grid-template-columns: auto 1fr; gap: var(--esp-3); padding: var(--esp-4); background: #fff; }
+.id-document-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--blue-50); color: var(--blue-700); font-size: 20px; }
+.id-document-body { min-width: 0; }
+.id-document-body p { margin: var(--esp-1) 0 var(--esp-3); }
+.id-document-body small { display: block; margin-top: var(--esp-2); color: #667085; }
+.id-external { display: inline-flex; text-decoration: none; }
+.id-upload { position: relative; display: inline-flex; align-items: center; min-height: 40px; padding: 0 var(--esp-4); border-radius: 10px; background: var(--blue-500); color: #fff; font-weight: 600; cursor: pointer; }
+.id-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.id-success { color: #087443 !important; font-weight: 600; }
+.id-analysis { display: grid; justify-items: center; align-content: center; gap: var(--esp-2); min-height: 210px; text-align: center; }
+.id-analysis > span { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--blue-50); color: var(--blue-700); font-size: 26px; }
+.id-analysis h3, .id-analysis p { margin: 0; }
+.id-analysis p { max-width: 390px; color: #5C6472; }
+.id-preparing, .id-privacy { margin: 0; color: #667085; text-align: center; font-size: 13px; }
+@media (max-width: 640px) {
+  .id-overview { grid-template-columns: auto 1fr; }
+  .id-overview .ui-button { grid-column: 1 / -1; width: 100%; justify-content: center; }
+  .id-steps small { font-size: 11px; }
+  .id-step-panel { padding: var(--esp-4); }
+  .id-complete-profile { grid-template-columns: 1fr; }
+  .id-complete-profile > * { grid-column: 1 !important; }
+}
 .mfa-steps { display: grid; gap: var(--esp-4); padding-left: var(--esp-5); }
 .mfa-secret { display: inline-block; padding: 2px 8px; border-radius: 6px; background: var(--gray-50); word-break: break-all; }
 .mfa-recovery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--esp-2); padding: 0; margin: var(--esp-2) 0; list-style: none; }
@@ -963,6 +1007,3 @@ button { cursor: pointer; }
 .dash-kpi-amber { background: #FFF1D6; } .dash-kpi-amber strong { color: #8A4B00; }
 .dash-links { margin: var(--esp-4) 0 0; font-size: 14px; color: #4B5563; }
 .dash-links a { color: var(--blue-700); text-decoration: underline; }
-
-/* ---------- Identidade: completar CEP/nascimento ---------- */
-.id-complete-profile { display: grid; gap: var(--esp-4); width: 100%; max-width: 320px; margin: 0 auto; text-align: left; }

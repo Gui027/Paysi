@@ -11,7 +11,7 @@ public interface SubaccountProvider {
     List<PendingDocument> pendingDocuments(String subaccountApiKey);
 
     /** Envia um documento para o grupo (id vindo de {@link #pendingDocuments}); só aceito quando {@code externalUrl} é nulo. */
-    void submitDocument(String subaccountApiKey, String documentGroupId, byte[] file, String filename, String contentType);
+    void submitDocument(String subaccountApiKey, String documentGroupId, String documentType, byte[] file, String filename, String contentType);
 
     /** {@code apiKey}: chave própria da subconta — a Asaas só devolve isso na criação, nunca mais depois. */
     record SubaccountResult(String accountId, String walletId, String apiKey) {

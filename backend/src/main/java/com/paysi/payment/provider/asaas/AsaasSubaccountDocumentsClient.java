@@ -46,7 +46,7 @@ class AsaasSubaccountDocumentsClient {
         });
     }
 
-    void submitDocument(String subaccountApiKey, String documentGroupId, byte[] file, String filename, String contentType) {
+    void submitDocument(String subaccountApiKey, String documentGroupId, String documentType, byte[] file, String filename, String contentType) {
         execute(() -> {
             HttpHeaders headers = headers(subaccountApiKey);
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -56,6 +56,7 @@ class AsaasSubaccountDocumentsClient {
             HttpEntity<byte[]> part = new HttpEntity<>(file, partHeaders);
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("documentFile", part);
+            body.add("type", documentType);
             http.postForObject(baseUrl + "/myAccount/documents/" + documentGroupId, new HttpEntity<>(body, headers), String.class);
             return null;
         });

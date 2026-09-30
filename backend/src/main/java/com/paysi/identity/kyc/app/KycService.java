@@ -92,10 +92,24 @@ public class KycService {
             throw new ValidationException("INVALID_DOCUMENT_ID", "Documento inválido", "documentGroupId");
         }
         try {
-            subaccounts.submitDocument(token, documentGroupId, file, filename == null ? "documento" : filename, contentType);
+            var requested = subaccounts.pendingDocuments(token).stream()
+                    .filter(document -> documentGroupId.equals(document.id()))
+                    .findFirst()
+                    .orElseThrow(() -> new ValidationException("INVALID_DOCUMENT_ID", "Esta pendência não está mais disponível. Atualize a verificação.", "documentGroupId"));
+            if (requested.externalUrl() != null || requiresExternalOnboarding(requested.description())) {
+                throw new ConflictException("KYC_DOCUMENT_EXTERNAL", "Este documento deve ser enviado pelo link seguro de verificação da Asaas.", null);
+            }
+            subaccounts.submitDocument(token, documentGroupId, requested.type(), file,
+                    filename == null ? "documento" : filename, contentType);
         } catch (SubaccountCreationException error) {
             throw new ConflictException("KYC_DOCUMENT_REJECTED", "Não foi possível enviar o documento: " + error.getMessage(), null);
         }
+    }
+
+    private static boolean requiresExternalOnboarding(String description) {
+        if (description == null) return false;
+        String normalized = description.toLowerCase(java.util.Locale.ROOT);
+        return normalized.contains("link de onboarding") || normalized.contains("aplicativo");
     }
 
     /**

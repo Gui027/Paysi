@@ -23,7 +23,7 @@ public class FakeSubaccountProvider implements SubaccountProvider {
     }
 
     @Override
-    public void submitDocument(String subaccountApiKey, String documentGroupId, byte[] file, String filename, String contentType) {
+    public void submitDocument(String subaccountApiKey, String documentGroupId, String documentType, byte[] file, String filename, String contentType) {
         // sem-op: nada de verdade pra enviar em dev/teste
     }
 }

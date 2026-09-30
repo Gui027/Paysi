@@ -188,13 +188,13 @@ test.describe("financeiro", () => {
     await expect(page.getByText(/4%.*de cada venda fica reservado por.*90 dias/)).toBeVisible();
   });
 
-  test("Identidade: verificada mostra 'Você já pode vender!'", async ({ page }) => {
+  test("Identidade: verificada mostra a conta pronta", async ({ page }) => {
     await preparar(page);
     await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "APPROVED", providerUrl: null, requirements: [] } }));
     await page.goto("/saldo?aba=identidade");
-    await expect(page.getByRole("heading", { name: "Verifique a sua identidade" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Identidade", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Identidade verificada" })).toBeVisible();
-    await expect(page.getByText("Você já pode vender!")).toBeVisible();
+    await expect(page.getByText("Tudo certo. Sua conta está pronta para vender e sacar.")).toBeVisible();
   });
 
   test("Identidade pendente mostra o passo a passo e inicia a verificação", async ({ page }) => {
@@ -221,17 +221,19 @@ test.describe("financeiro", () => {
       carregouDeNovo = true;
       return route.fulfill({ json: { accountId: "a", kycStatus: "PENDING", providerUrl: null, requirements: [] } });
     });
+    await page.route("**/api/v1/accounts/me/kyc", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [] } }));
+    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => route.fulfill({ json: [] }));
     await page.goto("/saldo?aba=identidade");
-    await expect(page.getByText("Complete seu CEP e data de nascimento")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Complete seus dados" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Iniciar verificação" })).toHaveCount(0);
     await page.getByLabel("CEP").fill("01310100");
     await page.getByLabel("Data de nascimento").fill("1990-05-20");
-    await page.getByRole("button", { name: "Salvar e continuar" }).click();
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
     await expect(page.getByText("Informe uma renda/faturamento válido.")).toBeVisible();
     await page.getByLabel("Renda/faturamento mensal em reais").fill("1500,00");
-    await page.getByRole("button", { name: "Salvar e continuar" }).click();
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
     await expect.poll(() => salvou).toEqual({ postalCode: "01310-100", birthDate: "1990-05-20", incomeValueCents: 150000 });
-    await expect(page.getByRole("heading", { name: "Verificação em análise" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Enviado para análise" })).toBeVisible();
   });
 
   test("verificação da Asaas pendente de documento envia o arquivo direto pelo painel, sem sair pra outro site", async ({ page }) => {
@@ -249,13 +251,27 @@ test.describe("financeiro", () => {
       return route.fulfill({ status: 204 });
     });
     await page.goto("/saldo?aba=identidade");
-    await expect(page.getByText("Envie os documentos solicitados abaixo")).toBeVisible();
+    await expect(page.getByText("Use o método indicado pela Asaas para concluir com segurança.")).toBeVisible();
     await expect(page.getByText("Documento de identidade")).toBeVisible();
     await page.locator('input[type="file"]').setInputFiles({ name: "rg.png", mimeType: "image/png", buffer: Buffer.from("fake-image") });
-    await expect(page.getByText("Documento enviado — aguardando análise.")).toBeVisible();
+    await expect(page.getByText("✓ Enviado. Agora é só aguardar a análise.")).toBeVisible();
     expect(enviado).not.toBeNull();
     expect(enviado!.url).toContain("/kyc/documents/doc_1");
     expect(enviado!.hasFile).toBe(true);
+  });
+
+  test("documento com onboarding usa o link seguro e não oferece upload inválido", async ({ page }) => {
+    await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
+    await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
+      { code: "ASAAS_VERIFICATION", label: "Verificação de identidade na Asaas", status: "PENDING", reason: null, estimatedAt: null },
+    ] } }));
+    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => route.fulfill({ json: [
+      { id: "doc_external", status: "PENDING", type: "IDENTIFICATION", description: "Utilize o link de onboarding.", externalUrl: "https://asaas.example/onboarding" },
+    ] }));
+
+    await page.goto("/saldo?aba=identidade");
+    await expect(page.getByRole("link", { name: "Fazer verificação segura" })).toHaveAttribute("href", "https://asaas.example/onboarding");
+    await expect(page.locator('input[type="file"]')).toHaveCount(0);
   });
 
   test("rotas antigas redirecionam para o Financeiro", async ({ page }) => {

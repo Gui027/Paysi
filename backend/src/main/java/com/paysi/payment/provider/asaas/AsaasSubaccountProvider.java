@@ -46,9 +46,9 @@ public class AsaasSubaccountProvider implements SubaccountProvider {
     }
 
     @Override
-    public void submitDocument(String subaccountApiKey, String documentGroupId, byte[] file, String filename, String contentType) {
+    public void submitDocument(String subaccountApiKey, String documentGroupId, String documentType, byte[] file, String filename, String contentType) {
         try {
-            documents.submitDocument(subaccountApiKey, documentGroupId, file, filename, contentType);
+            documents.submitDocument(subaccountApiKey, documentGroupId, documentType, file, filename, contentType);
         } catch (AsaasApiException error) {
             throw new SubaccountCreationException(error.getMessage(), error);
         }

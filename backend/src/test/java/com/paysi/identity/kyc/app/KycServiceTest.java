@@ -6,6 +6,7 @@ import com.paysi.identity.kyc.domain.KycRequirement;
 import com.paysi.identity.kyc.port.KycProvider;
 import com.paysi.identity.kyc.port.KycStore;
 import com.paysi.identity.port.AccountRepository;
+import com.paysi.payment.provider.SubaccountProvider;
 import org.junit.jupiter.api.Test;
 import java.time.Clock;
 import java.time.Instant;
@@ -77,6 +78,32 @@ class KycServiceTest {
         verify(fixture.store, never()).saveComplianceProfile(any(), any(), any(), any());
     }
 
+    @Test
+    void sendsTheDocumentWithTheTypeReturnedByTheProvider() {
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.of("sub-key"));
+        when(fixture.subaccounts.pendingDocuments("sub-key")).thenReturn(List.of(
+                new SubaccountProvider.PendingDocument("group-1", "PENDING", "IDENTIFICATION", "Documento", null)));
+
+        fixture.service.submitDocument(ACCOUNT_ID, "group-1", new byte[]{1}, "rg.png", "image/png");
+
+        verify(fixture.subaccounts).submitDocument(eq("sub-key"), eq("group-1"), eq("IDENTIFICATION"), any(byte[].class), eq("rg.png"), eq("image/png"));
+    }
+
+    @Test
+    void refusesApiUploadWhenTheProviderRequiresOnboarding() {
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.of("sub-key"));
+        when(fixture.subaccounts.pendingDocuments("sub-key")).thenReturn(List.of(
+                new SubaccountProvider.PendingDocument("group-1", "PENDING", "IDENTIFICATION", "Utilize o link de onboarding", "https://asaas.example/onboarding")));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                fixture.service.submitDocument(ACCOUNT_ID, "group-1", new byte[]{1}, "rg.png", "image/png"))
+                .isInstanceOf(com.paysi.core.error.ConflictException.class)
+                .hasMessageContaining("link seguro");
+        verify(fixture.subaccounts, never()).submitDocument(any(), any(), any(), any(), any(), any());
+    }
+
     private static Fixture fixture(KycStatus status, Optional<KycProcess> existing) {
         AccountRepository accounts = mock(AccountRepository.class);
         KycStore store = mock(KycStore.class);
@@ -85,8 +112,8 @@ class KycServiceTest {
         when(store.findProcess(ACCOUNT_ID)).thenReturn(existing);
         when(store.requirements(ACCOUNT_ID)).thenReturn(existing.map(KycProcess::requirements).orElse(List.of()));
         when(provider.createProcess(ACCOUNT_ID)).thenReturn(process(NOW.plusSeconds(3600)));
-        var subaccounts = mock(com.paysi.payment.provider.SubaccountProvider.class);
-        return new Fixture(new KycService(accounts, store, provider, subaccounts, Clock.fixed(NOW, ZoneOffset.UTC)), store, provider);
+        var subaccounts = mock(SubaccountProvider.class);
+        return new Fixture(new KycService(accounts, store, provider, subaccounts, Clock.fixed(NOW, ZoneOffset.UTC)), store, provider, subaccounts);
     }
 
     private static KycProcess process(Instant expiresAt) {
@@ -99,5 +126,5 @@ class KycServiceTest {
                 new TaxId("52998224725"), status, PayoutDelay.D32, 0, AccountStatus.ACTIVE, NOW.minusSeconds(100));
     }
 
-    private record Fixture(KycService service, KycStore store, KycProvider provider) { }
+    private record Fixture(KycService service, KycStore store, KycProvider provider, SubaccountProvider subaccounts) { }
 }

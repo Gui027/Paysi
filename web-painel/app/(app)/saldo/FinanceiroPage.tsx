@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton, Toast } from "../../../components/ui";
 import { formatarCentavos } from "../../../lib/moeda";
 import { FinanceOverview, getFinance } from "../../../lib/financeiro";
+import { getKyc, getPendingDocuments } from "../../../lib/kyc";
 import { CnpjDialog } from "./CnpjDialog";
 import { DadosBancariosTab } from "./DadosBancariosTab";
 import { ExtratoTab } from "./ExtratoTab";
-import { IdentidadeTab } from "./IdentidadeTab";
+import { IdentidadeTab, IdentitySetup } from "./IdentidadeTab";
 import { MfaSetupDialog } from "./MfaSetupDialog";
 import { SaqueDialog } from "./SaqueDialog";
 import { SaquesTab } from "./SaquesTab";
@@ -23,6 +24,7 @@ export function FinanceiroPage() {
   const searchParams = useSearchParams();
   const aba = (abas.find(([id]) => id === searchParams.get("aba"))?.[0] ?? "saques") as Aba;
   const [overview, setOverview] = useState<FinanceOverview | null>(null);
+  const [identitySetup, setIdentitySetup] = useState<IdentitySetup | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saqueOpen, setSaqueOpen] = useState(searchParams.get("sacar") === "1");
@@ -33,11 +35,16 @@ export function FinanceiroPage() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      setOverview(await getFinance());
+      const [finance, identity] = await Promise.all([
+        getFinance(),
+        aba === "identidade" ? Promise.all([getKyc(), getPendingDocuments().catch(() => [])]) : Promise.resolve(null),
+      ]);
+      setOverview(finance);
+      if (identity) setIdentitySetup({ kyc: identity[0], documents: identity[1] });
     } catch {
       setError("Não foi possível carregar o financeiro. Tente novamente.");
     }
-  }, []);
+  }, [aba]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -63,6 +70,10 @@ export function FinanceiroPage() {
     selectAba("identidade");
     void load();
   }
+
+  const handleIdentityStatus = useCallback((status: FinanceOverview["kycStatus"]) => {
+    setOverview(current => current && current.kycStatus !== status ? { ...current, kycStatus: status } : current);
+  }, []);
 
   if (error) return <Toast tone="danger">{error} <button className="toast-action" onClick={() => void load()}>Tentar novamente</button></Toast>;
   if (!overview) return <Skeleton label="Carregando financeiro" />;
@@ -94,7 +105,7 @@ export function FinanceiroPage() {
       {aba === "extrato" && <ExtratoTab />}
       {aba === "dados" && <DadosBancariosTab overview={overview} onChanged={() => void load()} onNeedMfa={() => setMfaSetupOpen(true)} onOpenCnpj={() => setCnpjOpen(true)} />}
       {aba === "taxas" && <TaxasTab />}
-      {aba === "identidade" && <IdentidadeTab onStatus={status => setOverview(current => current && current.kycStatus !== status ? { ...current, kycStatus: status } : current)} />}
+      {aba === "identidade" && <IdentidadeTab initialSetup={identitySetup} onStatus={handleIdentityStatus} />}
     </div>
 
     {/* Janelas só existem enquanto estão abertas: fechadas, não deixam campos escondidos na página. */}
