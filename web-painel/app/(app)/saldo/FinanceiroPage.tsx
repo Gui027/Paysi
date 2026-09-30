@@ -37,10 +37,13 @@ export function FinanceiroPage() {
     try {
       const [finance, identity] = await Promise.all([
         getFinance(),
-        aba === "identidade" ? Promise.all([getKyc(), getPendingDocuments().catch(() => [])]) : Promise.resolve(null),
+        aba === "identidade" ? Promise.all([getKyc(), getPendingDocuments().then(
+          documents => ({ documents, documentsError: false }),
+          () => ({ documents: null, documentsError: true }),
+        )]) : Promise.resolve(null),
       ]);
       setOverview(finance);
-      if (identity) setIdentitySetup({ kyc: identity[0], documents: identity[1] });
+      if (identity) setIdentitySetup({ kyc: identity[0], ...identity[1] });
     } catch {
       setError("Não foi possível carregar o financeiro. Tente novamente.");
     }

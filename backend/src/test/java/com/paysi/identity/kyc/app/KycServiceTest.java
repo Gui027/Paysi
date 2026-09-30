@@ -104,6 +104,17 @@ class KycServiceTest {
         verify(fixture.subaccounts, never()).submitDocument(any(), any(), any(), any(), any(), any());
     }
 
+    @Test
+    void doesNotHideAMissingSubaccountCredentialAsAnEmptyDocumentList() {
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.empty());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.pendingDocuments(ACCOUNT_ID))
+                .isInstanceOf(com.paysi.core.error.ConflictException.class)
+                .hasMessageContaining("suporte");
+        verify(fixture.subaccounts, never()).pendingDocuments(any());
+    }
+
     private static Fixture fixture(KycStatus status, Optional<KycProcess> existing) {
         AccountRepository accounts = mock(AccountRepository.class);
         KycStore store = mock(KycStore.class);

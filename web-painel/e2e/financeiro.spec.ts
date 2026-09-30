@@ -274,6 +274,26 @@ test.describe("financeiro", () => {
     await expect(page.locator('input[type="file"]')).toHaveCount(0);
   });
 
+  test("Atualizar agora mostra progresso e avança quando não há documentos pendentes", async ({ page }) => {
+    await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
+    let consultas = 0;
+    await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
+      { code: "ASAAS_VERIFICATION", label: "Verificação de identidade na Asaas", status: "PENDING", reason: null, estimatedAt: null },
+    ] } }));
+    await page.route("**/api/v1/accounts/me/kyc/documents", async (route) => {
+      consultas += 1;
+      if (consultas === 1) return route.fulfill({ status: 503, json: { message: "Asaas indisponível" } });
+      await new Promise(resolve => setTimeout(resolve, 150));
+      return route.fulfill({ json: [] });
+    });
+
+    await page.goto("/saldo?aba=identidade");
+    await page.getByRole("button", { name: "Atualizar agora" }).click();
+    await expect(page.getByRole("button", { name: "Atualizando…" })).toBeDisabled();
+    await expect(page.getByRole("heading", { name: "Documentos conferidos" })).toBeVisible();
+    await expect(page.getByText("Consulta concluída: não há documentos pendentes.")).toBeVisible();
+  });
+
   test("rotas antigas redirecionam para o Financeiro", async ({ page }) => {
     await preparar(page);
     await page.goto("/saldo/conta-bancaria");

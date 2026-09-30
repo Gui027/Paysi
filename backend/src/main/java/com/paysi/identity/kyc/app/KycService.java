@@ -62,16 +62,17 @@ public class KycService {
     /**
      * Documentos de verificação pendentes da subconta (ex.: documento de identidade, selfie/prova de
      * vida) — sempre consultados com a chave própria da subconta, nunca a da Paysi. Quando a conta ainda
-     * não tem subconta com chave salva (ex.: perdida antes desta funcionalidade existir), devolve vazio
-     * em vez de erro — o vendedor só vê "nenhuma pendência" até reiniciar a verificação.
+     * não tem subconta com chave salva (ex.: perdida antes desta funcionalidade existir), devolve um erro
+     * explícito. Lista vazia fica reservada para o caso real de não haver documentos pendentes.
      */
     @Transactional(readOnly = true)
     public List<PendingDocumentView> pendingDocuments(UUID accountId) {
-        return store.decryptedAccessToken(accountId)
-                .map(token -> subaccounts.pendingDocuments(token).stream()
-                        .map(item -> new PendingDocumentView(item.id(), item.status(), item.type(), item.description(), item.externalUrl()))
-                        .toList())
-                .orElseGet(List::of);
+        String token = store.decryptedAccessToken(accountId)
+                .orElseThrow(() -> new ConflictException("KYC_CREDENTIAL_UNAVAILABLE",
+                        "A conexão da conta de recebimento precisa ser revisada. Fale com o suporte da Paysi.", null));
+        return subaccounts.pendingDocuments(token).stream()
+                .map(item -> new PendingDocumentView(item.id(), item.status(), item.type(), item.description(), item.externalUrl()))
+                .toList();
     }
 
     /**

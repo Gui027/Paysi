@@ -8,7 +8,7 @@ import { ApiRequestError } from "../../../lib/api";
 import { parseMoneyToCents } from "../../../lib/ofertas";
 import { getKyc, getPendingDocuments, KycView, maskCep, PendingDocument, saveComplianceProfile, startKyc, submitDocument } from "../../../lib/kyc";
 
-export type IdentitySetup = { kyc: KycView; documents: PendingDocument[] };
+export type IdentitySetup = { kyc: KycView; documents: PendingDocument[] | null; documentsError: boolean };
 
 function externalOnly(document: PendingDocument) {
   const description = (document.description ?? "").toLocaleLowerCase("pt-BR");
@@ -80,7 +80,9 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const [kyc, setKyc] = useState<KycView | null>(initialSetup?.kyc ?? null);
   const [documents, setDocuments] = useState<PendingDocument[] | null>(initialSetup?.documents ?? null);
   const [loading, setLoading] = useState(!initialSetup);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(initialSetup?.documentsError ?? false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshFeedback, setRefreshFeedback] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(Boolean(initialSetup && initialSetup.kyc.kycStatus !== "APPROVED"));
   const [working, setWorking] = useState(false);
   const active = useRef(true);
@@ -91,11 +93,17 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const applyKyc = useCallback((view: KycView) => { if (active.current) { setKyc(view); onStatus?.(view.kycStatus); } }, [onStatus]);
   const loadSetup = useCallback(async () => {
     const [kycResult, documentsResult] = await Promise.allSettled([getKyc(), getPendingDocuments()]);
-    if (!active.current) return;
-    if (kycResult.status === "rejected") { setError(true); return; }
+    if (!active.current) return false;
+    if (kycResult.status === "rejected") { setError(true); return false; }
     applyKyc(kycResult.value);
-    setDocuments(documentsResult.status === "fulfilled" ? documentsResult.value : []);
-    setError(false);
+    if (documentsResult.status === "fulfilled") {
+      setDocuments(documentsResult.value);
+      setError(false);
+    } else {
+      setDocuments(null);
+      setError(true);
+    }
+    return documentsResult.status === "fulfilled";
   }, [applyKyc]);
 
   useEffect(() => {
@@ -123,7 +131,30 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
     return () => { if (retryTimer.current) clearTimeout(retryTimer.current); };
   }, [documents]);
 
-  async function refreshDocuments() { try { setDocuments(await getPendingDocuments()); } catch { setError(true); } }
+  async function refreshDocuments() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshFeedback(null);
+    setError(false);
+    try {
+      const nextDocuments = await getPendingDocuments();
+      setDocuments(nextDocuments);
+      setRefreshFeedback(nextDocuments.length === 0
+        ? "Consulta concluída: não há documentos pendentes."
+        : "Documentos atualizados.");
+    } catch (refreshError) {
+      setError(true);
+      setRefreshFeedback(refreshError instanceof ApiRequestError ? refreshError.message : "Não foi possível consultar a Asaas agora.");
+    } finally { setRefreshing(false); }
+  }
+  async function refreshStatus() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshFeedback(null);
+    const updated = await loadSetup();
+    if (updated) setRefreshFeedback("Status atualizado. A análise ainda está em andamento.");
+    setRefreshing(false);
+  }
   async function begin() {
     if (working) return;
     setWorking(true); setError(false);
@@ -145,7 +176,8 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const approved = kyc.kycStatus === "APPROVED";
   const needsProfile = kyc.requirements.some(item => item.code === "CONTACT_INFO" && item.status.toUpperCase() === "PENDING");
   const needsDocuments = kyc.requirements.some(item => item.code === "ASAAS_VERIFICATION" && item.status.toUpperCase() === "PENDING");
-  const currentStep = needsProfile ? 1 : approved ? 3 : 2;
+  const awaitingAnalysis = kyc.kycStatus === "SUBMITTED" && documents?.length === 0;
+  const currentStep = needsProfile ? 1 : approved || awaitingAnalysis ? 3 : 2;
 
   return <section className="pe-section id-section">
     <div className="pe-section-intro"><h2>Identidade</h2><p>Uma verificação simples para proteger seus recebimentos e saques.</p></div>
@@ -154,10 +186,10 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
     {!approved && <Janela open={modalOpen} title="Verificação de identidade" wide onClose={() => setModalOpen(false)}>
       <ol className="id-steps" aria-label={`Etapa ${currentStep} de 3`}>{["Seus dados", "Documentos", "Análise"].map((label, index) => <li key={label} className={currentStep > index + 1 ? "is-done" : currentStep === index + 1 ? "is-current" : ""}><span>{currentStep > index + 1 ? "✓" : index + 1}</span><small>{label}</small></li>)}</ol>
       <div className="id-step-panel">
-        {error && <Toast tone="danger">Não foi possível atualizar a verificação agora. Tente novamente.</Toast>}
+        {error && <Toast tone="danger">{refreshFeedback ?? "Não foi possível consultar a Asaas. Tente novamente."}</Toast>}
         {needsProfile ? <><div className="id-step-heading"><span>1</span><div><h3>Complete seus dados</h3><p>Primeiro, confirme algumas informações.</p></div></div><CompleteProfileForm onSaved={begin} /></> : needsDocuments ? <>
           <div className="id-step-heading"><span>2</span><div><h3>Confirme sua identidade</h3><p>Use o método indicado pela Asaas para concluir com segurança.</p></div></div>
-          {documents === null ? <p className="id-preparing" role="status">Preparando a etapa segura…</p> : documents.length > 0 ? <ul className="kyc-checklist">{documents.map(document => <DocumentRow key={document.id} document={document} onSent={refreshDocuments} onRefresh={refreshDocuments} />)}</ul> : <div className="id-analysis"><span aria-hidden="true">◷</span><h3>Preparando seus documentos</h3><p>A Asaas está finalizando a abertura da conta. O link será atualizado automaticamente.</p><button type="button" className="ui-button ui-button-secondary" onClick={() => void refreshDocuments()}>Atualizar agora</button></div>}
+          {documents === null ? <div className="id-analysis"><span aria-hidden="true">◷</span><h3>Preparando seus documentos</h3><p>A Asaas está finalizando a abertura da conta. A primeira consulta pode levar alguns segundos.</p><button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Atualizando…" : "Atualizar agora"}</button></div> : documents.length > 0 ? <ul className="kyc-checklist">{documents.map(document => <DocumentRow key={document.id} document={document} onSent={refreshDocuments} onRefresh={refreshDocuments} />)}</ul> : <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Documentos conferidos</h3><p>Não há documentos pendentes. Sua conta está aguardando o retorno da análise.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshStatus()}>{refreshing ? "Verificando…" : "Verificar status"}</button></div>}
         </> : kyc.kycStatus === "SUBMITTED" ? <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Enviado para análise</h3><p>Você não precisa manter esta tela aberta. Avisaremos assim que a verificação for concluída.</p><button type="button" className="ui-button ui-button-secondary" onClick={() => void loadSetup()}>Verificar status</button></div> : <>
           <div className="id-step-heading"><span>1</span><div><h3>Vamos começar?</h3><p>Confira a etapa abaixo e avance quando estiver pronto.</p></div></div>{kyc.requirements.length > 0 && <ul className="id-simple-list">{kyc.requirements.map(item => <li key={item.code}><span aria-hidden="true">○</span>{item.label}</li>)}</ul>}<button type="button" className="ui-button ui-button-primary id-next" disabled={working} onClick={() => void begin()}>{working ? "Preparando…" : "Iniciar verificação"}</button>
         </>}
