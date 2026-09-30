@@ -15,6 +15,10 @@ function externalOnly(document: PendingDocument) {
   return Boolean(document.externalUrl) || description.includes("link de onboarding") || description.includes("aplicativo");
 }
 
+function onboardingUnavailable(documents: PendingDocument[] | null) {
+  return Boolean(documents?.length && documents.every(document => externalOnly(document) && !document.externalUrl));
+}
+
 function CompleteProfileForm({ onSaved }: { onSaved: () => Promise<void> }) {
   const [postalCode, setPostalCode] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -46,7 +50,7 @@ function CompleteProfileForm({ onSaved }: { onSaved: () => Promise<void> }) {
   </div>;
 }
 
-function DocumentRow({ document, onSent, onRefresh }: { document: PendingDocument; onSent: () => Promise<void>; onRefresh: () => Promise<void> }) {
+function DocumentRow({ document, onSent }: { document: PendingDocument; onSent: () => Promise<void> }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -67,7 +71,7 @@ function DocumentRow({ document, onSent, onRefresh }: { document: PendingDocumen
   return <li className="kyc-document"><div className="id-document-icon" aria-hidden="true">▣</div><div className="id-document-body"><strong>{label}</strong>
     {sent ? <p className="id-success">✓ Enviado. Agora é só aguardar a análise.</p> : externalOnly(document) ? document.externalUrl ? <>
       <p>A identificação é concluída em um ambiente seguro da Asaas.</p><a className="ui-button ui-button-primary id-external" href={document.externalUrl} target="_blank" rel="noopener noreferrer">Fazer verificação segura</a>
-    </> : <><p>O link seguro ainda está sendo preparado. Isso costuma levar alguns segundos.</p><button type="button" className="ui-button ui-button-secondary" onClick={() => void onRefresh()}>Buscar link novamente</button></> : <>
+    </> : <p>O link seguro ainda não foi liberado pela Asaas.</p> : <>
       <label className="id-upload"><span>{sending ? "Enviando…" : "Selecionar arquivo"}</span><input type="file" accept="image/png,image/jpeg,application/pdf" aria-label={`Enviar ${label}`} onChange={event => { const file = event.target.files?.[0]; if (file) void handleFile(file); event.target.value = ""; }} disabled={sending} /></label>
       <small>PNG, JPG ou PDF de até 10 MB</small>{error && <p className="pe-error" role="alert">{error}</p>}
     </>}
@@ -88,7 +92,6 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const active = useRef(true);
   const openedOnce = useRef(Boolean(initialSetup));
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const linkRetries = useRef(0);
 
   const applyKyc = useCallback((view: KycView) => { if (active.current) { setKyc(view); onStatus?.(view.kycStatus); } }, [onStatus]);
   const loadSetup = useCallback(async () => {
@@ -120,17 +123,6 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
     return () => window.removeEventListener("focus", syncOnReturn);
   }, [kyc?.kycStatus, loadSetup]);
 
-  useEffect(() => {
-    const waitingForLink = documents?.some(document => externalOnly(document) && !document.externalUrl);
-    if (!waitingForLink) { linkRetries.current = 0; return; }
-    if (linkRetries.current >= 3) return;
-    retryTimer.current = setTimeout(() => {
-      linkRetries.current += 1;
-      if (active.current) void refreshDocuments();
-    }, 5_000);
-    return () => { if (retryTimer.current) clearTimeout(retryTimer.current); };
-  }, [documents]);
-
   async function refreshDocuments() {
     if (refreshing) return;
     setRefreshing(true);
@@ -141,7 +133,9 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
       setDocuments(nextDocuments);
       setRefreshFeedback(nextDocuments.length === 0
         ? "Consulta concluída: não há documentos pendentes."
-        : "Documentos atualizados.");
+        : onboardingUnavailable(nextDocuments)
+          ? "Consulta concluída: a Asaas ainda não liberou o link."
+          : "Documentos atualizados.");
     } catch (refreshError) {
       setError(true);
       setRefreshFeedback(refreshError instanceof ApiRequestError ? refreshError.message : "Não foi possível consultar a Asaas agora.");
@@ -177,6 +171,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const needsProfile = kyc.requirements.some(item => item.code === "CONTACT_INFO" && item.status.toUpperCase() === "PENDING");
   const needsDocuments = kyc.requirements.some(item => item.code === "ASAAS_VERIFICATION" && item.status.toUpperCase() === "PENDING");
   const awaitingAnalysis = kyc.kycStatus === "SUBMITTED" && documents?.length === 0;
+  const waitingForOnboarding = onboardingUnavailable(documents);
   const currentStep = needsProfile ? 1 : approved || awaitingAnalysis ? 3 : 2;
 
   return <section className="pe-section id-section">
@@ -189,7 +184,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
         {error && <Toast tone="danger">{refreshFeedback ?? "Não foi possível consultar a Asaas. Tente novamente."}</Toast>}
         {needsProfile ? <><div className="id-step-heading"><span>1</span><div><h3>Complete seus dados</h3><p>Primeiro, confirme algumas informações.</p></div></div><CompleteProfileForm onSaved={begin} /></> : needsDocuments ? <>
           <div className="id-step-heading"><span>2</span><div><h3>Confirme sua identidade</h3><p>Use o método indicado pela Asaas para concluir com segurança.</p></div></div>
-          {documents === null ? <div className="id-analysis"><span aria-hidden="true">◷</span><h3>Preparando seus documentos</h3><p>A Asaas está finalizando a abertura da conta. A primeira consulta pode levar alguns segundos.</p><button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Atualizando…" : "Atualizar agora"}</button></div> : documents.length > 0 ? <ul className="kyc-checklist">{documents.map(document => <DocumentRow key={document.id} document={document} onSent={refreshDocuments} onRefresh={refreshDocuments} />)}</ul> : <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Documentos conferidos</h3><p>Não há documentos pendentes. Sua conta está aguardando o retorno da análise.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshStatus()}>{refreshing ? "Verificando…" : "Verificar status"}</button></div>}
+          {documents === null ? <div className="id-analysis"><span aria-hidden="true">◷</span><h3>Preparando seus documentos</h3><p>A Asaas está finalizando a abertura da conta. A primeira consulta pode levar alguns segundos.</p><button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Atualizando…" : "Atualizar agora"}</button></div> : waitingForOnboarding ? <div className="id-analysis"><span aria-hidden="true">!</span><h3>Link de verificação indisponível</h3><p>A Asaas ainda não liberou o link de identificação para esta conta. Nossa equipe precisa revisar a configuração antes de você continuar.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Verificando…" : "Verificar liberação"}</button></div> : documents.length > 0 ? <ul className="kyc-checklist">{documents.map(document => <DocumentRow key={document.id} document={document} onSent={refreshDocuments} />)}</ul> : <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Documentos conferidos</h3><p>Não há documentos pendentes. Sua conta está aguardando o retorno da análise.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshStatus()}>{refreshing ? "Verificando…" : "Verificar status"}</button></div>}
         </> : kyc.kycStatus === "SUBMITTED" ? <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Enviado para análise</h3><p>Você não precisa manter esta tela aberta. Avisaremos assim que a verificação for concluída.</p><button type="button" className="ui-button ui-button-secondary" onClick={() => void loadSetup()}>Verificar status</button></div> : <>
           <div className="id-step-heading"><span>1</span><div><h3>Vamos começar?</h3><p>Confira a etapa abaixo e avance quando estiver pronto.</p></div></div>{kyc.requirements.length > 0 && <ul className="id-simple-list">{kyc.requirements.map(item => <li key={item.code}><span aria-hidden="true">○</span>{item.label}</li>)}</ul>}<button type="button" className="ui-button ui-button-primary id-next" disabled={working} onClick={() => void begin()}>{working ? "Preparando…" : "Iniciar verificação"}</button>
         </>}

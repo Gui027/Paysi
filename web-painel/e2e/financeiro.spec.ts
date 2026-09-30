@@ -274,6 +274,25 @@ test.describe("financeiro", () => {
     await expect(page.locator('input[type="file"]')).toHaveCount(0);
   });
 
+  test("onboarding não liberado mostra um único bloqueio em vez de botões estáticos", async ({ page }) => {
+    await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
+    await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
+      { code: "ASAAS_VERIFICATION", label: "Verificação de identidade na Asaas", status: "PENDING", reason: null, estimatedAt: null },
+    ] } }));
+    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => route.fulfill({ json: [
+      { id: "doc_1", status: "PENDING", type: "IDENTIFICATION", description: "Acesse nosso aplicativo ou utilize o link de onboarding.", externalUrl: null },
+      { id: "doc_2", status: "PENDING", type: "SELFIE", description: "Acesse nosso aplicativo ou utilize o link de onboarding.", externalUrl: null },
+    ] }));
+
+    await page.goto("/saldo?aba=identidade");
+    await expect(page.getByRole("heading", { name: "Link de verificação indisponível" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Verificar liberação" })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Buscar link novamente" })).toHaveCount(0);
+    await expect(page.locator('input[type="file"]')).toHaveCount(0);
+    await page.getByRole("button", { name: "Verificar liberação" }).click();
+    await expect(page.getByText("Consulta concluída: a Asaas ainda não liberou o link.")).toBeVisible();
+  });
+
   test("Atualizar agora mostra progresso e avança quando não há documentos pendentes", async ({ page }) => {
     await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
     let consultas = 0;
