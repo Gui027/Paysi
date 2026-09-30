@@ -63,7 +63,7 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
-  portainer:
+  kvm2:
     needs: images
     runs-on: ubuntu-latest
     environment: staging
@@ -71,40 +71,67 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-      - name: Atualizar o stack no Portainer
+
+      - name: Preparar acesso SSH ao KVM2
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.KVM2_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.KVM2_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/paysi-kvm2
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/paysi-kvm2 ~/.ssh/known_hosts
+
+      - name: Transferir configuração do Portainer antigo no primeiro deploy
         env:
           PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
           PORTAINER_TOKEN: ${{ secrets.PORTAINER_TOKEN }}
           STACK_ID: ${{ secrets.PORTAINER_STACK_ID }}
-          ENDPOINT_ID: ${{ secrets.PORTAINER_ENDPOINT_ID }}
+          KVM2_HOST: ${{ secrets.KVM2_HOST }}
+          KVM2_USER: ${{ secrets.KVM2_USER }}
+        run: |
+          set -euo pipefail
+          for v in PORTAINER_URL PORTAINER_TOKEN STACK_ID KVM2_HOST KVM2_USER; do
+            [ -n "${!v}" ] || { echo "::error::secret $v não configurado"; exit 1; }
+          done
+          SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
+          if "${SSH[@]}" test -s /opt/paysi/.env; then
+            echo "Configuração segura já existe no KVM2"
+            exit 0
+          fi
+          curl -fsSk -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID" \
+            | jq -r '.Env | map(select(.name != "PAYSI_IMAGE_TAG"))[] | "\(.name)=\(.value | @json)"' \
+            > paysi.env
+          test -s paysi.env || { echo "::error::não foi possível obter as variáveis da stack antiga"; exit 1; }
+          scp -i ~/.ssh/paysi-kvm2 paysi.env "$KVM2_USER@$KVM2_HOST:/opt/paysi/.env"
+          "${SSH[@]}" chmod 600 /opt/paysi/.env
+          rm -f paysi.env
+          echo "Configuração transferida sem expor valores"
+
+      - name: Publicar stack no KVM2
+        env:
+          KVM2_HOST: ${{ secrets.KVM2_HOST }}
+          KVM2_USER: ${{ secrets.KVM2_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
           TAG: ${{ needs.images.outputs.tag }}
         run: |
           set -euo pipefail
-          for v in PORTAINER_URL PORTAINER_TOKEN STACK_ID ENDPOINT_ID; do
-            [ -n "${!v}" ] || { echo "::error::secret $v não configurado"; exit 1; }
-          done
-          # -k: o Portainer em IP:9443 usa certificado autoassinado. O tráfego continua cifrado; o que se
-          # perde é a verificação de identidade do servidor (trocar por um domínio com certificado válido
-          # e remover o -k é uma melhoria futura).
-          api() { curl -fsSk -H "X-API-Key: $PORTAINER_TOKEN" "$@"; }
-
-          # Mantém todas as variáveis atuais do stack (senhas, chaves) e troca só a tag da imagem.
-          # A tag muda a cada commit, então o Docker sempre puxa a imagem nova.
-          api "$PORTAINER_URL/api/stacks/$STACK_ID" \
-            | jq --arg tag "$TAG" '.Env | map(select(.name != "PAYSI_IMAGE_TAG")) + [{name:"PAYSI_IMAGE_TAG", value:$tag}]' \
-            > env.json
-          jq -n --rawfile file infra/portainer-stack.yml --slurpfile env env.json \
-            '{stackFileContent:$file, env:$env[0], prune:false, pullImage:true}' > payload.json
-
-          api -X PUT -H "Content-Type: application/json" --data @payload.json \
-            "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" > /dev/null
-          rm -f env.json payload.json
-          echo "Stack atualizado para a tag $TAG"
+          SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
+          scp -i ~/.ssh/paysi-kvm2 infra/kvm2-compose.yml "$KVM2_USER@$KVM2_HOST:/opt/paysi/compose.yml"
+          printf '%s' "$GHCR_TOKEN" | "${SSH[@]}" docker login ghcr.io -u "$GHCR_USER" --password-stdin
+          "${SSH[@]}" "cd /opt/paysi && PAYSI_IMAGE_TAG='$TAG' docker compose --env-file .env -f compose.yml up -d --pull always --remove-orphans"
+          echo "Stack atualizada para a tag $TAG"
 
       - name: Esperar o backend ficar saudável
+        env:
+          KVM2_HOST: ${{ secrets.KVM2_HOST }}
+          KVM2_USER: ${{ secrets.KVM2_USER }}
         run: |
+          SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
           for i in $(seq 1 40); do
-            if curl -fsS -m 8 "${{ vars.API_HEALTH_URL || 'https://api.paysi.com.br/actuator/health' }}" | grep -q UP; then
+            if "${SSH[@]}" "curl -fsS -m 8 http://127.0.0.1:8090/actuator/health" | grep -q UP; then
               echo "Backend saudável"; exit 0
             fi
             sleep 15

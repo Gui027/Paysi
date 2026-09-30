@@ -1,0 +1,140 @@
+services:
+  db:
+    image: ghcr.io/gui027/paysi-postgres:${PAYSI_IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paysi
+      POSTGRES_USER: paysi
+      POSTGRES_PASSWORD: ${PAYSI_DB_PASSWORD}
+      PAYSI_APP_DB_PASSWORD: ${PAYSI_APP_DB_PASSWORD}
+    volumes:
+      - paysi_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paysi -d paysi"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - paysi_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  rabbit:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: paysi
+      RABBITMQ_DEFAULT_PASS: ${PAYSI_RABBIT_PASSWORD}
+    volumes:
+      - paysi_rabbitdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  mail:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/gui027/paysi-backend:${PAYSI_IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbit:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://db:5432/paysi
+      DATABASE_USER: paysi_app
+      DATABASE_PASSWORD: ${PAYSI_APP_DB_PASSWORD}
+      DATABASE_MIGRATION_USER: paysi
+      DATABASE_MIGRATION_PASSWORD: ${PAYSI_DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBIT_HOST: rabbit
+      RABBIT_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: paysi
+      SPRING_RABBITMQ_PASSWORD: ${PAYSI_RABBIT_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST:-mail}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
+      MAIL_SMTP_SSL: ${MAIL_SMTP_SSL:-false}
+      MAIL_SMTP_STARTTLS_REQUIRED: ${MAIL_SMTP_STARTTLS_REQUIRED:-false}
+      MAIL_SSL_PROTOCOLS: ${MAIL_SSL_PROTOCOLS:-TLSv1.2 TLSv1.3}
+      PAYSI_WEB_BASE_URL: https://${PAYSI_PAINEL_DOMAIN}
+      PAYSI_PUBLIC_API_URL: https://${PAYSI_API_DOMAIN}
+      PAYSI_ASSET_STORAGE_PATH: /var/lib/paysi/assets
+      PAYSI_MAIL_FROM: ${PAYSI_MAIL_FROM:-nao-responda@paysi.local}
+      SESSION_COOKIE_SECURE: "true"
+      PAYSI_PROVIDER: ${PAYSI_PROVIDER:-fake}
+      PAYSI_ALLOWED_ORIGINS: https://${PAYSI_CHECKOUT_DOMAIN},https://${PAYSI_PAINEL_DOMAIN}
+      PAYSI_SIGNUP_ALLOWED_EMAILS: ${PAYSI_SIGNUP_ALLOWED_EMAILS:-}
+      PAYSI_FISCAL: fake
+      PAYMENT_FAKE_OUTCOME: APPROVED
+      KYC_PROVIDER: ${KYC_PROVIDER:-configured}
+      KYC_WEBHOOK_SECRET: ${KYC_WEBHOOK_SECRET}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
+      MFA_ENCRYPTION_KEY_BASE64: ${MFA_ENCRYPTION_KEY_BASE64}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_BASE_URL: ${ASAAS_BASE_URL:-https://api-sandbox.asaas.com/v3}
+      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
+    volumes:
+      - paysi_assets:/var/lib/paysi/assets
+    ports:
+      - "127.0.0.1:8090:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+
+  painel:
+    image: ghcr.io/gui027/paysi-painel:${PAYSI_IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      PAYSI_API_URL: http://backend:8080
+    ports:
+      - "127.0.0.1:3020:3000"
+
+  checkout:
+    image: ghcr.io/gui027/paysi-checkout:${PAYSI_IMAGE_TAG}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5180:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  site:
+    image: ghcr.io/gui027/paysi-site:${PAYSI_IMAGE_TAG}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3030:3030"
+
+volumes:
+  paysi_pgdata:
+  paysi_redisdata:
+  paysi_rabbitdata:
+  paysi_assets:
