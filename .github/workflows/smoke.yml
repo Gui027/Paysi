@@ -1,0 +1,28 @@
+name: Smoke de produção
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+jobs:
+  endpoints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verificar endpoints públicos
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 --retry-all-errors --max-time 20 https://paysi.com.br/ > /dev/null
+          curl --fail --silent --show-error --location --retry 3 --retry-all-errors --max-time 20 https://www.paysi.com.br/ > /dev/null
+          curl --fail --silent --show-error --location --retry 3 --retry-all-errors --max-time 20 https://app.paysi.com.br/ > /dev/null
+          curl --fail --silent --show-error --retry 3 --retry-all-errors --max-time 20 https://checkout.paysi.com.br/ > /dev/null
+          curl --fail --silent --show-error --retry 3 --retry-all-errors --max-time 20 https://api.paysi.com.br/actuator/health | grep -q '"status":"UP"'

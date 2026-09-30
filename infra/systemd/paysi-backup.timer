@@ -1,0 +1,11 @@
+[Unit]
+Description=Agenda o backup diário do Paysi
+
+[Timer]
+OnCalendar=*-*-* 03:17:00 America/Sao_Paulo
+RandomizedDelaySec=10m
+Persistent=true
+Unit=paysi-backup.service
+
+[Install]
+WantedBy=timers.target

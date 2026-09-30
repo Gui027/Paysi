@@ -93,7 +93,12 @@ jobs:
           set -euo pipefail
           SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
           "${SSH[@]}" test -s /opt/paysi/.env || { echo "::error::/opt/paysi/.env não encontrado"; exit 1; }
+          PREVIOUS_TAG="$("${SSH[@]}" "cd /opt/paysi && if test -s current-tag; then cat current-tag; else docker inspect --format='{{.Config.Image}}' paysi-backend-1 2>/dev/null | sed 's/.*://'; fi")"
+          [[ "$PREVIOUS_TAG" =~ ^[0-9a-f]{7}$ ]] || { echo "::error::não foi possível determinar a versão anterior"; exit 1; }
+          printf '%s\n' "$PREVIOUS_TAG" | "${SSH[@]}" "cat > /opt/paysi/previous-tag"
           scp -i ~/.ssh/paysi-kvm2 infra/kvm2-compose.yml "$KVM2_USER@$KVM2_HOST:/opt/paysi/compose.yml"
+          scp -i ~/.ssh/paysi-kvm2 infra/backup-paysi.sh "$KVM2_USER@$KVM2_HOST:/opt/paysi/backup.sh"
+          "${SSH[@]}" chmod 700 /opt/paysi/backup.sh
           printf '%s' "$GHCR_TOKEN" | "${SSH[@]}" docker login ghcr.io -u "$GHCR_USER" --password-stdin
           "${SSH[@]}" "cd /opt/paysi && PAYSI_IMAGE_TAG='$TAG' docker compose --env-file .env -f compose.yml up -d --pull always --remove-orphans"
           echo "Stack atualizada para a tag $TAG"
@@ -102,12 +107,20 @@ jobs:
         env:
           KVM2_HOST: ${{ secrets.KVM2_HOST }}
           KVM2_USER: ${{ secrets.KVM2_USER }}
+          TAG: ${{ needs.images.outputs.tag }}
         run: |
+          set -euo pipefail
           SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
           for i in $(seq 1 40); do
             if "${SSH[@]}" "curl -fsS -m 8 http://127.0.0.1:8090/actuator/health" | grep -q UP; then
+              "${SSH[@]}" "printf '%s\\n' '$TAG' > /opt/paysi/current-tag && rm -f /opt/paysi/previous-tag"
               echo "Backend saudável"; exit 0
             fi
             sleep 15
           done
-          echo "::error::o backend não ficou saudável em 10 minutos"; exit 1
+          PREVIOUS_TAG="$("${SSH[@]}" cat /opt/paysi/previous-tag 2>/dev/null || true)"
+          if [[ "$PREVIOUS_TAG" =~ ^[0-9a-f]{7}$ ]]; then
+            echo "Backend não ficou saudável; restaurando a versão $PREVIOUS_TAG"
+            "${SSH[@]}" "cd /opt/paysi && PAYSI_IMAGE_TAG='$PREVIOUS_TAG' docker compose --env-file .env -f compose.yml up -d --pull always --remove-orphans"
+          fi
+          echo "::error::o backend não ficou saudável; rollback solicitado"; exit 1

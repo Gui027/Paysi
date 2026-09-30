@@ -8,8 +8,10 @@ Base executável da plataforma de checkout, divisão de pagamentos e afiliados, 
 - Swagger UI local: http://localhost:8080/swagger-ui.html
 - Contrato OpenAPI em JSON: http://localhost:8080/v3/api-docs
 - Saúde do backend: http://localhost:8080/actuator/health
-
-> Os endereços `localhost` funcionam somente com o ambiente local em execução. Ainda não existe uma URL pública de homologação ou produção cadastrada.
+- Site de produção: https://paysi.com.br
+- Painel de produção: https://app.paysi.com.br
+- Checkout de produção: https://checkout.paysi.com.br
+- Saúde da API de produção: https://api.paysi.com.br/actuator/health
 
 ## Estrutura
 
@@ -67,13 +69,24 @@ npm run build
 
 As decisões de produto, pendências jurídicas/PSP e critérios financeiros permanecem nos documentos. Em especial, PEN-10, PEN-21 e PEN-04 devem ser resolvidas antes de operação real.
 
-## Deploy no Portainer
+## Produção no KVM2
 
-A stack de homologação está em `infra/portainer-stack.yml` e constrói banco, backend, painel e checkout diretamente da branch `main`. Ela requer as variáveis `PAYSI_DB_PASSWORD`, `PAYSI_APP_DB_PASSWORD`, `PAYSI_RABBIT_PASSWORD`, `KYC_WEBHOOK_SECRET`, `PAYMENT_WEBHOOK_SECRET` e `MFA_ENCRYPTION_KEY_BASE64` configuradas no Portainer.
+O push na branch `main` dispara o CI e, depois que todos os testes passam, o
+workflow `.github/workflows/deploy.yml` publica imagens imutáveis no GHCR e
+atualiza `infra/kvm2-compose.yml` no KVM2 por SSH. O deploy confirma o health
+check do backend e solicita rollback para a tag anterior se a versão nova não
+ficar saudável.
 
-- Painel: `http://<servidor>:3020`
-- Checkout: `http://<servidor>:5180`
-- API/Swagger: `http://<servidor>:8090/swagger-ui.html`
-- Saúde: `http://<servidor>:8090/actuator/health`
+As variáveis de produção ficam exclusivamente em `/opt/paysi/.env`, com
+permissão `600`; elas não fazem parte do repositório. PostgreSQL, Redis e
+RabbitMQ não publicam portas no host. Site, painel, checkout e API escutam
+somente em `127.0.0.1` e são publicados pelo Nginx com HTTPS.
 
-PostgreSQL, Redis e RabbitMQ não publicam portas no host. Os dados persistentes usam volumes exclusivos com prefixo `paysi_`.
+O serviço `paysi-backup.timer` executa `infra/backup-paysi.sh` diariamente,
+mantém 14 dias de dumps do PostgreSQL e cópias dos assets em
+`/opt/paysi/backups`, e valida cada dump com `pg_restore --list`. Esta cópia
+local protege contra erro operacional, mas não substitui um backup externo ou
+snapshot da VPS.
+
+O workflow `.github/workflows/smoke.yml` verifica os cinco endpoints públicos
+a cada 15 minutos e também pode ser executado manualmente.

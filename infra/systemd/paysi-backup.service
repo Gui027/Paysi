@@ -1,0 +1,16 @@
+[Unit]
+Description=Backup diário do banco e dos arquivos do Paysi
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=paysi-deploy
+Group=paysi-deploy
+ExecStart=/opt/paysi/backup.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=multi-user.target
