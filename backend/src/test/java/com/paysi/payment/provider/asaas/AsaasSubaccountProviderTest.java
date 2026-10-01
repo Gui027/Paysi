@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 class AsaasSubaccountProviderTest {
     private static final LocalDate BIRTH_DATE = LocalDate.of(1990, 5, 20);
@@ -40,5 +41,19 @@ class AsaasSubaccountProviderTest {
         assertThatThrownBy(() -> provider.createSubaccount("Ana", "ana@example.com", "52998224725", "01310100", BIRTH_DATE, 150_000))
                 .isInstanceOf(SubaccountCreationException.class)
                 .hasMessageContaining("renda");
+    }
+
+    @Test
+    void mapsTheCurrentSubaccountStatus() {
+        AsaasSubaccountDocumentsClient documents = mock(AsaasSubaccountDocumentsClient.class);
+        when(documents.accountStatus("sub-key")).thenReturn(new com.paysi.payment.provider.asaas.dto.AsaasAccountStatusResponse(
+                "acc_123", "APPROVED", "PENDING", "APPROVED", "APPROVED"));
+        var provider = new AsaasSubaccountProvider(mock(AsaasClient.class), documents);
+
+        var status = provider.accountStatus("sub-key");
+
+        assertThat(status.approved()).isTrue();
+        assertThat(status.bankAccountInfo()).isEqualTo("PENDING");
+        verify(documents).accountStatus("sub-key");
     }
 }

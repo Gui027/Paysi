@@ -40,6 +40,11 @@ public class KycController {
         return kyc.start(sessions.authenticate(token).session().accountId());
     }
 
+    @PostMapping("/kyc/refresh")
+    public KycView refresh(@CookieValue(name = COOKIE_NAME, required = false) String token) {
+        return kyc.refreshStatus(sessions.authenticate(token).session().accountId());
+    }
+
     @PutMapping("/kyc/contact-info")
     public KycView saveComplianceProfile(@CookieValue(name = COOKIE_NAME, required = false) String token,
                                          @RequestBody ComplianceProfileRequest request) {

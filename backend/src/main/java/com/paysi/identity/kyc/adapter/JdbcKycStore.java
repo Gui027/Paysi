@@ -92,5 +92,15 @@ public class JdbcKycStore implements KycStore {
         jdbc.update("delete from kyc_processes where account_id = ?", accountId);
     }
 
+    @Override
+    public void updateStatus(UUID accountId, com.paysi.identity.domain.KycStatus status, List<KycRequirement> requirements) {
+        jdbc.update("update accounts set kyc_status = ? where id = ?", status.name(), accountId);
+        jdbc.update("delete from kyc_requirements where account_id = ?", accountId);
+        requirements.forEach(requirement -> jdbc.update(
+                "insert into kyc_requirements(account_id,code,label,status,reason,estimated_at) values (?,?,?,?,?,?)",
+                accountId, requirement.code(), requirement.label(), requirement.status(), requirement.reason(),
+                requirement.estimatedAt() == null ? null : Timestamp.from(requirement.estimatedAt())));
+    }
+
     private static Instant nullableInstant(Timestamp timestamp) { return timestamp == null ? null : timestamp.toInstant(); }
 }

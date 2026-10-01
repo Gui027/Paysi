@@ -23,6 +23,11 @@ public class FakeSubaccountProvider implements SubaccountProvider {
     }
 
     @Override
+    public SubaccountStatus accountStatus(String subaccountApiKey) {
+        return new SubaccountStatus("APPROVED", "APPROVED", "APPROVED", "APPROVED");
+    }
+
+    @Override
     public void submitDocument(String subaccountApiKey, String documentGroupId, String documentType, byte[] file, String filename, String contentType) {
         // sem-op: nada de verdade pra enviar em dev/teste
     }

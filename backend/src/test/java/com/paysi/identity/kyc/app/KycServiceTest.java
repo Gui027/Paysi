@@ -6,6 +6,7 @@ import com.paysi.identity.kyc.domain.KycRequirement;
 import com.paysi.identity.kyc.port.KycProvider;
 import com.paysi.identity.kyc.port.KycStore;
 import com.paysi.identity.port.AccountRepository;
+import com.paysi.ledger.app.LedgerService;
 import com.paysi.payment.provider.SubaccountProvider;
 import org.junit.jupiter.api.Test;
 import java.time.Clock;
@@ -115,6 +116,35 @@ class KycServiceTest {
         verify(fixture.subaccounts, never()).pendingDocuments(any());
     }
 
+    @Test
+    void refreshesAnApprovedAsaasSubaccountAndChargesTheVerificationOnlyThroughTheIdempotentLedgerKey() {
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.of("sub-key"));
+        when(fixture.subaccounts.accountStatus("sub-key")).thenReturn(
+                new SubaccountProvider.SubaccountStatus("APPROVED", "APPROVED", "PENDING", "APPROVED"));
+
+        var refreshed = fixture.service.refreshStatus(ACCOUNT_ID);
+
+        assertThat(refreshed.kycStatus()).isEqualTo(KycStatus.APPROVED);
+        assertThat(refreshed.requirements()).isEmpty();
+        verify(fixture.store).updateStatus(ACCOUNT_ID, KycStatus.APPROVED, List.of());
+        verify(fixture.ledger).write(argThat(command -> command.reference().id().equals(ACCOUNT_ID.toString())));
+    }
+
+    @Test
+    void refreshesARejectedDocumentAsRejectedEvenWhenAsaasGeneralStatusIsPending() {
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.of("sub-key"));
+        when(fixture.subaccounts.accountStatus("sub-key")).thenReturn(
+                new SubaccountProvider.SubaccountStatus("PENDING", "APPROVED", "PENDING", "REJECTED"));
+
+        var refreshed = fixture.service.refreshStatus(ACCOUNT_ID);
+
+        assertThat(refreshed.kycStatus()).isEqualTo(KycStatus.REJECTED);
+        verify(fixture.store).updateStatus(eq(ACCOUNT_ID), eq(KycStatus.REJECTED), anyList());
+        verifyNoInteractions(fixture.ledger);
+    }
+
     private static Fixture fixture(KycStatus status, Optional<KycProcess> existing) {
         AccountRepository accounts = mock(AccountRepository.class);
         KycStore store = mock(KycStore.class);
@@ -124,7 +154,8 @@ class KycServiceTest {
         when(store.requirements(ACCOUNT_ID)).thenReturn(existing.map(KycProcess::requirements).orElse(List.of()));
         when(provider.createProcess(ACCOUNT_ID)).thenReturn(process(NOW.plusSeconds(3600)));
         var subaccounts = mock(SubaccountProvider.class);
-        return new Fixture(new KycService(accounts, store, provider, subaccounts, Clock.fixed(NOW, ZoneOffset.UTC)), store, provider, subaccounts);
+        var ledger = mock(LedgerService.class);
+        return new Fixture(new KycService(accounts, store, provider, subaccounts, ledger, Clock.fixed(NOW, ZoneOffset.UTC)), store, provider, subaccounts, ledger);
     }
 
     private static KycProcess process(Instant expiresAt) {
@@ -137,5 +168,6 @@ class KycServiceTest {
                 new TaxId("52998224725"), status, PayoutDelay.D32, 0, AccountStatus.ACTIVE, NOW.minusSeconds(100));
     }
 
-    private record Fixture(KycService service, KycStore store, KycProvider provider, SubaccountProvider subaccounts) { }
+    private record Fixture(KycService service, KycStore store, KycProvider provider, SubaccountProvider subaccounts,
+                           LedgerService ledger) { }
 }

@@ -6,7 +6,18 @@ import com.paysi.core.error.ValidationException;
 import com.paysi.identity.domain.KycStatus;
 import com.paysi.identity.kyc.port.KycProvider;
 import com.paysi.identity.kyc.port.KycStore;
+import com.paysi.identity.kyc.domain.KycProcess;
+import com.paysi.identity.kyc.domain.KycRequirement;
 import com.paysi.identity.port.AccountRepository;
+import com.paysi.ledger.app.LedgerService;
+import com.paysi.ledger.domain.Bucket;
+import com.paysi.ledger.domain.Direction;
+import com.paysi.ledger.domain.LedgerCommand;
+import com.paysi.ledger.domain.LedgerEntry;
+import com.paysi.ledger.domain.LedgerReference;
+import com.paysi.ledger.domain.Origin;
+import com.paysi.ledger.domain.ReferenceType;
+import com.paysi.ledger.domain.TransactionType;
 import com.paysi.payment.provider.SubaccountProvider;
 import com.paysi.payment.provider.SubaccountProvider.SubaccountCreationException;
 import org.springframework.stereotype.Service;
@@ -23,20 +34,26 @@ public class KycService {
     private static final java.util.Set<String> ALLOWED_DOCUMENT_TYPES = java.util.Set.of(
             "image/png", "image/jpeg", "application/pdf");
     private static final long MAX_DOCUMENT_BYTES = 10L * 1024 * 1024;
+    private static final long VERIFICATION_FEE_CENTS = 1200;
+    private static final UUID PLATFORM_REVENUE = UUID.fromString("00000000-0000-0000-0000-0000000000c2");
 
     private final AccountRepository accounts;
     private final KycStore store;
     private final KycProvider provider;
     private final SubaccountProvider subaccounts;
+    private final LedgerService ledger;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
-    public KycService(AccountRepository accounts, KycStore store, KycProvider provider, SubaccountProvider subaccounts) {
-        this(accounts, store, provider, subaccounts, Clock.systemUTC());
+    public KycService(AccountRepository accounts, KycStore store, KycProvider provider, SubaccountProvider subaccounts,
+                      LedgerService ledger) {
+        this(accounts, store, provider, subaccounts, ledger, Clock.systemUTC());
     }
 
-    KycService(AccountRepository accounts, KycStore store, KycProvider provider, SubaccountProvider subaccounts, Clock clock) {
-        this.accounts = accounts; this.store = store; this.provider = provider; this.subaccounts = subaccounts; this.clock = clock;
+    KycService(AccountRepository accounts, KycStore store, KycProvider provider, SubaccountProvider subaccounts,
+               LedgerService ledger, Clock clock) {
+        this.accounts = accounts; this.store = store; this.provider = provider; this.subaccounts = subaccounts;
+        this.ledger = ledger; this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -73,6 +90,47 @@ public class KycService {
         return subaccounts.pendingDocuments(token).stream()
                 .map(item -> new PendingDocumentView(item.id(), item.status(), item.type(), item.description(), item.externalUrl()))
                 .toList();
+    }
+
+    /**
+     * Consulta pontualmente a situação cadastral da subconta. É o fallback explícito recomendado pela
+     * Asaas quando a interface precisa refletir o resultado antes do webhook. A cobrança da verificação
+     * usa a mesma chave natural do webhook e, portanto, continua idempotente se ambos chegarem juntos.
+     */
+    @Transactional
+    public KycView refreshStatus(UUID accountId) {
+        store.lockAccount(accountId);
+        var account = accounts.findById(accountId).orElseThrow(() -> unavailable());
+        if (account.kycStatus() == KycStatus.APPROVED) return current(accountId);
+        String token = store.decryptedAccessToken(accountId)
+                .orElseThrow(() -> new ConflictException("KYC_CREDENTIAL_UNAVAILABLE",
+                        "A conexão da conta de recebimento precisa ser revisada. Fale com o suporte da Paysi.", null));
+        final SubaccountProvider.SubaccountStatus providerStatus;
+        try {
+            providerStatus = subaccounts.accountStatus(token);
+        } catch (SubaccountCreationException error) {
+            throw new ConflictException("KYC_STATUS_UNAVAILABLE",
+                    "Não foi possível consultar a análise agora. Tente novamente em instantes.", null);
+        }
+
+        KycStatus next = providerStatus.approved() ? KycStatus.APPROVED
+                : providerStatus.rejected() ? KycStatus.REJECTED : KycStatus.SUBMITTED;
+        List<KycRequirement> requirements = next == KycStatus.APPROVED ? List.of()
+                : List.of(new KycRequirement("ASAAS_VERIFICATION", "Verificação de identidade na Asaas",
+                next == KycStatus.REJECTED ? "REJECTED" : "PENDING",
+                next == KycStatus.REJECTED
+                        ? "A Asaas recusou algum dado ou documento. Revise as pendências e envie novamente."
+                        : "A análise da Asaas ainda está em andamento.", null));
+        store.updateStatus(accountId, next, requirements);
+
+        if (next == KycStatus.APPROVED) {
+            ledger.write(new LedgerCommand(TransactionType.PLATFORM_FEE,
+                    new LedgerReference(ReferenceType.VERIFICATION, accountId.toString()), "Taxa de verificação KYC",
+                    List.of(new LedgerEntry(accountId, Bucket.DEBT, Direction.DEBIT, VERIFICATION_FEE_CENTS, Origin.FEE, null),
+                            new LedgerEntry(PLATFORM_REVENUE, Bucket.SYSTEM, Direction.CREDIT, VERIFICATION_FEE_CENTS, Origin.FEE, null))));
+        }
+        String providerUrl = store.findProcess(accountId).map(KycProcess::providerUrl).orElse(null);
+        return new KycView(accountId, next, providerUrl, requirements);
     }
 
     /**

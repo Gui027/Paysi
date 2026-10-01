@@ -2,6 +2,7 @@ package com.paysi.payment.provider.asaas;
 
 import com.paysi.payment.provider.asaas.dto.AsaasDocumentGroup;
 import com.paysi.payment.provider.asaas.dto.AsaasListResponse;
+import com.paysi.payment.provider.asaas.dto.AsaasAccountStatusResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
@@ -44,6 +45,11 @@ class AsaasSubaccountDocumentsClient {
                     new ParameterizedTypeReference<AsaasListResponse<AsaasDocumentGroup>>() { });
             return response.getBody() == null ? List.<AsaasDocumentGroup>of() : response.getBody().dataOrEmpty();
         });
+    }
+
+    AsaasAccountStatusResponse accountStatus(String subaccountApiKey) {
+        return execute(() -> http.exchange(baseUrl + "/myAccount/status", HttpMethod.GET,
+                new HttpEntity<>(headers(subaccountApiKey)), AsaasAccountStatusResponse.class).getBody());
     }
 
     void submitDocument(String subaccountApiKey, String documentGroupId, String documentType, byte[] file, String filename, String contentType) {

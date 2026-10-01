@@ -3,6 +3,7 @@ package com.paysi.identity.kyc.port;
 import com.paysi.identity.kyc.domain.ComplianceProfile;
 import com.paysi.identity.kyc.domain.KycProcess;
 import com.paysi.identity.kyc.domain.KycRequirement;
+import com.paysi.identity.domain.KycStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,4 +30,7 @@ public interface KycStore {
 
     /** Apaga o processo/pendências guardados — próxima chamada a {@code start} chama o provedor de novo. */
     void clearProcess(UUID accountId);
+
+    /** Atualiza o resultado obtido diretamente do provedor e substitui as pendências exibidas. */
+    void updateStatus(UUID accountId, KycStatus status, List<KycRequirement> requirements);
 }

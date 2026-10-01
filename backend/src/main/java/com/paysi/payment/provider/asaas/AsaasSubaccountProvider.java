@@ -46,6 +46,17 @@ public class AsaasSubaccountProvider implements SubaccountProvider {
     }
 
     @Override
+    public SubaccountStatus accountStatus(String subaccountApiKey) {
+        try {
+            var status = documents.accountStatus(subaccountApiKey);
+            if (status == null) throw new SubaccountCreationException("A Asaas não retornou a situação da conta", null);
+            return new SubaccountStatus(status.general(), status.commercialInfo(), status.bankAccountInfo(), status.documentation());
+        } catch (AsaasApiException error) {
+            throw new SubaccountCreationException(error.getMessage(), error);
+        }
+    }
+
+    @Override
     public void submitDocument(String subaccountApiKey, String documentGroupId, String documentType, byte[] file, String filename, String contentType) {
         try {
             documents.submitDocument(subaccountApiKey, documentGroupId, documentType, file, filename, contentType);

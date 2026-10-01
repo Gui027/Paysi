@@ -6,7 +6,7 @@ import { Janela } from "../../../components/Janela";
 import { Skeleton, Toast } from "../../../components/ui";
 import { ApiRequestError } from "../../../lib/api";
 import { parseMoneyToCents } from "../../../lib/ofertas";
-import { getKyc, getPendingDocuments, KycView, maskCep, PendingDocument, saveComplianceProfile, startKyc, submitDocument } from "../../../lib/kyc";
+import { getKyc, getPendingDocuments, KycView, maskCep, PendingDocument, refreshKycStatus, saveComplianceProfile, startKyc, submitDocument } from "../../../lib/kyc";
 
 export type IdentitySetup = { kyc: KycView; documents: PendingDocument[] | null; documentsError: boolean };
 
@@ -94,8 +94,8 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const applyKyc = useCallback((view: KycView) => { if (active.current) { setKyc(view); onStatus?.(view.kycStatus); } }, [onStatus]);
-  const loadSetup = useCallback(async () => {
-    const [kycResult, documentsResult] = await Promise.allSettled([getKyc(), getPendingDocuments()]);
+  const loadSetup = useCallback(async (refreshProvider = false) => {
+    const [kycResult, documentsResult] = await Promise.allSettled([refreshProvider ? refreshKycStatus() : getKyc(), getPendingDocuments()]);
     if (!active.current) return false;
     if (kycResult.status === "rejected") { setError(true); return false; }
     applyKyc(kycResult.value);
@@ -118,7 +118,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   useEffect(() => { if (kyc && kyc.kycStatus !== "APPROVED" && !openedOnce.current) { openedOnce.current = true; setModalOpen(true); } }, [kyc]);
   useEffect(() => { if (kyc?.kycStatus === "APPROVED" && nextParam) router.replace(nextParam); }, [kyc, nextParam, router]);
   useEffect(() => {
-    const syncOnReturn = () => { if (kyc?.kycStatus === "SUBMITTED") void loadSetup(); };
+    const syncOnReturn = () => { if (kyc?.kycStatus === "SUBMITTED") void loadSetup(true); };
     window.addEventListener("focus", syncOnReturn);
     return () => window.removeEventListener("focus", syncOnReturn);
   }, [kyc?.kycStatus, loadSetup]);
@@ -129,8 +129,9 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
     setRefreshFeedback(null);
     setError(false);
     try {
-      const nextDocuments = await getPendingDocuments();
+      const [nextDocuments, nextKyc] = await Promise.all([getPendingDocuments(), refreshKycStatus()]);
       setDocuments(nextDocuments);
+      applyKyc(nextKyc);
       setRefreshFeedback(nextDocuments.length === 0
         ? "Consulta concluída: não há documentos pendentes."
         : onboardingUnavailable(nextDocuments)
@@ -145,7 +146,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
     if (refreshing) return;
     setRefreshing(true);
     setRefreshFeedback(null);
-    const updated = await loadSetup();
+    const updated = await loadSetup(true);
     if (updated) setRefreshFeedback("Status atualizado. A análise ainda está em andamento.");
     setRefreshing(false);
   }

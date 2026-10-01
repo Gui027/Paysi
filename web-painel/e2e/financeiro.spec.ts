@@ -305,6 +305,9 @@ test.describe("financeiro", () => {
       await new Promise(resolve => setTimeout(resolve, 150));
       return route.fulfill({ json: [] });
     });
+    await page.route("**/api/v1/accounts/me/kyc/refresh", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
+      { code: "ASAAS_VERIFICATION", label: "Verificação de identidade na Asaas", status: "PENDING", reason: null, estimatedAt: null },
+    ] } }));
 
     await page.goto("/saldo?aba=identidade");
     await page.getByRole("button", { name: "Atualizar agora" }).click();

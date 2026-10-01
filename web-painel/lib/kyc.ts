@@ -49,6 +49,10 @@ export function startKyc() {
   return apiRequest<KycView>("/v1/accounts/me/kyc", { method: "POST" });
 }
 
+export function refreshKycStatus() {
+  return apiRequest<KycView>("/v1/accounts/me/kyc/refresh", { method: "POST" });
+}
+
 /** postalCode: CEP (com ou sem máscara); birthDate: "AAAA-MM-DD"; incomeValueCents: renda/faturamento em centavos. Exigidos pela Asaas pra criar a subconta. */
 export function saveComplianceProfile(postalCode: string, birthDate: string, incomeValueCents: number) {
   return apiRequest<KycView>("/v1/accounts/me/kyc/contact-info", {
