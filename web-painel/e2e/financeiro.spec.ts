@@ -283,6 +283,9 @@ test.describe("financeiro", () => {
       { id: "doc_1", status: "PENDING", type: "IDENTIFICATION", description: "Acesse nosso aplicativo ou utilize o link de onboarding.", externalUrl: null },
       { id: "doc_2", status: "PENDING", type: "SELFIE", description: "Acesse nosso aplicativo ou utilize o link de onboarding.", externalUrl: null },
     ] }));
+    await page.route("**/api/v1/accounts/me/kyc/refresh", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
+      { code: "ASAAS_VERIFICATION", label: "Verificação de identidade na Asaas", status: "PENDING", reason: null, estimatedAt: null },
+    ] } }));
 
     await page.goto("/saldo?aba=identidade");
     await expect(page.getByRole("heading", { name: "Link de verificação indisponível" })).toBeVisible();
