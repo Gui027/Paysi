@@ -68,6 +68,6 @@ test.describe("criar produto (modal em dois passos)", () => {
     await page.getByLabel("Preço em reais").fill("1");
     await page.getByRole("dialog").getByRole("button", { name: "Criar produto" }).click();
     await expect(page.getByText(/informe o nome do produto/i)).toBeVisible();
-    await expect(page.getByText(/preço mínimo de R$ 2,00/i)).toBeVisible();
+    await expect(page.getByText(/preço mínimo de R\$ 2,00/i)).toBeVisible();
   });
 });
