@@ -137,6 +137,23 @@ class KycServiceTest {
     }
 
     @Test
+    void reconnectsFromTheKycProcessWhenTheAccountRowLostItsWalletAndDoesNotCreateADuplicate() {
+        var legacyProcess = new KycProcess("wallet-from-process", null, NOW.plusSeconds(60), List.of(
+                new KycRequirement("ASAAS_VERIFICATION", "Verificação", "PENDING", null, null)));
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(legacyProcess));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(fixture.store.providerAccountId(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(fixture.subaccounts.recoverAccessToken("wallet-from-process")).thenReturn("new-sub-key");
+        when(fixture.subaccounts.pendingDocuments("new-sub-key")).thenReturn(List.of());
+
+        assertThat(fixture.service.reconnect(ACCOUNT_ID)).isEmpty();
+
+        verify(fixture.store).attachProviderAccount(ACCOUNT_ID, "wallet-from-process", "new-sub-key");
+        verify(fixture.store, never()).saveProviderAccessToken(any(), any());
+        verify(fixture.subaccounts, never()).createSubaccount(any(), any(), any(), any(), any(), anyLong());
+    }
+
+    @Test
     void reconnectIsIdempotentWhenTheCredentialAlreadyExists() {
         var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
         when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.of("current-key"));

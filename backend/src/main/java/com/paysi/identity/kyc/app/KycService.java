@@ -95,14 +95,23 @@ public class KycService {
      * Repara contas criadas antes de a Paysi persistir a chave da subconta. Nunca cria outra conta:
      * localiza a subconta existente pelo walletId, gera uma chave substituta e a armazena criptografada.
      */
-    @Transactional
+    // A nova chave é exibida pela Asaas uma única vez. Se a consulta de documentos falhar logo
+    // depois, preserva a credencial já gravada para que uma simples atualização possa reutilizá-la.
+    @Transactional(noRollbackFor = ConflictException.class)
     public List<PendingDocumentView> reconnect(UUID accountId) {
         store.lockAccount(accountId);
         accounts.findById(accountId).orElseThrow(() -> unavailable());
         Optional<String> currentToken = store.decryptedAccessToken(accountId);
         if (currentToken.isPresent()) return pendingDocuments(currentToken.get());
 
-        String walletId = store.providerAccountId(accountId)
+        Optional<String> storedWalletId = store.providerAccountId(accountId);
+        String walletId = storedWalletId
+                // Contas criadas por versões antigas podem ter gravado o walletId somente no
+                // processo KYC. Ele continua sendo a referência exata da mesma subconta e evita
+                // criar uma duplicata no provedor durante o reparo da credencial.
+                .or(() -> store.findProcess(accountId)
+                        .map(KycProcess::providerProcessId)
+                        .filter(KycService::isProviderAccountReference))
                 .orElseThrow(() -> new ConflictException("KYC_SUBACCOUNT_UNAVAILABLE",
                         "A conta de recebimento ainda não foi criada. Reinicie a verificação.", null));
         final String recoveredToken;
@@ -112,7 +121,11 @@ public class KycService {
             throw new ConflictException("KYC_RECONNECT_UNAVAILABLE",
                     "Não foi possível restabelecer a conexão agora. O suporte da Paysi precisa liberar a reconexão na Asaas.", null);
         }
-        store.saveProviderAccessToken(accountId, recoveredToken);
+        if (storedWalletId.isPresent()) {
+            store.saveProviderAccessToken(accountId, recoveredToken);
+        } else {
+            store.attachProviderAccount(accountId, walletId, recoveredToken);
+        }
         return pendingDocuments(recoveredToken);
     }
 
@@ -193,6 +206,10 @@ public class KycService {
         if (description == null) return false;
         String normalized = description.toLowerCase(java.util.Locale.ROOT);
         return normalized.contains("link de onboarding") || normalized.contains("aplicativo");
+    }
+
+    private static boolean isProviderAccountReference(String value) {
+        return value != null && !value.isBlank() && !value.startsWith("pending-");
     }
 
     private List<PendingDocumentView> pendingDocuments(String token) {
