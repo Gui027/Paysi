@@ -35,6 +35,20 @@ public class AsaasSubaccountProvider implements SubaccountProvider {
     }
 
     @Override
+    public String recoverAccessToken(String walletId) {
+        try {
+            var account = client.findSubaccountByWalletId(walletId);
+            var created = client.createSubaccountAccessToken(account.id());
+            if (created == null || created.apiKey() == null || created.apiKey().isBlank()) {
+                throw new SubaccountCreationException("A Asaas não devolveu a nova chave da subconta", null);
+            }
+            return created.apiKey();
+        } catch (AsaasApiException error) {
+            throw new SubaccountCreationException(error.getMessage(), error);
+        }
+    }
+
+    @Override
     public List<PendingDocument> pendingDocuments(String subaccountApiKey) {
         try {
             return documents.listPendingDocuments(subaccountApiKey).stream()

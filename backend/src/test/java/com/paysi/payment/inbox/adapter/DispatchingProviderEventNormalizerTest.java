@@ -19,10 +19,14 @@ class DispatchingProviderEventNormalizerTest {
             new DispatchingProviderEventNormalizer(new ObjectMapper().findAndRegisterModules(), knownCharge);
 
     private static String asaasEvent(String event, String paymentId) {
+        return asaasEvent(event, paymentId, UUID.randomUUID());
+    }
+
+    private static String asaasEvent(String event, String paymentId, UUID orderId) {
         return """
                 {"id":"evt_1","event":"%s","dateCreated":"2024-06-12 16:45:03",
                  "payment":{"id":"%s","externalReference":"%s","status":"RECEIVED","value":100}}
-                """.formatted(event, paymentId, UUID.randomUUID());
+                """.formatted(event, paymentId, orderId);
     }
 
     @Test
@@ -52,6 +56,25 @@ class DispatchingProviderEventNormalizerTest {
     void asaasOverdueMapsToExpired() throws Exception {
         assertThat(normalizer.normalize("asaas", asaasEvent("PAYMENT_OVERDUE", "pay_080225913252")).eventType())
                 .isEqualTo("PAYMENT_EXPIRED");
+    }
+
+    @Test
+    void asaasOverdueFallsBackToTheOrderReferenceWhenTheProviderIdWasNotAssociatedYet() throws Exception {
+        UUID orderId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+        ChargeLookup lookup = new ChargeLookup() {
+            @Override public Optional<UUID> findByProviderChargeId(String providerId) { return Optional.empty(); }
+            @Override public Optional<UUID> findByOrderId(UUID requestedOrderId) {
+                return orderId.equals(requestedOrderId) ? Optional.of(CHARGE_ID) : Optional.empty();
+            }
+        };
+        var fallbackNormalizer = new DispatchingProviderEventNormalizer(
+                new ObjectMapper().findAndRegisterModules(), lookup);
+
+        var event = fallbackNormalizer.normalize("asaas", asaasEvent("PAYMENT_OVERDUE", "pay_missing_link", orderId));
+
+        assertThat(event.eventType()).isEqualTo("PAYMENT_EXPIRED");
+        assertThat(event.chargeId()).isEqualTo(CHARGE_ID);
+        assertThat(event.providerChargeId()).isEqualTo("pay_missing_link");
     }
 
     @Test

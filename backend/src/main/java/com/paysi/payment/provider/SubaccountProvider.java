@@ -7,6 +7,12 @@ import java.util.List;
 public interface SubaccountProvider {
     SubaccountResult createSubaccount(String name, String email, String taxIdDigits, String postalCode, LocalDate birthDate, long incomeValueCents);
 
+    /**
+     * Gera uma nova credencial para uma subconta já existente, localizada pelo walletId. Usado somente
+     * para reparar contas legadas cuja chave retornada na criação não foi armazenada.
+     */
+    String recoverAccessToken(String walletId);
+
     /** Documentos de verificação pendentes da subconta. Chamado com a chave de API própria dela, não a da Paysi. */
     List<PendingDocument> pendingDocuments(String subaccountApiKey);
 

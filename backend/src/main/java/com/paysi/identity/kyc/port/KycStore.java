@@ -24,6 +24,12 @@ public interface KycStore {
     /** Chave própria da subconta, já decriptada. Vazio quando a conta ainda não tem subconta com chave salva. */
     Optional<String> decryptedAccessToken(UUID accountId);
 
+    /** walletId da subconta, preservado em provider_account_id para uso nos splits. */
+    Optional<String> providerAccountId(UUID accountId);
+
+    /** Grava uma nova chave de forma segura durante a recuperação de uma conta legada. */
+    void saveProviderAccessToken(UUID accountId, String accessToken);
+
     ComplianceProfile complianceProfile(UUID accountId);
 
     void saveComplianceProfile(UUID accountId, String postalCode, java.time.LocalDate birthDate, Long incomeValueCents);

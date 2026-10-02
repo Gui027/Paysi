@@ -266,6 +266,33 @@ test.describe("financeiro", () => {
     expect(enviado!.hasFile).toBe(true);
   });
 
+  test("credencial legada perdida oferece reconexão e libera o onboarding sem duplicar a conta", async ({ page }) => {
+    await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
+    await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
+      { code: "ASAAS_VERIFICATION", label: "Verificação de identidade na Asaas", status: "PENDING", reason: null, estimatedAt: null },
+    ] } }));
+    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => route.fulfill({
+      status: 409,
+      json: { code: "KYC_CREDENTIAL_UNAVAILABLE", message: "A conexão da conta de recebimento precisa ser restabelecida." },
+    }));
+    let reconectou = false;
+    await page.route("**/api/v1/accounts/me/kyc/reconnect", (route) => {
+      reconectou = true;
+      return route.fulfill({ json: [
+        { id: "doc_external", status: "PENDING", type: "IDENTIFICATION", description: "Utilize o link de onboarding.", externalUrl: "https://cadastro.io/secure" },
+      ] });
+    });
+
+    await page.goto("/saldo?aba=identidade");
+    await expect(page.getByRole("heading", { name: "Reconecte sua conta de recebimento" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Preparando seus documentos" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Reconectar agora" }).click();
+
+    await expect.poll(() => reconectou).toBe(true);
+    await expect(page.getByRole("link", { name: "Fazer verificação segura" })).toHaveAttribute("href", "https://cadastro.io/secure");
+    await expect(page.getByText("Conexão restabelecida. Continue a verificação abaixo.")).toBeVisible();
+  });
+
   test("documento com onboarding usa o link seguro e não oferece upload inválido", async ({ page }) => {
     await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
     await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [

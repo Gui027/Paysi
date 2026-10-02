@@ -78,6 +78,11 @@ export function getPendingDocuments() {
   return apiRequest<PendingDocument[]>("/v1/accounts/me/kyc/documents");
 }
 
+/** Recria somente a credencial perdida da subconta existente; não cria outra conta nem troca o walletId. */
+export function reconnectKyc() {
+  return apiRequest<PendingDocument[]>("/v1/accounts/me/kyc/reconnect", { method: "POST" });
+}
+
 export function submitDocument(documentGroupId: string, file: File) {
   const body = new FormData();
   body.append("file", file);

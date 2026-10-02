@@ -20,4 +20,10 @@ public class JdbcChargeLookup implements ChargeLookup {
         return jdbc.query("select id from charges where provider_charge_id=?",
                 (rs, row) -> rs.getObject(1, UUID.class), providerChargeId).stream().findFirst();
     }
+
+    @Override
+    public Optional<UUID> findByOrderId(UUID orderId) {
+        return jdbc.query("select id from charges where order_id=? order by created_at desc limit 1",
+                (rs, row) -> rs.getObject(1, UUID.class), orderId).stream().findFirst();
+    }
 }

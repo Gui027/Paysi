@@ -26,6 +26,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -86,10 +87,33 @@ public class KycService {
     public List<PendingDocumentView> pendingDocuments(UUID accountId) {
         String token = store.decryptedAccessToken(accountId)
                 .orElseThrow(() -> new ConflictException("KYC_CREDENTIAL_UNAVAILABLE",
-                        "A conexão da conta de recebimento precisa ser revisada. Fale com o suporte da Paysi.", null));
-        return subaccounts.pendingDocuments(token).stream()
-                .map(item -> new PendingDocumentView(item.id(), item.status(), item.type(), item.description(), item.externalUrl()))
-                .toList();
+                        "A conexão da conta de recebimento precisa ser restabelecida.", null));
+        return pendingDocuments(token);
+    }
+
+    /**
+     * Repara contas criadas antes de a Paysi persistir a chave da subconta. Nunca cria outra conta:
+     * localiza a subconta existente pelo walletId, gera uma chave substituta e a armazena criptografada.
+     */
+    @Transactional
+    public List<PendingDocumentView> reconnect(UUID accountId) {
+        store.lockAccount(accountId);
+        accounts.findById(accountId).orElseThrow(() -> unavailable());
+        Optional<String> currentToken = store.decryptedAccessToken(accountId);
+        if (currentToken.isPresent()) return pendingDocuments(currentToken.get());
+
+        String walletId = store.providerAccountId(accountId)
+                .orElseThrow(() -> new ConflictException("KYC_SUBACCOUNT_UNAVAILABLE",
+                        "A conta de recebimento ainda não foi criada. Reinicie a verificação.", null));
+        final String recoveredToken;
+        try {
+            recoveredToken = subaccounts.recoverAccessToken(walletId);
+        } catch (SubaccountCreationException error) {
+            throw new ConflictException("KYC_RECONNECT_UNAVAILABLE",
+                    "Não foi possível restabelecer a conexão agora. O suporte da Paysi precisa liberar a reconexão na Asaas.", null);
+        }
+        store.saveProviderAccessToken(accountId, recoveredToken);
+        return pendingDocuments(recoveredToken);
     }
 
     /**
@@ -169,6 +193,17 @@ public class KycService {
         if (description == null) return false;
         String normalized = description.toLowerCase(java.util.Locale.ROOT);
         return normalized.contains("link de onboarding") || normalized.contains("aplicativo");
+    }
+
+    private List<PendingDocumentView> pendingDocuments(String token) {
+        try {
+            return subaccounts.pendingDocuments(token).stream()
+                    .map(item -> new PendingDocumentView(item.id(), item.status(), item.type(), item.description(), item.externalUrl()))
+                    .toList();
+        } catch (SubaccountCreationException error) {
+            throw new ConflictException("KYC_DOCUMENTS_UNAVAILABLE",
+                    "Não foi possível consultar os documentos na Asaas agora. Tente novamente em instantes.", null);
+        }
     }
 
     /**

@@ -61,9 +61,11 @@ public class DispatchingProviderEventNormalizer implements ProviderEventNormaliz
             throw new IllegalArgumentException("Webhook da Asaas sem objeto 'payment'");
         }
         String eventType = toCanonicalEventType(event.event());
+        var resolvedCharge = charges.findByProviderChargeId(event.payment().id())
+                .or(() -> orderId(event.payment().externalReference()).flatMap(charges::findByOrderId));
         UUID chargeId = eventType.startsWith("ASAAS_")
-                ? charges.findByProviderChargeId(event.payment().id()).orElse(NO_CHARGE)
-                : charges.findByProviderChargeId(event.payment().id()).orElseThrow(() ->
+                ? resolvedCharge.orElse(NO_CHARGE)
+                : resolvedCharge.orElseThrow(() ->
                         new IllegalArgumentException("Cobrança da Asaas desconhecida: " + event.payment().id()));
         return new ProviderEventPayload(event.id(), eventType, chargeId,
                 event.payment().id(), toInstant(event.dateCreated()));
@@ -89,6 +91,14 @@ public class DispatchingProviderEventNormalizer implements ProviderEventNormaliz
             throw new IllegalArgumentException("Webhook da Asaas sem dateCreated");
         }
         return LocalDateTime.parse(asaasTimestamp, ASAAS_TIMESTAMP).atZone(ASAAS_ZONE).toInstant();
+    }
+
+    private static java.util.Optional<UUID> orderId(String externalReference) {
+        try {
+            return java.util.Optional.of(UUID.fromString(externalReference));
+        } catch (IllegalArgumentException | NullPointerException ignored) {
+            return java.util.Optional.empty();
+        }
     }
 
     private record AsaasWebhookEvent(String id, String event, String dateCreated, AsaasWebhookPayment payment) {

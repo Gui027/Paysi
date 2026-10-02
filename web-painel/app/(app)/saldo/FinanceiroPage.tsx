@@ -38,15 +38,16 @@ export function FinanceiroPage() {
     try {
       const loadIdentity = async (): Promise<IdentitySetup> => {
         const kyc = await getKyc();
-        if (!needsAsaasDocuments(kyc)) return { kyc, documents: null, documentsError: null };
+        if (!needsAsaasDocuments(kyc)) return { kyc, documents: null, documentsError: null, documentsErrorCode: null };
         return getPendingDocuments().then(
-          documents => ({ kyc, documents, documentsError: null }),
+          documents => ({ kyc, documents, documentsError: null, documentsErrorCode: null }),
           error => ({
             kyc,
             documents: null,
             documentsError: error instanceof ApiRequestError
               ? error.message
               : "Não foi possível consultar a Asaas agora.",
+            documentsErrorCode: error instanceof ApiRequestError ? (error.problem.code ?? null) : null,
           }),
         );
       };

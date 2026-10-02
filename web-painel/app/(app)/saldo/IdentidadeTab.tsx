@@ -6,9 +6,9 @@ import { Janela } from "../../../components/Janela";
 import { Skeleton, Toast } from "../../../components/ui";
 import { ApiRequestError } from "../../../lib/api";
 import { parseMoneyToCents } from "../../../lib/ofertas";
-import { getKyc, getPendingDocuments, KycView, maskCep, PendingDocument, refreshKycStatus, saveComplianceProfile, startKyc, submitDocument } from "../../../lib/kyc";
+import { getKyc, getPendingDocuments, KycView, maskCep, PendingDocument, reconnectKyc, refreshKycStatus, saveComplianceProfile, startKyc, submitDocument } from "../../../lib/kyc";
 
-export type IdentitySetup = { kyc: KycView; documents: PendingDocument[] | null; documentsError: string | null };
+export type IdentitySetup = { kyc: KycView; documents: PendingDocument[] | null; documentsError: string | null; documentsErrorCode: string | null };
 
 export function needsAsaasDocuments(kyc: KycView) {
   return kyc.kycStatus === "SUBMITTED"
@@ -90,6 +90,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const [documents, setDocuments] = useState<PendingDocument[] | null>(initialSetup?.documents ?? null);
   const [loading, setLoading] = useState(!initialSetup);
   const [error, setError] = useState(Boolean(initialSetup?.documentsError));
+  const [errorCode, setErrorCode] = useState<string | null>(initialSetup?.documentsErrorCode ?? null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshFeedback, setRefreshFeedback] = useState<string | null>(initialSetup?.documentsError ?? null);
   const [modalOpen, setModalOpen] = useState(Boolean(initialSetup && initialSetup.kyc.kycStatus !== "APPROVED"));
@@ -105,11 +106,16 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
       reason => ({ status: "rejected" as const, reason }),
     );
     if (!active.current) return false;
-    if (kycResult.status === "rejected") { setError(true); return false; }
+    if (kycResult.status === "rejected") {
+      setError(true);
+      setErrorCode(kycResult.reason instanceof ApiRequestError ? (kycResult.reason.problem.code ?? null) : null);
+      return false;
+    }
     applyKyc(kycResult.value);
     if (!needsAsaasDocuments(kycResult.value)) {
       setDocuments(null);
       setError(false);
+      setErrorCode(null);
       return true;
     }
     const documentsResult = await Promise.resolve(getPendingDocuments()).then(
@@ -120,9 +126,12 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
     if (documentsResult.status === "fulfilled") {
       setDocuments(documentsResult.value);
       setError(false);
+      setErrorCode(null);
     } else {
       setDocuments(null);
       setError(true);
+      setErrorCode(documentsResult.reason instanceof ApiRequestError ? (documentsResult.reason.problem.code ?? null) : null);
+      setRefreshFeedback(documentsResult.reason instanceof ApiRequestError ? documentsResult.reason.message : "Não foi possível consultar a Asaas agora.");
     }
     return documentsResult.status === "fulfilled";
   }, [applyKyc]);
@@ -146,6 +155,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
     setRefreshing(true);
     setRefreshFeedback(null);
     setError(false);
+    setErrorCode(null);
     try {
       const nextDocuments = await getPendingDocuments();
       setDocuments(nextDocuments);
@@ -163,7 +173,24 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
           : "Documentos atualizados.");
     } catch (refreshError) {
       setError(true);
+      setErrorCode(refreshError instanceof ApiRequestError ? (refreshError.problem.code ?? null) : null);
       setRefreshFeedback(refreshError instanceof ApiRequestError ? refreshError.message : "Não foi possível consultar a Asaas agora.");
+    } finally { setRefreshing(false); }
+  }
+  async function reconnect() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshFeedback(null);
+    try {
+      const nextDocuments = await reconnectKyc();
+      setDocuments(nextDocuments);
+      setError(false);
+      setErrorCode(null);
+      setRefreshFeedback(nextDocuments.length === 0 ? "Conexão restabelecida. Não há documentos pendentes." : "Conexão restabelecida. Continue a verificação abaixo.");
+    } catch (reconnectError) {
+      setError(true);
+      setErrorCode(reconnectError instanceof ApiRequestError ? (reconnectError.problem.code ?? null) : "KYC_RECONNECT_UNAVAILABLE");
+      setRefreshFeedback(reconnectError instanceof ApiRequestError ? reconnectError.message : "Não foi possível restabelecer a conexão agora.");
     } finally { setRefreshing(false); }
   }
   async function refreshStatus() {
@@ -176,7 +203,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   }
   async function begin() {
     if (working) return;
-    setWorking(true); setError(false);
+    setWorking(true); setError(false); setErrorCode(null);
     try {
       const view = await startKyc();
       applyKyc(view);
@@ -197,6 +224,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const needsDocuments = needsAsaasDocuments(kyc);
   const awaitingAnalysis = kyc.kycStatus === "SUBMITTED" && documents?.length === 0;
   const waitingForOnboarding = onboardingUnavailable(documents);
+  const connectionUnavailable = errorCode === "KYC_CREDENTIAL_UNAVAILABLE" || errorCode === "KYC_RECONNECT_UNAVAILABLE";
   const currentStep = needsProfile ? 1 : approved || awaitingAnalysis ? 3 : 2;
 
   return <section className="pe-section id-section">
@@ -206,10 +234,10 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
     {!approved && <Janela open={modalOpen} title="Verificação de identidade" wide onClose={() => setModalOpen(false)}>
       <ol className="id-steps" aria-label={`Etapa ${currentStep} de 3`}>{["Seus dados", "Documentos", "Análise"].map((label, index) => <li key={label} className={currentStep > index + 1 ? "is-done" : currentStep === index + 1 ? "is-current" : ""}><span>{currentStep > index + 1 ? "✓" : index + 1}</span><small>{label}</small></li>)}</ol>
       <div className="id-step-panel">
-        {error && <Toast tone="danger">{refreshFeedback ?? "Não foi possível consultar a Asaas. Tente novamente."}</Toast>}
+        {error && !connectionUnavailable && <Toast tone="danger">{refreshFeedback ?? "Não foi possível consultar a Asaas. Tente novamente."}</Toast>}
         {needsProfile ? <><div className="id-step-heading"><span>1</span><div><h3>Complete seus dados</h3><p>Primeiro, confirme algumas informações.</p></div></div><CompleteProfileForm onSaved={begin} /></> : needsDocuments ? <>
           <div className="id-step-heading"><span>2</span><div><h3>Confirme sua identidade</h3><p>Use o método indicado pela Asaas para concluir com segurança.</p></div></div>
-          {documents === null ? <div className="id-analysis"><span aria-hidden="true">◷</span><h3>Preparando seus documentos</h3><p>A Asaas está finalizando a abertura da conta. A primeira consulta pode levar alguns segundos.</p><button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Atualizando…" : "Atualizar agora"}</button></div> : waitingForOnboarding ? <div className="id-analysis"><span aria-hidden="true">!</span><h3>Link de verificação indisponível</h3><p>A Asaas ainda não liberou o link de identificação para esta conta. Nossa equipe precisa revisar a configuração antes de você continuar.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Verificando…" : "Verificar liberação"}</button></div> : documents.length > 0 ? <ul className="kyc-checklist">{documents.map(document => <DocumentRow key={document.id} document={document} onSent={refreshDocuments} />)}</ul> : <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Documentos conferidos</h3><p>Não há documentos pendentes. Sua conta está aguardando o retorno da análise.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshStatus()}>{refreshing ? "Verificando…" : "Verificar status"}</button></div>}
+          {connectionUnavailable ? <div className="id-analysis"><span aria-hidden="true">!</span><h3>Reconecte sua conta de recebimento</h3><p>A subconta já existe e não será duplicada. Vamos gerar uma nova conexão segura para liberar os documentos.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-primary" disabled={refreshing} onClick={() => void reconnect()}>{refreshing ? "Reconectando…" : "Reconectar agora"}</button></div> : documents === null ? <div className="id-analysis"><span aria-hidden="true">◷</span><h3>Preparando seus documentos</h3><p>A Asaas está finalizando a abertura da conta. A primeira consulta pode levar alguns segundos.</p><button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Atualizando…" : "Atualizar agora"}</button></div> : waitingForOnboarding ? <div className="id-analysis"><span aria-hidden="true">!</span><h3>Link de verificação indisponível</h3><p>A Asaas ainda não liberou o link de identificação para esta conta. Nossa equipe precisa revisar a configuração antes de você continuar.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Verificando…" : "Verificar liberação"}</button></div> : documents.length > 0 ? <><ul className="kyc-checklist">{documents.map(document => <DocumentRow key={document.id} document={document} onSent={refreshDocuments} />)}</ul>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}</> : <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Documentos conferidos</h3><p>Não há documentos pendentes. Sua conta está aguardando o retorno da análise.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshStatus()}>{refreshing ? "Verificando…" : "Verificar status"}</button></div>}
         </> : kyc.kycStatus === "SUBMITTED" ? <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Enviado para análise</h3><p>Você não precisa manter esta tela aberta. Avisaremos assim que a verificação for concluída.</p><button type="button" className="ui-button ui-button-secondary" onClick={() => void loadSetup()}>Verificar status</button></div> : <>
           <div className="id-step-heading"><span>1</span><div><h3>Vamos começar?</h3><p>Confira a etapa abaixo e avance quando estiver pronto.</p></div></div>{kyc.requirements.length > 0 && <ul className="id-simple-list">{kyc.requirements.map(item => <li key={item.code}><span aria-hidden="true">○</span>{item.label}</li>)}</ul>}<button type="button" className="ui-button ui-button-primary id-next" disabled={working} onClick={() => void begin()}>{working ? "Preparando…" : "Iniciar verificação"}</button>
         </>}

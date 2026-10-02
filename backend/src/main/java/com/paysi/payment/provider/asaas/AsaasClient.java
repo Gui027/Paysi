@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -65,6 +66,27 @@ class AsaasClient {
     /** POST /v3/accounts — cria a subconta white-label do vendedor/afiliado (RF do split real). */
     AsaasAccountResponse createSubaccount(AsaasSubaccountRequest request) {
         return execute(() -> http.postForObject("/accounts", request, AsaasAccountResponse.class));
+    }
+
+    /** Localiza a subconta sem depender da chave perdida, usando a chave mestre e o walletId do split. */
+    AsaasAccountResponse findSubaccountByWalletId(String walletId) {
+        var response = execute(() -> http.exchange("/accounts?walletId={walletId}&limit=2", HttpMethod.GET,
+                HttpEntity.EMPTY, new ParameterizedTypeReference<AsaasListResponse<AsaasAccountResponse>>() {},
+                walletId).getBody());
+        List<AsaasAccountResponse> found = response == null ? List.of() : response.dataOrEmpty().stream()
+                .filter(account -> walletId.equals(account.walletId()))
+                .toList();
+        if (found.size() != 1) {
+            throw new AsaasApiException("SUBACCOUNT_NOT_FOUND",
+                    "A Asaas não retornou uma única subconta para o walletId informado", false, null);
+        }
+        return found.getFirst();
+    }
+
+    /** Cria uma chave substituta; o endpoint exige liberação temporária e whitelist na conta-pai. */
+    AsaasAccessTokenResponse createSubaccountAccessToken(String subaccountId) {
+        return execute(() -> http.postForObject("/accounts/{id}/accessTokens",
+                Map.of("name", "Paysi Backend"), AsaasAccessTokenResponse.class, subaccountId));
     }
 
     AsaasPaymentResponse refund(String paymentId, BigDecimal amount) {

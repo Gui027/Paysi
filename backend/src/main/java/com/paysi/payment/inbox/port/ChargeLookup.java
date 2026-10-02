@@ -6,4 +6,9 @@ import java.util.UUID;
 /** Resolve a cobrança interna a partir do identificador que o provedor usa para ela. */
 public interface ChargeLookup {
     Optional<UUID> findByProviderChargeId(String providerChargeId);
+
+    /** Fallback para provedores que devolvem o id do pedido em externalReference. */
+    default Optional<UUID> findByOrderId(UUID orderId) {
+        return Optional.empty();
+    }
 }

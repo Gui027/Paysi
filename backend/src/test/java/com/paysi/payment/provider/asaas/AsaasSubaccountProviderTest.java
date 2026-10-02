@@ -2,6 +2,7 @@ package com.paysi.payment.provider.asaas;
 
 import com.paysi.payment.provider.SubaccountProvider.SubaccountCreationException;
 import com.paysi.payment.provider.asaas.dto.AsaasAccountResponse;
+import com.paysi.payment.provider.asaas.dto.AsaasAccessTokenResponse;
 import com.paysi.payment.provider.asaas.dto.AsaasSubaccountRequest;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
@@ -55,5 +57,21 @@ class AsaasSubaccountProviderTest {
         assertThat(status.approved()).isTrue();
         assertThat(status.bankAccountInfo()).isEqualTo("PENDING");
         verify(documents).accountStatus("sub-key");
+    }
+
+    @Test
+    void recoversALostCredentialFromTheExistingWalletWithoutCreatingAnotherSubaccount() {
+        AsaasClient client = mock(AsaasClient.class);
+        when(client.findSubaccountByWalletId("wallet_abc"))
+                .thenReturn(new AsaasAccountResponse("acc_123", "wallet_abc", null));
+        when(client.createSubaccountAccessToken("acc_123"))
+                .thenReturn(new AsaasAccessTokenResponse("token-id", "new-sub-key"));
+        var provider = new AsaasSubaccountProvider(client, mock(AsaasSubaccountDocumentsClient.class));
+
+        assertThat(provider.recoverAccessToken("wallet_abc")).isEqualTo("new-sub-key");
+
+        verify(client).findSubaccountByWalletId("wallet_abc");
+        verify(client).createSubaccountAccessToken("acc_123");
+        verify(client, never()).createSubaccount(any());
     }
 }

@@ -73,6 +73,25 @@ public class JdbcKycStore implements KycStore {
     }
 
     @Override
+    public Optional<String> providerAccountId(UUID accountId) {
+        List<String> rows = jdbc.query("select provider_account_id from accounts where id = ?",
+                (rs, row) -> rs.getString(1), accountId);
+        if (rows.isEmpty()) return Optional.empty();
+        String value = rows.get(0);
+        return value == null || value.isBlank() ? Optional.empty() : Optional.of(value);
+    }
+
+    @Override
+    public void saveProviderAccessToken(UUID accountId, String accessToken) {
+        byte[] encrypted = secrets.encrypt(accessToken.getBytes(StandardCharsets.UTF_8));
+        int changed = jdbc.update("update accounts set provider_access_token_enc = ? where id = ? and provider_access_token_enc is null",
+                encrypted, accountId);
+        if (changed != 1) {
+            throw new IllegalStateException("A credencial da subconta já foi preenchida ou a conta não existe");
+        }
+    }
+
+    @Override
     public com.paysi.identity.kyc.domain.ComplianceProfile complianceProfile(UUID accountId) {
         return jdbc.query("select postal_code, birth_date, income_value_cents from accounts where id = ?",
                 (rs, row) -> new com.paysi.identity.kyc.domain.ComplianceProfile(rs.getString(1),

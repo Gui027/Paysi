@@ -111,9 +111,41 @@ class KycServiceTest {
         when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.empty());
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.pendingDocuments(ACCOUNT_ID))
-                .isInstanceOf(com.paysi.core.error.ConflictException.class)
-                .hasMessageContaining("suporte");
+                .isInstanceOfSatisfying(com.paysi.core.error.ConflictException.class,
+                        error -> assertThat(error.code()).isEqualTo("KYC_CREDENTIAL_UNAVAILABLE"))
+                .hasMessageContaining("restabelecida");
         verify(fixture.subaccounts, never()).pendingDocuments(any());
+    }
+
+    @Test
+    void reconnectsALegacySubaccountWithoutChangingItsWalletAndReturnsThePendingDocuments() {
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(fixture.store.providerAccountId(ACCOUNT_ID)).thenReturn(Optional.of("wallet-existing"));
+        when(fixture.subaccounts.recoverAccessToken("wallet-existing")).thenReturn("new-sub-key");
+        when(fixture.subaccounts.pendingDocuments("new-sub-key")).thenReturn(List.of(
+                new SubaccountProvider.PendingDocument("group-1", "PENDING", "IDENTIFICATION", "Documento", "https://cadastro.io/one")));
+
+        var documents = fixture.service.reconnect(ACCOUNT_ID);
+
+        assertThat(documents).singleElement().satisfies(document -> {
+            assertThat(document.id()).isEqualTo("group-1");
+            assertThat(document.externalUrl()).isEqualTo("https://cadastro.io/one");
+        });
+        verify(fixture.store).saveProviderAccessToken(ACCOUNT_ID, "new-sub-key");
+        verify(fixture.subaccounts, never()).createSubaccount(any(), any(), any(), any(), any(), anyLong());
+    }
+
+    @Test
+    void reconnectIsIdempotentWhenTheCredentialAlreadyExists() {
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.of("current-key"));
+        when(fixture.subaccounts.pendingDocuments("current-key")).thenReturn(List.of());
+
+        assertThat(fixture.service.reconnect(ACCOUNT_ID)).isEmpty();
+
+        verify(fixture.subaccounts, never()).recoverAccessToken(any());
+        verify(fixture.store, never()).saveProviderAccessToken(any(), any());
     }
 
     @Test

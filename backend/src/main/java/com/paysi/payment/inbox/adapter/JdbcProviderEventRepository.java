@@ -50,11 +50,11 @@ public class JdbcProviderEventRepository implements ProviderEventRepository {
             default -> "DECLINED";
         };
         int changed = jdbc.update("""
-                update charges set status=?,provider_status=?,
+                update charges set status=?,provider_status=?,provider_charge_id=coalesce(provider_charge_id,?),
                   paid_at=case when ?='PAID' then ? else paid_at end,
                   confirmed_at=case when ?='PAID' then ? else confirmed_at end
-                 where id=? and provider_charge_id=?
-                """, chargeStatus, providerStatus, chargeStatus, Timestamp.from(event.occurredAt()),
+                 where id=? and (provider_charge_id=? or provider_charge_id is null)
+                """, chargeStatus, providerStatus, event.providerChargeId(), chargeStatus, Timestamp.from(event.occurredAt()),
                 chargeStatus, Timestamp.from(event.occurredAt()), event.chargeId(), event.providerChargeId());
         if (changed != 1) throw new IllegalStateException("Cobrança do evento não encontrada");
         jdbc.update("update orders set status=?,confirmed_at=case when ?='PAID' then ? else confirmed_at end "

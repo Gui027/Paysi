@@ -18,6 +18,11 @@ public class FakeSubaccountProvider implements SubaccountProvider {
     }
 
     @Override
+    public String recoverAccessToken(String walletId) {
+        return "fake_key_recovered_" + walletId;
+    }
+
+    @Override
     public List<PendingDocument> pendingDocuments(String subaccountApiKey) {
         return List.of();
     }
