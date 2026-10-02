@@ -8,7 +8,12 @@ import { ApiRequestError } from "../../../lib/api";
 import { parseMoneyToCents } from "../../../lib/ofertas";
 import { getKyc, getPendingDocuments, KycView, maskCep, PendingDocument, refreshKycStatus, saveComplianceProfile, startKyc, submitDocument } from "../../../lib/kyc";
 
-export type IdentitySetup = { kyc: KycView; documents: PendingDocument[] | null; documentsError: boolean };
+export type IdentitySetup = { kyc: KycView; documents: PendingDocument[] | null; documentsError: string | null };
+
+export function needsAsaasDocuments(kyc: KycView) {
+  return kyc.kycStatus === "SUBMITTED"
+    || kyc.requirements.some(item => item.code === "ASAAS_VERIFICATION" && item.status.toUpperCase() === "PENDING");
+}
 
 function externalOnly(document: PendingDocument) {
   const description = (document.description ?? "").toLocaleLowerCase("pt-BR");
@@ -84,9 +89,9 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const [kyc, setKyc] = useState<KycView | null>(initialSetup?.kyc ?? null);
   const [documents, setDocuments] = useState<PendingDocument[] | null>(initialSetup?.documents ?? null);
   const [loading, setLoading] = useState(!initialSetup);
-  const [error, setError] = useState(initialSetup?.documentsError ?? false);
+  const [error, setError] = useState(Boolean(initialSetup?.documentsError));
   const [refreshing, setRefreshing] = useState(false);
-  const [refreshFeedback, setRefreshFeedback] = useState<string | null>(null);
+  const [refreshFeedback, setRefreshFeedback] = useState<string | null>(initialSetup?.documentsError ?? null);
   const [modalOpen, setModalOpen] = useState(Boolean(initialSetup && initialSetup.kyc.kycStatus !== "APPROVED"));
   const [working, setWorking] = useState(false);
   const active = useRef(true);
@@ -95,10 +100,23 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
 
   const applyKyc = useCallback((view: KycView) => { if (active.current) { setKyc(view); onStatus?.(view.kycStatus); } }, [onStatus]);
   const loadSetup = useCallback(async (refreshProvider = false) => {
-    const [kycResult, documentsResult] = await Promise.allSettled([refreshProvider ? refreshKycStatus() : getKyc(), getPendingDocuments()]);
+    const kycResult = await Promise.resolve(refreshProvider ? refreshKycStatus() : getKyc()).then(
+      value => ({ status: "fulfilled" as const, value }),
+      reason => ({ status: "rejected" as const, reason }),
+    );
     if (!active.current) return false;
     if (kycResult.status === "rejected") { setError(true); return false; }
     applyKyc(kycResult.value);
+    if (!needsAsaasDocuments(kycResult.value)) {
+      setDocuments(null);
+      setError(false);
+      return true;
+    }
+    const documentsResult = await Promise.resolve(getPendingDocuments()).then(
+      value => ({ status: "fulfilled" as const, value }),
+      reason => ({ status: "rejected" as const, reason }),
+    );
+    if (!active.current) return false;
     if (documentsResult.status === "fulfilled") {
       setDocuments(documentsResult.value);
       setError(false);
@@ -129,9 +147,15 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
     setRefreshFeedback(null);
     setError(false);
     try {
-      const [nextDocuments, nextKyc] = await Promise.all([getPendingDocuments(), refreshKycStatus()]);
+      const nextDocuments = await getPendingDocuments();
       setDocuments(nextDocuments);
-      applyKyc(nextKyc);
+      // Carregar os documentos não pode depender da consulta de status: são endpoints
+      // distintos da Asaas e o link/upload deve continuar disponível se só o status falhar.
+      try {
+        applyKyc(await refreshKycStatus());
+      } catch {
+        // A própria lista já permite concluir a etapa; o status pode ser atualizado depois.
+      }
       setRefreshFeedback(nextDocuments.length === 0
         ? "Consulta concluída: não há documentos pendentes."
         : onboardingUnavailable(nextDocuments)
@@ -170,7 +194,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
 
   const approved = kyc.kycStatus === "APPROVED";
   const needsProfile = kyc.requirements.some(item => item.code === "CONTACT_INFO" && item.status.toUpperCase() === "PENDING");
-  const needsDocuments = kyc.requirements.some(item => item.code === "ASAAS_VERIFICATION" && item.status.toUpperCase() === "PENDING");
+  const needsDocuments = needsAsaasDocuments(kyc);
   const awaitingAnalysis = kyc.kycStatus === "SUBMITTED" && documents?.length === 0;
   const waitingForOnboarding = onboardingUnavailable(documents);
   const currentStep = needsProfile ? 1 : approved || awaitingAnalysis ? 3 : 2;

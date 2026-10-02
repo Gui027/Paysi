@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton, Toast } from "../../../components/ui";
+import { ApiRequestError } from "../../../lib/api";
 import { formatarCentavos } from "../../../lib/moeda";
 import { FinanceOverview, getFinance } from "../../../lib/financeiro";
 import { getKyc, getPendingDocuments } from "../../../lib/kyc";
 import { CnpjDialog } from "./CnpjDialog";
 import { DadosBancariosTab } from "./DadosBancariosTab";
 import { ExtratoTab } from "./ExtratoTab";
-import { IdentidadeTab, IdentitySetup } from "./IdentidadeTab";
+import { IdentidadeTab, IdentitySetup, needsAsaasDocuments } from "./IdentidadeTab";
 import { MfaSetupDialog } from "./MfaSetupDialog";
 import { SaqueDialog } from "./SaqueDialog";
 import { SaquesTab } from "./SaquesTab";
@@ -35,15 +36,26 @@ export function FinanceiroPage() {
   const load = useCallback(async () => {
     setError(null);
     try {
+      const loadIdentity = async (): Promise<IdentitySetup> => {
+        const kyc = await getKyc();
+        if (!needsAsaasDocuments(kyc)) return { kyc, documents: null, documentsError: null };
+        return getPendingDocuments().then(
+          documents => ({ kyc, documents, documentsError: null }),
+          error => ({
+            kyc,
+            documents: null,
+            documentsError: error instanceof ApiRequestError
+              ? error.message
+              : "Não foi possível consultar a Asaas agora.",
+          }),
+        );
+      };
       const [finance, identity] = await Promise.all([
         getFinance(),
-        aba === "identidade" ? Promise.all([getKyc(), getPendingDocuments().then(
-          documents => ({ documents, documentsError: false }),
-          () => ({ documents: null, documentsError: true }),
-        )]) : Promise.resolve(null),
+        aba === "identidade" ? loadIdentity() : Promise.resolve(null),
       ]);
       setOverview(finance);
-      if (identity) setIdentitySetup({ kyc: identity[0], ...identity[1] });
+      if (identity) setIdentitySetup(identity);
     } catch {
       setError("Não foi possível carregar o financeiro. Tente novamente.");
     }
@@ -108,7 +120,9 @@ export function FinanceiroPage() {
       {aba === "extrato" && <ExtratoTab />}
       {aba === "dados" && <DadosBancariosTab overview={overview} onChanged={() => void load()} onNeedMfa={() => setMfaSetupOpen(true)} onOpenCnpj={() => setCnpjOpen(true)} />}
       {aba === "taxas" && <TaxasTab />}
-      {aba === "identidade" && <IdentidadeTab initialSetup={identitySetup} onStatus={handleIdentityStatus} />}
+      {aba === "identidade" && (identitySetup
+        ? <IdentidadeTab initialSetup={identitySetup} onStatus={handleIdentityStatus} />
+        : <Skeleton label="Preparando sua verificação" />)}
     </div>
 
     {/* Janelas só existem enquanto estão abertas: fechadas, não deixam campos escondidos na página. */}

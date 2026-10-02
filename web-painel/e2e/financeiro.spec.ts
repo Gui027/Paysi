@@ -212,6 +212,7 @@ test.describe("financeiro", () => {
     await preparar(page, { ...OVERVIEW, kycStatus: "PENDING" });
     let salvou: Record<string, unknown> | null = null;
     let carregouDeNovo = false;
+    let consultasDeDocumentos = 0;
     await page.route("**/api/v1/accounts/me", (route) => {
       if (carregouDeNovo) return route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [] } });
       return route.fulfill({ json: { accountId: "a", kycStatus: "PENDING", providerUrl: null, requirements: [{ code: "CONTACT_INFO", label: "CEP e data de nascimento", status: "PENDING", reason: "Complete seu CEP e data de nascimento para continuarmos a verificação.", estimatedAt: null }] } });
@@ -222,9 +223,14 @@ test.describe("financeiro", () => {
       return route.fulfill({ json: { accountId: "a", kycStatus: "PENDING", providerUrl: null, requirements: [] } });
     });
     await page.route("**/api/v1/accounts/me/kyc", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [] } }));
-    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => route.fulfill({ json: [] }));
+    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => {
+      consultasDeDocumentos += 1;
+      return route.fulfill({ json: [] });
+    });
     await page.goto("/saldo?aba=identidade");
     await expect(page.getByRole("heading", { name: "Complete seus dados" })).toBeVisible();
+    await expect(page.getByText("Não foi possível consultar a Asaas. Tente novamente.")).toHaveCount(0);
+    expect(consultasDeDocumentos).toBe(0);
     await expect(page.getByRole("button", { name: "Iniciar verificação" })).toHaveCount(0);
     await page.getByLabel("CEP").fill("01310100");
     await page.getByLabel("Data de nascimento").fill("1990-05-20");
@@ -233,7 +239,7 @@ test.describe("financeiro", () => {
     await page.getByLabel("Renda/faturamento mensal em reais").fill("1500,00");
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
     await expect.poll(() => salvou).toEqual({ postalCode: "01310-100", birthDate: "1990-05-20", incomeValueCents: 150000 });
-    await expect(page.getByRole("heading", { name: "Enviado para análise" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Preparando seus documentos" })).toBeVisible();
   });
 
   test("verificação da Asaas pendente de documento envia o arquivo direto pelo painel, sem sair pra outro site", async ({ page }) => {
@@ -317,6 +323,33 @@ test.describe("financeiro", () => {
     await expect(page.getByRole("button", { name: "Atualizando…" })).toBeDisabled();
     await expect(page.getByRole("heading", { name: "Documentos conferidos" })).toBeVisible();
     await expect(page.getByText("Consulta concluída: não há documentos pendentes.")).toBeVisible();
+  });
+
+  test("documentos continuam disponíveis quando somente a consulta de status da Asaas falha", async ({ page }) => {
+    await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
+    let consultas = 0;
+    await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: {
+      accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [],
+    } }));
+    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => {
+      consultas += 1;
+      if (consultas === 1) return route.fulfill({ status: 503, json: { message: "Asaas indisponível" } });
+      return route.fulfill({ json: [
+        { id: "doc_1", status: "PENDING", type: "IDENTIFICATION", description: "Documento de identidade", externalUrl: null },
+      ] });
+    });
+    await page.route("**/api/v1/accounts/me/kyc/refresh", (route) => route.fulfill({
+      status: 503, json: { message: "Status temporariamente indisponível" },
+    }));
+
+    await page.goto("/saldo?aba=identidade");
+    await expect(page.getByRole("button", { name: "Atualizar agora" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Enviado para análise" })).toHaveCount(0);
+    await expect(page.getByText("Asaas indisponível")).toBeVisible();
+    await page.getByRole("button", { name: "Atualizar agora" }).click();
+    await expect(page.getByText("Documento de identidade")).toBeVisible();
+    await expect(page.locator('input[type="file"]')).toHaveCount(1);
+    await expect(page.getByText("Não foi possível consultar a Asaas. Tente novamente.")).toHaveCount(0);
   });
 
   test("rotas antigas redirecionam para o Financeiro", async ({ page }) => {
