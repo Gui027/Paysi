@@ -5,6 +5,7 @@ export type SimulacaoInput = {
   method: PaymentMethod;
   installments: number;
   couponCode: string;
+  amountCents?: number;
 };
 
 export type SimulacaoCheckout = {

@@ -182,7 +182,7 @@ class FinanceServiceTest {
         assertThat(fees.methods()).anySatisfy(fee -> {
             assertThat(fee.method()).isEqualTo("PIX");
             assertThat(fee.feeBps()).isEqualTo(399);
-            assertThat(fee.fixedCents()).isEqualTo(200);
+            assertThat(fee.fixedCents()).isZero();
         });
     }
 }

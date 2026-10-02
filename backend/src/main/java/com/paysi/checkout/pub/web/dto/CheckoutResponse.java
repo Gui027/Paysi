@@ -2,6 +2,7 @@ package com.paysi.checkout.pub.web.dto;
 
 import com.paysi.catalog.offer.domain.BillingCycle;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
+import com.paysi.catalog.offer.domain.PricingMode;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
 import com.paysi.checkout.pub.app.CheckoutContract;
@@ -24,13 +25,16 @@ public record CheckoutResponse(
         int installments,
         Map<PersonType, List<String>> requiredBuyerFields,
         AppearanceResponse appearance,
-        LegalTextsResponse legalTexts
+        LegalTextsResponse legalTexts,
+        String returnUrl,
+        PricingMode pricingMode
 ) {
     public static CheckoutResponse from(CheckoutContract contract) {
         return new CheckoutResponse(contract.product(), contract.segment(), contract.chargeType(),
                 contract.priceCents(), contract.cycle(), contract.today(), contract.nextChargeAt(),
                 contract.methods(), contract.installments(), contract.requiredBuyerFields(),
-                AppearanceResponse.from(contract.appearance()), LegalTextsResponse.from(contract.legalTexts()));
+                AppearanceResponse.from(contract.appearance()), LegalTextsResponse.from(contract.legalTexts()),
+                contract.returnUrl(), contract.pricingMode());
     }
 
     public record AppearanceResponse(

@@ -6,6 +6,7 @@ import com.paysi.catalog.offer.domain.Offer;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
 import com.paysi.catalog.offer.domain.OfferPayoutDelay;
 import com.paysi.catalog.offer.domain.OfferStatus;
+import com.paysi.catalog.offer.domain.PricingMode;
 import com.paysi.catalog.offer.port.OfferRepository;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
@@ -63,13 +64,13 @@ class PriceSimulationServiceTest {
 
     @Test
     void reproduzOExemploDoContratoComAfiliado() {
-        // Documento 2, §4.3: 17700 fecha em 14670 + 1770 + 682 + 578.
+        // Documento 2, §4.3: 17700 fecha em 14870 + 1770 + 682 + 578.
         PriceQuote quote = service.priceFor(offer(17_700), OfferPaymentMethod.CARD, 1, null, 1_000);
 
         assertThat(quote.paidCents()).isEqualTo(17_700);
-        assertThat(quote.sellerCents()).isEqualTo(14_670);
+        assertThat(quote.sellerCents()).isEqualTo(14_870);
         assertThat(quote.commissionCents()).isEqualTo(1_770);
-        assertThat(quote.feesCents()).isEqualTo(1_260);
+        assertThat(quote.feesCents()).isEqualTo(1_060);
         assertThat(quote.sellerCents() + quote.commissionCents() + quote.feesCents())
                 .isEqualTo(quote.paidCents());
     }
@@ -98,6 +99,34 @@ class PriceSimulationServiceTest {
         assertThat(quote.grossCents()).isEqualTo(17_700);
         assertThat(quote.discountCents()).isZero();
         assertThat(quote.paidCents()).isEqualTo(17_700);
+    }
+
+    @Test
+    void compradorDefineOValorDaOfertaFlexivel() {
+        Offer flexible = customerDefinedOffer(500);
+        PriceQuote quote = service.priceFor(flexible, OfferPaymentMethod.PIX, 1, null, 0, 12_345L);
+
+        assertThat(quote.grossCents()).isEqualTo(12_345);
+        assertThat(quote.paidCents()).isEqualTo(12_345);
+    }
+
+    @Test
+    void ofertaFlexivelExigeValorAcimaDoMinimo() {
+        Offer flexible = customerDefinedOffer(500);
+
+        assertThatThrownBy(() -> service.priceFor(flexible, OfferPaymentMethod.PIX, 1, null, 0, null))
+                .isInstanceOfSatisfying(ValidationException.class,
+                        error -> assertThat(error.code()).isEqualTo("ORDER_AMOUNT_REQUIRED"));
+        assertThatThrownBy(() -> service.priceFor(flexible, OfferPaymentMethod.PIX, 1, null, 0, 499L))
+                .isInstanceOfSatisfying(ValidationException.class,
+                        error -> assertThat(error.code()).isEqualTo("ORDER_AMOUNT_BELOW_MINIMUM"));
+    }
+
+    @Test
+    void clienteNaoPodeTrocarValorDeOfertaFixa() {
+        assertThatThrownBy(() -> service.priceFor(offer(17_700), OfferPaymentMethod.PIX, 1, null, 0, 20_000L))
+                .isInstanceOfSatisfying(ValidationException.class,
+                        error -> assertThat(error.code()).isEqualTo("ORDER_AMOUNT_NOT_ALLOWED"));
     }
 
     @Test
@@ -143,7 +172,7 @@ class PriceSimulationServiceTest {
     @Test
     void cupomNaoPodeDerrubarAbaixoDoPisoTecnico() {
         when(coupons.quote(OFFER, "QUASETUDO", 17_700))
-                .thenReturn(new CouponDiscount(null, "QUASETUDO", 17_300, 1));
+                .thenReturn(new CouponDiscount(null, "QUASETUDO", 17_600, 1));
 
         assertThatThrownBy(() -> service.simulate(SLUG, OfferPaymentMethod.PIX, 1, "QUASETUDO"))
                 .isInstanceOfSatisfying(ValidationException.class,
@@ -165,5 +194,13 @@ class PriceSimulationServiceTest {
                 Set.of(OfferPaymentMethod.PIX, OfferPaymentMethod.CARD),
                 OfferPayoutDelay.D15, OfferStatus.PUBLISHED, null, NOW.minusSeconds(60),
                 NOW.minusSeconds(60));
+    }
+
+    private static Offer customerDefinedOffer(long minimumCents) {
+        return new Offer(OFFER, PRODUCT, ChargeType.ONE_TIME, Segment.DIGITAL, SLUG, minimumCents,
+                null, 0, true, 7, 12, 3, 5,
+                Set.of(OfferPaymentMethod.PIX, OfferPaymentMethod.CARD),
+                OfferPayoutDelay.D15, OfferStatus.PUBLISHED, null, NOW.minusSeconds(60),
+                NOW.minusSeconds(60), null, null, PricingMode.CUSTOMER_DEFINED);
     }
 }

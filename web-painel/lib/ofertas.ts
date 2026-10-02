@@ -4,6 +4,7 @@ export type OfferPaymentMethod = "PIX" | "CARD" | "BOLETO";
 export type BillingCycle = "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "ANNUAL";
 export type OfferPayoutDelay = "D32" | "D15" | "D7" | "D2";
 export type OfferStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type OfferPricingMode = "FIXED" | "CUSTOMER_DEFINED";
 export type OfferImmutableField = "CYCLE" | "GUARANTEE";
 
 export type Offer = {
@@ -13,6 +14,7 @@ export type Offer = {
   segment: "SAAS" | "DIGITAL";
   slug: string;
   priceCents: number;
+  pricingMode?: OfferPricingMode;
   cycle: BillingCycle | null;
   trialDays: number;
   trialRequiresCard: boolean;
@@ -33,6 +35,7 @@ export type Offer = {
 
 export type OfferInput = {
   priceCents: number;
+  pricingMode: OfferPricingMode;
   cycle: BillingCycle | null;
   trialDays: number;
   trialRequiresCard: boolean;
@@ -99,7 +102,12 @@ export function validateOfferInput(input: OfferInput, context: { segment: "SAAS"
   const errors: OfferInputErrors = {};
   if (input.returnUrl?.trim() && !isValidReturnUrl(input.returnUrl.trim())) errors.returnUrl = "Use um endereço começando com https:// (até 500 caracteres).";
   if ((input.name?.trim().length ?? 0) > OFFER_NAME_MAX) errors.name = `Use no máximo ${OFFER_NAME_MAX} caracteres.`;
-  if (!Number.isSafeInteger(input.priceCents) || input.priceCents < 2_000) errors.price = "Informe um preço mínimo de R$ 20,00.";
+  if (input.pricingMode === "CUSTOMER_DEFINED") {
+    if (context.chargeType !== "ONE_TIME") errors.pricingMode = "O cliente só pode definir o valor em pagamentos únicos.";
+    if (!Number.isSafeInteger(input.priceCents) || input.priceCents < 200) errors.price = "Informe um valor mínimo de pelo menos R$ 2,00.";
+  } else if (!Number.isSafeInteger(input.priceCents) || input.priceCents < 200) {
+    errors.price = "Informe um preço mínimo de R$ 2,00.";
+  }
   if (context.chargeType === "SUBSCRIPTION" && !input.cycle) errors.cycle = "Escolha o ciclo da assinatura.";
   if (context.chargeType === "ONE_TIME" && input.cycle) errors.cycle = "Pagamento único não aceita ciclo.";
   if (!Number.isInteger(input.trialDays) || input.trialDays < 0 || input.trialDays > 30) errors.trialDays = "Use um período entre 0 e 30 dias.";

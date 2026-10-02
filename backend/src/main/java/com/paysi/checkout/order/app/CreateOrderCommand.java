@@ -5,9 +5,8 @@ import com.paysi.checkout.order.domain.BuyerAddress;
 import com.paysi.identity.domain.PersonType;
 
 /**
- * Submissão do checkout. Repare no que não existe aqui: nenhum campo de preço,
- * desconto ou taxa. O valor é sempre relido do banco (documento 5, passo 5), então
- * não há o que o navegador possa forjar.
+ * Submissão do checkout. O valor escolhido só existe para ofertas flexíveis; o servidor
+ * relê a oferta e valida o mínimo. Descontos e taxas nunca vêm do navegador.
  *
  * <p>O {@code toString} é mascarado: o comando carrega PII e token de cartão, e
  * nenhum dos dois pode vazar em log (documento 3, §4).
@@ -28,7 +27,8 @@ public record CreateOrderCommand(
         String termsHash,
         String reference,
         String phone,
-        String ip
+        String ip,
+        Long amountCents
 ) {
     /** Identificador do cliente no sistema do vendedor (opcional, até 128 caracteres). */
     public static final int REFERENCE_MAX_LENGTH = 128;
@@ -53,19 +53,28 @@ public record CreateOrderCommand(
         }
     }
 
+    /** Mantém compatibilidade com chamadas anteriores à precificação variável. */
+    public CreateOrderCommand(String name, String email, PersonType personType, String taxId, String legalName,
+                              String municipalReg, BuyerAddress address, OfferPaymentMethod method,
+                              int installments, String cardToken, String coupon, String visitorKey,
+                              String termsHash, String reference, String phone, String ip) {
+        this(name, email, personType, taxId, legalName, municipalReg, address, method, installments, cardToken,
+                coupon, visitorKey, termsHash, reference, phone, ip, null);
+    }
+
     /** Pedido com referência, sem celular nem IP. */
     public CreateOrderCommand(String name, String email, PersonType personType, String taxId, String legalName,
                               String municipalReg, BuyerAddress address, OfferPaymentMethod method,
                               int installments, String cardToken, String coupon, String visitorKey,
                               String termsHash, String reference) {
         this(name, email, personType, taxId, legalName, municipalReg, address, method, installments, cardToken,
-                coupon, visitorKey, termsHash, reference, null, null);
+                coupon, visitorKey, termsHash, reference, null, null, null);
     }
 
     /** Devolve o comando com o IP de origem (preenchido pelo controller, nunca pelo corpo). */
     public CreateOrderCommand withIp(String clientIp) {
         return new CreateOrderCommand(name, email, personType, taxId, legalName, municipalReg, address, method,
-                installments, cardToken, coupon, visitorKey, termsHash, reference, phone, clientIp);
+                installments, cardToken, coupon, visitorKey, termsHash, reference, phone, clientIp, amountCents);
     }
 
     /** Pedido sem referência externa; mantém a assinatura anterior. */
@@ -74,7 +83,7 @@ public record CreateOrderCommand(
                               int installments, String cardToken, String coupon, String visitorKey,
                               String termsHash) {
         this(name, email, personType, taxId, legalName, municipalReg, address, method, installments, cardToken,
-                coupon, visitorKey, termsHash, null, null, null);
+                coupon, visitorKey, termsHash, null, null, null, null);
     }
 
     @Override

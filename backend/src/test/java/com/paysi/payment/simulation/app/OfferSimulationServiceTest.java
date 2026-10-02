@@ -52,7 +52,7 @@ class OfferSimulationServiceTest {
         assertThat(result.discountCents()).isZero();
         assertThat(result.paidCents()).isEqualTo(10_000);
         assertThat(result.commissionCents()).isZero();
-        assertThat(result.sellerCents()).isEqualTo(9_401);
+        assertThat(result.sellerCents()).isEqualTo(9_601);
         assertThat(result.availableAt()).isEqualTo(NOW.plusSeconds(14L * 86_400));
     }
 

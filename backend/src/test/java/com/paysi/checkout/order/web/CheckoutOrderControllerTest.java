@@ -99,12 +99,12 @@ class CheckoutOrderControllerTest {
     }
 
     @Test
-    void corpoQueTentaMandarValorEhRecusadoNaoIgnorado() throws Exception {
+    void campoDePrecoDesconhecidoEhRecusadoNaoIgnorado() throws Exception {
         String comValor = """
                 {"buyer":{"name":"Ana","email":"ana@example.com","personType":"PF",
                   "taxId":"529.982.247-25"},
                  "method":"PIX","installments":1,"termsHash":"hash-dos-termos",
-                 "amountCents":100}
+                 "price":100}
                 """;
 
         mvc.perform(post("/v1/checkout/{slug}/orders", SLUG)
@@ -112,8 +112,28 @@ class CheckoutOrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(comValor))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"))
-                .andExpect(jsonPath("$.field").value("amountCents"));
+                .andExpect(jsonPath("$.field").value("price"));
         verify(orders, never()).create(any(), any(), any());
+    }
+
+    @Test
+    void encaminhaValorEscolhidoPeloComprador() throws Exception {
+        when(orders.create(eq(SLUG), eq(KEY), any(CreateOrderCommand.class)))
+                .thenReturn(new OrderResult(order(), false));
+        String comValor = """
+                {"buyer":{"name":"Ana","email":"ana@example.com","personType":"PF",
+                  "taxId":"529.982.247-25"},
+                 "method":"PIX","installments":1,"termsHash":"hash-dos-termos",
+                 "amountCents":500}
+                """;
+
+        mvc.perform(post("/v1/checkout/{slug}/orders", SLUG)
+                        .header("Idempotency-Key", KEY)
+                        .contentType(MediaType.APPLICATION_JSON).content(comValor))
+                .andExpect(status().isCreated());
+
+        verify(orders).create(eq(SLUG), eq(KEY),
+                org.mockito.ArgumentMatchers.argThat(command -> Long.valueOf(500).equals(command.amountCents())));
     }
 
     @Test

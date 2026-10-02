@@ -5,6 +5,7 @@ import com.paysi.catalog.coupon.app.CouponRedemptionService;
 import com.paysi.catalog.offer.app.OfferAvailability;
 import com.paysi.catalog.offer.domain.Offer;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
+import com.paysi.catalog.offer.domain.PricingMode;
 import com.paysi.catalog.offer.port.OfferRepository;
 import com.paysi.checkout.pricing.port.OfferSellerLookup;
 import com.paysi.core.error.NotFoundException;
@@ -29,8 +30,8 @@ import java.util.UUID;
  */
 @Service
 public class PriceSimulationService {
-    /** Mínimo que o adquirente aceita. Distinto do piso comercial de R$ 20,00 da oferta. */
-    private static final long TECHNICAL_FLOOR_CENTS = 500;
+    /** Mínimo que o adquirente aceita. Distinto do piso comercial da oferta. */
+    private static final long TECHNICAL_FLOOR_CENTS = 200;
 
     private final OfferRepository offers;
     private final CouponRedemptionService coupons;
@@ -56,9 +57,16 @@ public class PriceSimulationService {
     /** Simulação pública: calcula e não consome unidade de cupom. */
     @Transactional(readOnly = true)
     public PriceQuote simulate(String slug, OfferPaymentMethod method, int installments, String couponCode) {
+        return simulate(slug, method, installments, couponCode, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PriceQuote simulate(String slug, OfferPaymentMethod method, int installments, String couponCode,
+            Long requestedAmountCents) {
         Offer offer = offers.findPublishedBySlug(slug).orElseThrow(PriceSimulationService::offerNotFound);
-        CouponDiscount discount = coupons.quote(offer.id(), couponCode, offer.priceCents());
-        return price(offer, method, installments, discount, 0);
+        long grossCents = grossCents(offer, requestedAmountCents);
+        CouponDiscount discount = coupons.quote(offer.id(), couponCode, grossCents);
+        return price(offer, grossCents, method, installments, discount, 0);
     }
 
     /**
@@ -69,15 +77,21 @@ public class PriceSimulationService {
     @Transactional(readOnly = true)
     public PriceQuote priceFor(Offer offer, OfferPaymentMethod method, int installments,
             String couponCode, int commissionBps) {
-        CouponDiscount discount = coupons.quote(offer.id(), couponCode, offer.priceCents());
-        return price(offer, method, installments, discount, commissionBps);
+        return priceFor(offer, method, installments, couponCode, commissionBps, null);
     }
 
-    private PriceQuote price(Offer offer, OfferPaymentMethod method, int installments,
+    @Transactional(readOnly = true)
+    public PriceQuote priceFor(Offer offer, OfferPaymentMethod method, int installments,
+            String couponCode, int commissionBps, Long requestedAmountCents) {
+        long grossCents = grossCents(offer, requestedAmountCents);
+        CouponDiscount discount = coupons.quote(offer.id(), couponCode, grossCents);
+        return price(offer, grossCents, method, installments, discount, commissionBps);
+    }
+
+    private PriceQuote price(Offer offer, long grossCents, OfferPaymentMethod method, int installments,
             CouponDiscount discount, int commissionBps) {
         validate(offer, method, installments);
 
-        long grossCents = offer.priceCents();
         long discountCents = discount.discountCents();
         long paidCents = Math.subtractExact(grossCents, discountCents);
         if (paidCents < TECHNICAL_FLOOR_CENTS) {
@@ -90,6 +104,25 @@ public class PriceSimulationService {
         return new PriceQuote(grossCents, discountCents, paidCents, method, installments,
                 split.sellerFeeCents(), split.affiliateCents(), split.sellerCents(),
                 OfferAvailability.at(offer, clock.instant()), discount);
+    }
+
+    private long grossCents(Offer offer, Long requestedAmountCents) {
+        if (offer.pricingMode() == PricingMode.FIXED) {
+            if (requestedAmountCents != null && requestedAmountCents != offer.priceCents()) {
+                throw new ValidationException("ORDER_AMOUNT_NOT_ALLOWED",
+                        "O valor desta oferta é fixo", "amountCents");
+            }
+            return offer.priceCents();
+        }
+        if (requestedAmountCents == null) {
+            throw new ValidationException("ORDER_AMOUNT_REQUIRED",
+                    "Informe o valor que deseja pagar", "amountCents");
+        }
+        if (requestedAmountCents < offer.priceCents()) {
+            throw new ValidationException("ORDER_AMOUNT_BELOW_MINIMUM",
+                    "O valor informado está abaixo do mínimo desta oferta", "amountCents");
+        }
+        return requestedAmountCents;
     }
 
     private void validate(Offer offer, OfferPaymentMethod method, int installments) {

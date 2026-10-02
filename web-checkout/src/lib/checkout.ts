@@ -5,6 +5,7 @@ export type ChargeType = "ONE_TIME" | "SUBSCRIPTION";
 export type BillingCycle = "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "ANNUAL";
 export type PaymentMethod = "PIX" | "CARD" | "BOLETO";
 export type PersonType = "PF" | "PJ";
+export type PricingMode = "FIXED" | "CUSTOMER_DEFINED";
 
 export type CheckoutAppearance = {
   logoUrl: string | null;
@@ -24,6 +25,7 @@ export type CheckoutContract = {
   segment: Segment;
   chargeType: ChargeType;
   priceCents: number;
+  pricingMode?: PricingMode;
   cycle: BillingCycle | null;
   today: string;
   nextChargeAt: string | null;

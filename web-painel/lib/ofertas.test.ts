@@ -16,7 +16,8 @@ test("converte valores brasileiros em centavos sem usar taxa local", () => {
 
 test("bloqueia combinações inválidas antes da API", () => {
   const errors = validateOfferInput({
-    priceCents: 1000,
+    priceCents: 199,
+    pricingMode: "FIXED",
     cycle: "MONTHLY",
     trialDays: 0,
     trialRequiresCard: false,
@@ -33,6 +34,23 @@ test("bloqueia combinações inválidas antes da API", () => {
   assert.ok(errors.guaranteeDays);
   assert.ok(errors.maxInstallments);
   assert.ok(errors.paymentMethods);
+});
+
+test("aceita preço escolhido pelo cliente a partir de dois reais", () => {
+  const errors = validateOfferInput({
+    priceCents: 500,
+    pricingMode: "CUSTOMER_DEFINED",
+    cycle: null,
+    trialDays: 0,
+    trialRequiresCard: true,
+    guaranteeDays: 7,
+    maxInstallments: 1,
+    boletoDueDays: 3,
+    boletoAdvanceDays: 5,
+    paymentMethods: ["PIX"],
+    payoutDelay: "D32",
+  }, { segment: "DIGITAL", chargeType: "ONE_TIME" });
+  assert.deepEqual(errors, {});
 });
 
 test("consulta a simulação no endpoint autenticado", async () => {

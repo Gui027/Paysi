@@ -45,6 +45,7 @@ class CheckoutControllerTest {
                 .andExpect(jsonPath("$.product").value("Gestão Ágil"))
                 .andExpect(jsonPath("$.segment").value("SAAS"))
                 .andExpect(jsonPath("$.priceCents").value(10_000))
+                .andExpect(jsonPath("$.pricingMode").value("FIXED"))
                 .andExpect(jsonPath("$.requiredBuyerFields.PF[0]").value("name"))
                 .andExpect(jsonPath("$.appearance.logoUrl").value("http://localhost:8080/v1/assets/x/content"))
                 .andExpect(jsonPath("$.legalTexts.termsUrl").value("https://paysi.com.br/termos"))

@@ -6,6 +6,7 @@ import com.paysi.catalog.offer.domain.BillingCycle;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
 import com.paysi.catalog.offer.domain.OfferPayoutDelay;
 import com.paysi.catalog.offer.domain.OfferStatus;
+import com.paysi.catalog.offer.domain.PricingMode;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
 
@@ -35,7 +36,8 @@ public record OfferResponse(
         Instant createdAt,
         Instant updatedAt,
         String name,
-        String returnUrl
+        String returnUrl,
+        PricingMode pricingMode
 ) {
     public static OfferResponse from(OfferView view) {
         var offer = view.offer();
@@ -44,6 +46,6 @@ public record OfferResponse(
                 offer.trialRequiresCard(), offer.guaranteeDays(), offer.maxInstallments(),
                 offer.boletoDueDays(), offer.boletoAdvanceDays(), offer.paymentMethods(),
                 offer.payoutDelay(), offer.status(), view.availableAt(), view.immutableFields(),
-                offer.createdAt(), offer.updatedAt(), offer.name(), offer.returnUrl());
+                offer.createdAt(), offer.updatedAt(), offer.name(), offer.returnUrl(), offer.pricingMode());
     }
 }

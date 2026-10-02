@@ -11,7 +11,7 @@ class RefundSplitTest {
 
         RefundPart firstSlice = RefundSplit.slice(original, 10_000, 0, 2_000);
 
-        assertThat(firstSlice).isEqualTo(new RefundPart(1_641, 200, 90, 69));
+        assertThat(firstSlice).isEqualTo(new RefundPart(1_681, 200, 50, 69));
         assertThat(firstSlice.totalCents()).isEqualTo(2_000);
     }
 

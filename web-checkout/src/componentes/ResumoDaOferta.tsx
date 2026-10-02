@@ -10,7 +10,8 @@ export function ResumoDaOferta({ contract }: { contract: CheckoutContract }) {
       <img className="merchant-mark" src={appearance.logoUrl ?? "/paysi-logo.svg"} alt="" />
       <span className="eyebrow">Você está comprando</span>
       <h1>{contract.product}</h1>
-      <div className="price paysi-valor">{formatarCentavos(contract.priceCents)}</div>
+      <div className="price paysi-valor">{contract.pricingMode === "CUSTOMER_DEFINED" ? "Você decide o valor" : formatarCentavos(contract.priceCents)}</div>
+      {contract.pricingMode === "CUSTOMER_DEFINED" && <small>Valor mínimo: {formatarCentavos(contract.priceCents)}</small>}
       {contract.cycle && <small>Cobrança {cycleLabel[contract.cycle]}</small>}
       <div className="summary-dates">
         <span>Hoje: {dataFormatada.format(new Date(contract.today))}</span>

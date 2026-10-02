@@ -4,6 +4,7 @@ import com.paysi.catalog.offer.domain.BillingCycle;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
 import com.paysi.catalog.offer.domain.OfferPayoutDelay;
 import com.paysi.catalog.offer.domain.OfferValues;
+import com.paysi.catalog.offer.domain.PricingMode;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,7 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public record OfferRequest(
-        @NotNull @Min(2000) Long priceCents,
+        @NotNull @Min(500) Long priceCents,
         BillingCycle cycle,
         @NotNull @Min(0) @Max(30) Integer trialDays,
         @NotNull Boolean trialRequiresCard,
@@ -30,6 +31,7 @@ public record OfferRequest(
         @NotNull OfferPayoutDelay payoutDelay,
         @Size(max = 60, message = "O nome da oferta deve ter no máximo 60 caracteres") String name,
         @Size(max = 500, message = "A URL de retorno deve ter no máximo 500 caracteres") String returnUrl,
+        PricingMode pricingMode,
         @Null(message = "Produto é somente leitura") @Schema(accessMode = Schema.AccessMode.READ_ONLY) UUID productId,
         @Null(message = "Segmento é somente leitura") @Schema(accessMode = Schema.AccessMode.READ_ONLY) Segment segment,
         @Null(message = "Tipo de cobrança é somente leitura") @Schema(accessMode = Schema.AccessMode.READ_ONLY)
@@ -39,6 +41,7 @@ public record OfferRequest(
 ) {
     public OfferValues toValues() {
         return new OfferValues(priceCents, cycle, trialDays, trialRequiresCard, guaranteeDays,
-                maxInstallments, boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay, name, returnUrl);
+                maxInstallments, boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay, name, returnUrl,
+                pricingMode == null ? PricingMode.FIXED : pricingMode);
     }
 }

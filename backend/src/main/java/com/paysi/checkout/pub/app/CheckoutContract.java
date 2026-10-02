@@ -2,6 +2,7 @@ package com.paysi.checkout.pub.app;
 
 import com.paysi.catalog.offer.domain.BillingCycle;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
+import com.paysi.catalog.offer.domain.PricingMode;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
 import com.paysi.identity.domain.PersonType;
@@ -24,15 +25,25 @@ public record CheckoutContract(
         Map<PersonType, List<String>> requiredBuyerFields,
         Appearance appearance,
         LegalTexts legalTexts,
-        String returnUrl
+        String returnUrl,
+        PricingMode pricingMode
 ) {
+    /** Mantém compatibilidade com o contrato anterior de preço fixo. */
+    public CheckoutContract(String product, Segment segment, ChargeType chargeType, long priceCents,
+                            BillingCycle cycle, Instant today, Instant nextChargeAt, Set<OfferPaymentMethod> methods,
+                            int installments, Map<PersonType, List<String>> requiredBuyerFields,
+                            Appearance appearance, LegalTexts legalTexts, String returnUrl) {
+        this(product, segment, chargeType, priceCents, cycle, today, nextChargeAt, methods, installments,
+                requiredBuyerFields, appearance, legalTexts, returnUrl, PricingMode.FIXED);
+    }
+
     /** Contrato sem URL de retorno; mantém a assinatura anterior. */
     public CheckoutContract(String product, Segment segment, ChargeType chargeType, long priceCents,
                             BillingCycle cycle, Instant today, Instant nextChargeAt, Set<OfferPaymentMethod> methods,
                             int installments, Map<PersonType, List<String>> requiredBuyerFields,
                             Appearance appearance, LegalTexts legalTexts) {
         this(product, segment, chargeType, priceCents, cycle, today, nextChargeAt, methods, installments,
-                requiredBuyerFields, appearance, legalTexts, null);
+                requiredBuyerFields, appearance, legalTexts, null, PricingMode.FIXED);
     }
 
     public record Appearance(

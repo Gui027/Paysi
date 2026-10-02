@@ -141,7 +141,7 @@ class OfferControllerTest {
     void rejectsInvalidRangesAndEnumsBeforeService() throws Exception {
         mvc.perform(post("/v1/products/{id}/offers", PRODUCT).cookie(cookie())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validBody().replace("10000", "1999")))
+                        .content(validBody().replace("10000", "199")))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
         mvc.perform(post("/v1/products/{id}/offers", PRODUCT).cookie(cookie())
                         .contentType(MediaType.APPLICATION_JSON)

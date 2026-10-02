@@ -105,7 +105,7 @@ public class CreateOrderService {
         Buyer buyer = buyers.insertOrRead(newBuyer(offer, command), clock.instant());
         AffiliationClickLookup.Attribution attribution = attribution(offer, command);
         PriceQuote quote = prices.priceFor(offer, command.method(), command.installments(),
-                command.coupon(), attribution == null ? 0 : attribution.commissionBps());
+                command.coupon(), attribution == null ? 0 : attribution.commissionBps(), command.amountCents());
 
         Order order = new Order(UUID.randomUUID(), offer.id(), buyer.id(),
                 attribution == null ? null : attribution.affiliationId(),

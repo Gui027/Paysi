@@ -8,14 +8,15 @@ import com.paysi.core.error.ValidationException;
 import com.paysi.identity.domain.PersonType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 import java.util.Map;
 
 /**
- * Corpo do pedido. Não existe campo de valor aqui, e um corpo que tente mandar
- * {@code amountCents} ou {@code price} é <em>recusado</em>, não silenciosamente
- * ignorado: aceitar e descartar deixaria o integrador achar que o preço dele valeu.
+ * Corpo do pedido. {@code amountCents} só é considerado quando a oferta permite que
+ * o comprador escolha o valor; a regra e o mínimo continuam sendo validados no servidor.
+ * Campos paralelos como {@code price} são recusados, não silenciosamente ignorados.
  *
  * <p>A recusa é explícita porque a aplicação roda com
  * {@code FAIL_ON_UNKNOWN_PROPERTIES} desligado — confiar no padrão global do Jackson
@@ -30,6 +31,7 @@ public record CreateOrderRequest(
         @Size(max = 128) String visitorKey,
         @NotNull @Size(min = 8, max = 128) String termsHash,
         @Size(max = 128) String reference,
+        @Min(200) Long amountCents,
         @JsonAnySetter Map<String, Object> unknown
 ) {
     public CreateOrderRequest {
@@ -40,7 +42,7 @@ public record CreateOrderRequest(
         return new CreateOrderCommand(buyer.name(), buyer.email(), buyer.personType(),
                 buyer.taxId(), buyer.legalName(), buyer.municipalReg(), buyer.address(),
                 method, installments == null ? 1 : installments, cardToken, coupon,
-                visitorKey, termsHash, reference, buyer.phone(), null);
+                visitorKey, termsHash, reference, buyer.phone(), null, amountCents);
     }
 
     public record BuyerRequest(
@@ -68,8 +70,8 @@ public record CreateOrderRequest(
         if (unknown == null || unknown.isEmpty()) return;
         String field = unknown.keySet().iterator().next();
         throw new ValidationException("UNKNOWN_FIELD",
-                "O campo '" + field + "' não faz parte do pedido. Preço e desconto são"
-                        + " calculados pelo servidor.", field);
+                "O campo '" + field + "' não faz parte do pedido. Preço e desconto são "
+                        + "validados pelo servidor.", field);
     }
 
     @Override

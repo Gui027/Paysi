@@ -64,6 +64,26 @@ test.describe("checkout — validação", () => {
 });
 
 test.describe("checkout — fluxo feliz por método de pagamento", () => {
+  test("preço flexível envia o valor escolhido pelo comprador", async ({ page }) => {
+    let pedido: Record<string, unknown> | null = null;
+    await mockOferta(page, { pricingMode: "CUSTOMER_DEFINED", priceCents: 500 });
+    await page.route(`**/v1/checkout/${OFERTA_SLUG}/orders`, async route => {
+      pedido = route.request().postDataJSON() as Record<string, unknown>;
+      await route.fulfill({ json: { orderId: "order_flex", status: "CREATED" } });
+    });
+    await mockCobranca(page, COBRANCA_PIX);
+    await page.goto(`/${OFERTA_SLUG}`);
+
+    await expect(page.getByText(/você decide o valor/i)).toBeVisible();
+    await page.getByLabel(/valor a pagar/i).fill("49,90");
+    await preencherComprador(page);
+    await aceitarTermos(page);
+    await page.getByRole("button", { name: /pagar agora/i }).click();
+
+    await expect(page.getByRole("heading", { name: /aguardando pagamento do pix/i })).toBeVisible();
+    expect(pedido).toMatchObject({ amountCents: 4990 });
+  });
+
   test("Pix: gera QR code e tela de aguardando pagamento", async ({ page }) => {
     await mockOferta(page);
     await mockPedido(page);

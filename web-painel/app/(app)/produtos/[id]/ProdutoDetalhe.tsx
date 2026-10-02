@@ -22,13 +22,13 @@ const cycleLabel: Record<BillingCycle, string> = { MONTHLY: "Mensal", QUARTERLY:
 const methodLabel: Record<OfferPaymentMethod, string> = { PIX: "Pix", CARD: "Cartão de crédito", BOLETO: "Boleto" };
 
 const blankOffer: OfferInput = {
-  priceCents: 0, cycle: null, trialDays: 0, trialRequiresCard: true, guaranteeDays: 7, maxInstallments: 1,
+  priceCents: 0, pricingMode: "FIXED", cycle: null, trialDays: 0, trialRequiresCard: true, guaranteeDays: 7, maxInstallments: 1,
   boletoDueDays: 3, boletoAdvanceDays: 5, paymentMethods: ["PIX", "CARD"], payoutDelay: "D32",
 };
 
 function offerInput(offer: Offer): OfferInput {
   return {
-    priceCents: offer.priceCents, cycle: offer.cycle, trialDays: offer.trialDays, trialRequiresCard: offer.trialRequiresCard,
+    priceCents: offer.priceCents, pricingMode: offer.pricingMode ?? "FIXED", cycle: offer.cycle, trialDays: offer.trialDays, trialRequiresCard: offer.trialRequiresCard,
     guaranteeDays: offer.guaranteeDays, maxInstallments: offer.maxInstallments, boletoDueDays: offer.boletoDueDays,
     boletoAdvanceDays: offer.boletoAdvanceDays, paymentMethods: offer.paymentMethods, payoutDelay: offer.payoutDelay,
     name: offer.name,
@@ -41,6 +41,9 @@ const upsert = (list: Offer[], offer: Offer) => list.some(item => item.id === of
 // Só reformata o texto de centavos vindo da API ("9700" -> "97,00"); nenhuma conta com dinheiro.
 const priceText = (cents: number) => { const digits = String(cents).padStart(3, "0"); return `${digits.slice(0, -2)},${digits.slice(-2)}`; };
 const checkoutBase = () => (process.env.NEXT_PUBLIC_CHECKOUT_BASE_URL ?? "https://checkout.paysi.com.br").replace(/\/$/, "");
+const offerPriceLabel = (offer: Offer) => offer.pricingMode === "CUSTOMER_DEFINED"
+  ? `Cliente escolhe · mínimo ${formatOfferMoney(offer.priceCents)}`
+  : formatOfferMoney(offer.priceCents);
 
 function Secao({ titulo, texto, children }: { titulo: string; texto?: ReactNode; children: ReactNode }) {
   return <section className="pe-section"><div className="pe-section-intro"><h2>{titulo}</h2>{texto && <p>{texto}</p>}</div><div className="pe-card">{children}</div></section>;
@@ -273,7 +276,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       {abas.map(([id, label]) => <button key={id} type="button" role="tab" id={`aba-${id}`} aria-selected={aba === id} aria-controls={`painel-${id}`} onClick={() => selectAba(id)}>{label}</button>)}
     </div>
 
-    {offers.length > 1 && (aba === "geral" || aba === "configuracoes") && offer && <label className="pe-switcher"><span>Oferta em edição</span><select value={offer.id} onChange={event => { const next = offers.find(item => item.id === event.target.value); if (next) selectOffer(next); }}>{offers.map(item => <option key={item.id} value={item.id}>{offerLabel(item, offers)} · {formatOfferMoney(item.priceCents)}</option>)}</select></label>}
+    {offers.length > 1 && (aba === "geral" || aba === "configuracoes") && offer && <label className="pe-switcher"><span>Oferta em edição</span><select value={offer.id} onChange={event => { const next = offers.find(item => item.id === event.target.value); if (next) selectOffer(next); }}>{offers.map(item => <option key={item.id} value={item.id}>{offerLabel(item, offers)} · {offerPriceLabel(item)}</option>)}</select></label>}
 
     {message && <Toast tone={message.tone}>{message.text}{nextStep && <> <Link href={nextStep.url}>{nextStep.label}</Link></>}</Toast>}
 
@@ -286,7 +289,8 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
         </Secao>
         <Secao titulo="Preço" texto={subscription ? "Valor cobrado a cada ciclo." : "Cada oferta tem o seu preço e o seu link."}>
           <label className="pe-field"><span>Nome da oferta</span><input value={offerName} maxLength={60} placeholder="Ex.: Plano Pro" aria-invalid={Boolean(errors.name)} onChange={event => { setOfferName(event.target.value); setErrors(current => ({ ...current, name: undefined })); }} />{errors.name && <small className="pe-error">{errors.name}</small>}<small className="pe-hint">Só você vê este nome; ele ajuda a distinguir as ofertas.</small></label>
-          <label className="pe-field"><span>Preço</span><span className="pe-money"><span aria-hidden="true">R$</span><input inputMode="decimal" placeholder="0,00" aria-label="Preço em reais" value={price} aria-invalid={Boolean(errors.price)} onChange={event => { setPrice(event.target.value); setErrors(current => ({ ...current, price: undefined })); }} /></span>{errors.price && <small className="pe-error">{errors.price}</small>}</label>
+          {!subscription && <Chave label="Cliente define o valor no checkout" checked={values.pricingMode === "CUSTOMER_DEFINED"} onChange={checked => { change("pricingMode", checked ? "CUSTOMER_DEFINED" : "FIXED"); setPrice(checked ? "2,00" : "20,00"); }} />}
+          <label className="pe-field"><span>{values.pricingMode === "CUSTOMER_DEFINED" ? "Valor mínimo" : "Preço"}</span><span className="pe-money"><span aria-hidden="true">R$</span><input inputMode="decimal" placeholder="0,00" aria-label={values.pricingMode === "CUSTOMER_DEFINED" ? "Valor mínimo em reais" : "Preço em reais"} value={price} aria-invalid={Boolean(errors.price)} onChange={event => { setPrice(event.target.value); setErrors(current => ({ ...current, price: undefined })); }} /></span>{values.pricingMode === "CUSTOMER_DEFINED" && <small className="pe-hint">O comprador escolhe o valor, respeitando este mínimo.</small>}{errors.price && <small className="pe-error">{errors.price}</small>}</label>
           {subscription && <label className="pe-field"><span>Cobrança</span><select value={values.cycle ?? "MONTHLY"} disabled={lockedContract.includes("CYCLE")} onChange={event => change("cycle", event.target.value as BillingCycle)}>{Object.entries(cycleLabel).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select>{errors.cycle && <small className="pe-error">{errors.cycle}</small>}</label>}
         </Secao>
       </>}
@@ -326,7 +330,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
             const itemPublished = item.status === "PUBLISHED";
             return <tr key={item.id}>
               <td><span className="prod-name">{offerLabel(item, offers)}</span>{index === 0 && <span className="pe-badge">Padrão</span>}</td>
-              <td className="prod-muted">{formatOfferMoney(item.priceCents)}</td>
+              <td className="prod-muted">{offerPriceLabel(item)}</td>
               <td><span className={`pe-pill ${itemPublished ? "pe-pill-on" : ""}`}>{itemPublished ? "Publicado" : "Rascunho"}</span></td>
               <td className="prod-actions"><div className="pe-row-actions">
                 <button type="button" className="ui-button ui-button-secondary" aria-label={`Editar ${offerLabel(item, offers)}`} onClick={() => selectOffer(item, "geral")}>Editar</button>
@@ -342,7 +346,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       {aba === "checkout" && offers.length > 0 && <Secao titulo="Integrar com seu sistema" texto={<>Use o link da oferta no seu SaaS ou landing page e receba os avisos de venda por <Link href="/apps/webhooks">webhook</Link>.</>}>
         <div className="pe-field"><span>Identificar o cliente no link</span>
           <div className="pe-link"><input className="pe-url" readOnly aria-label="Exemplo de link com identificação do cliente" value={`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`} onFocus={event => event.currentTarget.select()} /><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`)}>{copied ? "Copiado" : "Copiar"}</button></div>
-          <small className="pe-hint"><strong>ref</strong> é o identificador do cliente no seu sistema: ele volta em todos os webhooks desta venda. <strong>email</strong> e <strong>name</strong> pré-preenchem o formulário. O preço nunca vem do link: é sempre o da oferta.</small>
+          <small className="pe-hint"><strong>ref</strong> é o identificador do cliente no seu sistema: ele volta em todos os webhooks desta venda. <strong>email</strong> e <strong>name</strong> pré-preenchem o formulário. Em ofertas flexíveis, o comprador informa o valor dentro do checkout seguro.</small>
         </div>
         <div className="pe-field"><span>Eventos que você recebe</span>
           <small className="pe-hint">PAYMENT.APPROVED (venda e renovações), SUBSCRIPTION.PAST_DUE, SUBSCRIPTION.CANCELED, PAYMENT.REFUNDED e CHARGEBACK.OPENED. Cada um leva o <strong>reference</strong>, o e-mail do comprador, a oferta e o valor. Configure a URL e a assinatura em <Link href="/apps/webhooks">Apps → Webhooks</Link>.</small>
@@ -359,7 +363,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
               <td><span className="prod-name">{offerLabel(item, offers)}</span></td>
               <td><input className="pe-url" readOnly aria-label={`URL do checkout de ${offerLabel(item, offers)}`} value={itemLink} onFocus={event => event.currentTarget.select()} /></td>
               <td><span className="pe-pill pe-pill-blue">Checkout</span></td>
-              <td className="prod-muted">{formatOfferMoney(item.priceCents)}</td>
+              <td className="prod-muted">{offerPriceLabel(item)}</td>
               <td className="prod-actions"><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(itemLink)}>{copied ? "Copiado" : "Copiar"}</button></td>
             </tr>;
           })}</tbody>

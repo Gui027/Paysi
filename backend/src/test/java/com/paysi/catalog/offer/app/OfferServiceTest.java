@@ -99,7 +99,7 @@ class OfferServiceTest {
 
     @Test
     void validatesEveryCommercialCombination() {
-        assertInvalid(oneTime(1_999, null, true, Set.of(OfferPaymentMethod.CARD)), "priceCents");
+        assertInvalid(oneTime(199, null, true, Set.of(OfferPaymentMethod.CARD)), "priceCents");
         assertInvalid(oneTime(2_000, BillingCycle.MONTHLY, true, Set.of(OfferPaymentMethod.CARD)), "cycle");
         assertInvalid(values(2_000, null, 31, true, 7, 1, 3, 5,
                 Set.of(OfferPaymentMethod.CARD)), "trialDays");

@@ -10,7 +10,7 @@ import { Metodo, SeletorDeMetodo } from "../componentes/SeletorDeMetodo";
 import { criarPedido } from "../lib/pedido";
 import { calcularTermosHash } from "../lib/termos";
 import { obterChaveDeIdempotencia } from "../lib/idempotencia";
-import { formatarCentavos } from "../lib/formato";
+import { formatarCentavos, lerCentavos } from "../lib/formato";
 import { SimulacaoCheckout, simularCheckout } from "../lib/simulacao";
 import { CobrancaIniciada, cobrancaAprovada, cobrancaRecusada, confirmarTresDs, exigeDesafioTresDs, iniciarCobranca, obterChaveDeDispositivo, tokenizarCartao } from "../lib/cobranca";
 import { DadosCartao } from "../lib/cartao";
@@ -35,6 +35,8 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [couponVisible, setCouponVisible] = useState(false);
   const [coupon, setCoupon] = useState("");
+  const [amountText, setAmountText] = useState("");
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [simulando, setSimulando] = useState(false);
   const [simulacao, setSimulacao] = useState<SimulacaoCheckout | null>(null);
@@ -57,6 +59,22 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
     .filter((key): key is ChaveCampo => key !== null);
   const paymentMethod = METODO_TO_METHOD[metodo];
   const selectedInstallments = metodo === "cartao" ? installments : 1;
+  const customerDefinesAmount = contract.pricingMode === "CUSTOMER_DEFINED";
+
+  function selectedAmount(): number | null {
+    if (!customerDefinesAmount) return null;
+    const cents = lerCentavos(amountText);
+    if (cents === null) {
+      setAmountError("Informe o valor que deseja pagar.");
+      return null;
+    }
+    if (cents < contract.priceCents) {
+      setAmountError(`O valor mínimo é ${formatarCentavos(contract.priceCents)}.`);
+      return null;
+    }
+    setAmountError(null);
+    return cents;
+  }
 
   function invalidarSimulacao() {
     simulationVersion.current += 1;
@@ -76,11 +94,17 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
     setCouponError(null);
     setSimulacao(null);
     const requestVersion = ++simulationVersion.current;
+    const amountCents = selectedAmount();
+    if (customerDefinesAmount && amountCents === null) {
+      setSimulando(false);
+      return;
+    }
     try {
       const result = await simularCheckout(slug, {
         method: paymentMethod,
         installments: selectedInstallments,
         couponCode,
+        ...(amountCents !== null ? { amountCents } : {}),
       });
       if (simulationVersion.current === requestVersion) setSimulacao(result);
     } catch (error) {
@@ -117,10 +141,12 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
     const hasTermsError = !termsAccepted;
     const hasCouponError = couponVisible && Boolean(coupon.trim()) && !simulacao;
     const hasCardError = metodo === "cartao" && !dadosCartao;
+    const amountCents = selectedAmount();
+    const hasAmountError = customerDefinesAmount && amountCents === null;
     setErrors(nextErrors);
     setTermsError(hasTermsError ? "É preciso aceitar os termos para continuar." : null);
     setCouponError(hasCouponError ? "Valide o cupom antes de continuar." : null);
-    if (Object.values(nextErrors).some(Boolean) || hasTermsError || hasCouponError || hasCardError) {
+    if (Object.values(nextErrors).some(Boolean) || hasTermsError || hasCouponError || hasCardError || hasAmountError) {
       setGeneralError(hasCardError ? "Preencha os dados do cartão corretamente." : "Revise os campos destacados.");
       return;
     }
@@ -137,6 +163,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
         coupon: couponVisible && coupon.trim() ? coupon.trim() : null,
         termsHash,
         ...(integracao.reference ? { reference: integracao.reference } : {}),
+        ...(amountCents !== null ? { amountCents } : {}),
       };
       const pedido = await criarPedido(slug, payload, obterChaveDeIdempotencia(`${slug}:${JSON.stringify(payload)}`));
 
@@ -227,7 +254,9 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
     <form className="checkout-form" onSubmit={event => void enviar(event)} noValidate>
       {generalError && <p className="form-alert" role="alert">{generalError}</p>}
 
-      <div><span className="step">1</span><h2>Quem está comprando</h2></div>
+      {customerDefinesAmount && <><div><span className="step">1</span><h2>Escolha o valor</h2></div><div className="field-grid customer-amount"><Campo id="amount" label={`Valor a pagar (mínimo ${formatarCentavos(contract.priceCents)})`} inputMode="decimal" placeholder="0,00" full value={amountText} error={amountError ?? undefined} onChange={event => { setAmountText(event.target.value); setAmountError(null); invalidarSimulacao(); }} /></div></>}
+
+      <div><span className="step">{customerDefinesAmount ? 2 : 1}</span><h2>Quem está comprando</h2></div>
       <fieldset className="person-type-toggle">
         <legend>Tipo de comprador</legend>
         <label className={personType === "PF" ? "selected" : undefined}>
@@ -244,7 +273,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
           onChange={event => { setValues(current => ({ ...current, phone: event.target.value })); setErrors(current => ({ ...current, phone: undefined })); }} />
       </div>
 
-      <div className="section-title"><span className="step">2</span><h2>Cupom de desconto</h2></div>
+      <div className="section-title"><span className="step">{customerDefinesAmount ? 3 : 2}</span><h2>Cupom de desconto</h2></div>
       {!couponVisible ? (
         <button type="button" className="link-button" onClick={() => setCouponVisible(true)}>Tenho um cupom</button>
       ) : (
@@ -269,7 +298,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
         </label>
       )}
 
-      <div className="section-title"><span className="step">3</span><h2>Pagamento</h2></div>
+      <div className="section-title"><span className="step">{customerDefinesAmount ? 4 : 3}</span><h2>Pagamento</h2></div>
       <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); setDadosCartao(null); }} disponiveis={disponiveis} />
       {metodo === "cartao" && (
         <>
@@ -286,7 +315,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
         </>
       )}
 
-      <div className="section-title"><span className="step">4</span><h2>Termos</h2></div>
+      <div className="section-title"><span className="step">{customerDefinesAmount ? 5 : 4}</span><h2>Termos</h2></div>
       <label className="terms-check">
         <input type="checkbox" checked={termsAccepted} onChange={event => { setTermsAccepted(event.target.checked); setTermsError(null); }} />
         Li e aceito os <a href={contract.legalTexts.termsUrl} target="_blank" rel="noreferrer">termos de uso</a> e a{" "}

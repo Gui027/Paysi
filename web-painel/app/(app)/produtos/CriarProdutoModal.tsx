@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useId, useRef, useState } from "react";
 import { ApiRequestError } from "../../../lib/api";
-import { BillingCycle, createOffer, parseMoneyToCents, validateOfferInput } from "../../../lib/ofertas";
+import { BillingCycle, createOffer, OfferPricingMode, parseMoneyToCents, validateOfferInput } from "../../../lib/ofertas";
 import { createProduct, ProductChargeType, ProductSegment } from "../../../lib/produtos";
 
 const cycleLabel: Record<BillingCycle, string> = { MONTHLY: "Mensal", QUARTERLY: "Trimestral", SEMIANNUAL: "Semestral", ANNUAL: "Anual" };
@@ -21,6 +21,7 @@ export function CriarProdutoModal({ open, onClose }: { open: boolean; onClose: (
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [pricingMode, setPricingMode] = useState<OfferPricingMode>("FIXED");
   const [errors, setErrors] = useState<{ name?: string; price?: string }>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -39,6 +40,7 @@ export function CriarProdutoModal({ open, onClose }: { open: boolean; onClose: (
     if (!name.trim()) next.name = "Informe o nome do produto.";
     const offerInput = {
       priceCents: cents ?? 0, cycle: chargeType === "SUBSCRIPTION" ? cycle : null, trialDays: 0, trialRequiresCard: true,
+      pricingMode,
       guaranteeDays: 7, maxInstallments: 1, boletoDueDays: 3, boletoAdvanceDays: 5,
       paymentMethods: segment === "SAAS" ? ["PIX", "CARD", "BOLETO"] as ("PIX" | "CARD" | "BOLETO")[] : ["PIX", "CARD"] as ("PIX" | "CARD")[],
       payoutDelay: "D32" as const,
@@ -65,7 +67,7 @@ export function CriarProdutoModal({ open, onClose }: { open: boolean; onClose: (
       <button type="button" className="cp-close" aria-label="Fechar" onClick={() => !saving && onClose()}>✕</button></header>
     {step === 1 ? <div className="cp-body">
       <label className="cp-field"><span>Tipo de pagamento</span>
-        <select value={chargeType} onChange={event => setChargeType(event.target.value as ProductChargeType)}>
+        <select value={chargeType} onChange={event => { const next = event.target.value as ProductChargeType; setChargeType(next); if (next === "SUBSCRIPTION") setPricingMode("FIXED"); }}>
           <option value="ONE_TIME">Pagamento único</option><option value="SUBSCRIPTION">Assinatura recorrente</option>
         </select></label>
       <label className="cp-field"><span>Tipo de produto</span>
@@ -85,8 +87,10 @@ export function CriarProdutoModal({ open, onClose }: { open: boolean; onClose: (
         <select value={cycle} onChange={event => setCycle(event.target.value as BillingCycle)}>
           {Object.entries(cycleLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select></label>}
-      <label className="cp-field"><span>Preço</span>
+      {chargeType === "ONE_TIME" && <label className="pe-switch"><input type="checkbox" role="switch" checked={pricingMode === "CUSTOMER_DEFINED"} onChange={event => { const custom = event.target.checked; setPricingMode(custom ? "CUSTOMER_DEFINED" : "FIXED"); if (custom && !price.trim()) setPrice("5,00"); setErrors(current => ({ ...current, price: undefined })); }} /><span className="pe-track" aria-hidden="true" /><span>Cliente define o valor no checkout</span></label>}
+      <label className="cp-field"><span>{pricingMode === "CUSTOMER_DEFINED" ? "Valor mínimo" : "Preço"}</span>
         <span className="cp-money"><span aria-hidden="true">R$</span><input inputMode="decimal" placeholder="0,00" value={price} aria-label="Preço em reais" aria-invalid={Boolean(errors.price)} onChange={event => setPrice(event.target.value)} /></span>
+        {pricingMode === "CUSTOMER_DEFINED" && <small>O comprador poderá escolher qualquer valor a partir deste mínimo.</small>}
         {errors.price && <small className="cp-error">{errors.price}</small>}</label>
       <button type="submit" className="cp-primary" disabled={saving}>{saving ? "Criando…" : "Criar produto"}</button>
     </form>}

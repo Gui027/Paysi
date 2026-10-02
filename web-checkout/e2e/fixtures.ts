@@ -14,6 +14,7 @@ export function contractFixture(overrides: Partial<Record<string, unknown>> = {}
     segment: "DIGITAL",
     chargeType: "ONE_TIME",
     priceCents: 19900,
+    pricingMode: "FIXED",
     cycle: null,
     today: "2026-09-17",
     nextChargeAt: null,

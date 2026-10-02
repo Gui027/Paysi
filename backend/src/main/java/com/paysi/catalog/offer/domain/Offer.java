@@ -30,8 +30,20 @@ public record Offer(
         Instant createdAt,
         Instant updatedAt,
         String name,
-        String returnUrl
+        String returnUrl,
+        PricingMode pricingMode
 ) {
+    /** Mantém a assinatura anterior do construtor canônico para ofertas de preço fixo. */
+    public Offer(UUID id, UUID productId, ChargeType chargeType, Segment segment, String slug,
+                 long priceCents, BillingCycle cycle, int trialDays, boolean trialRequiresCard,
+                 int guaranteeDays, int maxInstallments, int boletoDueDays, int boletoAdvanceDays,
+                 Set<OfferPaymentMethod> paymentMethods, OfferPayoutDelay payoutDelay, OfferStatus status,
+                 Instant archivedAt, Instant createdAt, Instant updatedAt, String name, String returnUrl) {
+        this(id, productId, chargeType, segment, slug, priceCents, cycle, trialDays, trialRequiresCard,
+                guaranteeDays, maxInstallments, boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay,
+                status, archivedAt, createdAt, updatedAt, name, returnUrl, PricingMode.FIXED);
+    }
+
     /** Oferta sem URL de retorno. */
     public Offer(UUID id, UUID productId, ChargeType chargeType, Segment segment, String slug,
                  long priceCents, BillingCycle cycle, int trialDays, boolean trialRequiresCard,
@@ -40,7 +52,7 @@ public record Offer(
                  Instant archivedAt, Instant createdAt, Instant updatedAt, String name) {
         this(id, productId, chargeType, segment, slug, priceCents, cycle, trialDays, trialRequiresCard,
                 guaranteeDays, maxInstallments, boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay,
-                status, archivedAt, createdAt, updatedAt, name, null);
+                status, archivedAt, createdAt, updatedAt, name, null, PricingMode.FIXED);
     }
 
     /** Oferta sem nome; mantém a assinatura anterior do construtor. */
@@ -51,7 +63,7 @@ public record Offer(
                  Instant archivedAt, Instant createdAt, Instant updatedAt) {
         this(id, productId, chargeType, segment, slug, priceCents, cycle, trialDays, trialRequiresCard,
                 guaranteeDays, maxInstallments, boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay,
-                status, archivedAt, createdAt, updatedAt, null, null);
+                status, archivedAt, createdAt, updatedAt, null, null, PricingMode.FIXED);
     }
 
     public Offer {
@@ -60,7 +72,16 @@ public record Offer(
         Objects.requireNonNull(chargeType, "chargeType");
         Objects.requireNonNull(segment, "segment");
         if (slug == null || slug.isBlank()) throw invalid("O slug é obrigatório", "slug");
-        if (priceCents < 2_000) throw invalid("O preço mínimo é 2000 centavos", "priceCents");
+        pricingMode = pricingMode == null ? PricingMode.FIXED : pricingMode;
+        if (pricingMode == PricingMode.FIXED && priceCents < 200) {
+            throw invalid("O preço mínimo é 200 centavos", "priceCents");
+        }
+        if (pricingMode == PricingMode.CUSTOMER_DEFINED) {
+            if (chargeType != ChargeType.ONE_TIME) {
+                throw invalid("Preço definido pelo cliente só está disponível para pagamento único", "pricingMode");
+            }
+            if (priceCents < 200) throw invalid("O valor mínimo é 200 centavos", "priceCents");
+        }
         if (chargeType == ChargeType.SUBSCRIPTION && cycle == null) {
             throw invalid("Ciclo é obrigatório para assinaturas", "cycle");
         }
@@ -101,20 +122,22 @@ public record Offer(
         return new Offer(id, productId, chargeType, segment, slug, values.priceCents(), values.cycle(),
                 values.trialDays(), values.trialRequiresCard(), values.guaranteeDays(),
                 values.maxInstallments(), values.boletoDueDays(), values.boletoAdvanceDays(),
-                values.paymentMethods(), values.payoutDelay(), OfferStatus.DRAFT, null, now, now, values.name(), values.returnUrl());
+                values.paymentMethods(), values.payoutDelay(), OfferStatus.DRAFT, null, now, now,
+                values.name(), values.returnUrl(), values.pricingMode());
     }
 
     /** Valores comerciais atuais, para criar uma cópia da oferta. */
     public OfferValues values() {
         return new OfferValues(priceCents, cycle, trialDays, trialRequiresCard, guaranteeDays, maxInstallments,
-                boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay, name, returnUrl);
+                boletoDueDays, boletoAdvanceDays, paymentMethods, payoutDelay, name, returnUrl, pricingMode);
     }
 
     public Offer update(OfferValues values, Instant now) {
         return new Offer(id, productId, chargeType, segment, slug, values.priceCents(), values.cycle(),
                 values.trialDays(), values.trialRequiresCard(), values.guaranteeDays(),
                 values.maxInstallments(), values.boletoDueDays(), values.boletoAdvanceDays(),
-                values.paymentMethods(), values.payoutDelay(), status, archivedAt, createdAt, now, values.name(), values.returnUrl());
+                values.paymentMethods(), values.payoutDelay(), status, archivedAt, createdAt, now,
+                values.name(), values.returnUrl(), values.pricingMode());
     }
 
     public Offer publish(Instant now) {
@@ -124,7 +147,7 @@ public record Offer(
         }
         return new Offer(id, productId, chargeType, segment, slug, priceCents, cycle, trialDays,
                 trialRequiresCard, guaranteeDays, maxInstallments, boletoDueDays, boletoAdvanceDays,
-                paymentMethods, payoutDelay, OfferStatus.PUBLISHED, null, createdAt, now, name, returnUrl);
+                paymentMethods, payoutDelay, OfferStatus.PUBLISHED, null, createdAt, now, name, returnUrl, pricingMode);
     }
 
     private static ValidationException invalid(String message, String field) {

@@ -27,7 +27,33 @@ test.describe("criar produto (modal em dois passos)", () => {
     await page.getByRole("dialog").getByRole("button", { name: "Criar produto" }).click();
 
     await expect(page).toHaveURL(new RegExp(`/produtos/${PRODUTO.id}$`));
-    expect(ofertaEnviada).toMatchObject({ priceCents: 9700, cycle: null, guaranteeDays: 7 });
+    expect(ofertaEnviada).toMatchObject({ priceCents: 9700, pricingMode: "FIXED", cycle: null, guaranteeDays: 7 });
+  });
+
+  test("permite criar produto com valor definido pelo cliente", async ({ page }) => {
+    await mockSessao(page);
+    await mockDashboardVazio(page);
+    let ofertaEnviada: Record<string, unknown> | null = null;
+    await page.route("**/api/v1/products", async route => {
+      if (route.request().method() === "POST") await route.fulfill({ json: PRODUTO });
+      else await route.fulfill({ json: { items: [], nextCursor: null } });
+    });
+    await page.route(`**/api/v1/products/${PRODUTO.id}/offers`, async route => {
+      if (route.request().method() === "POST") {
+        ofertaEnviada = route.request().postDataJSON();
+        await route.fulfill({ json: { id: "off_flex" } });
+      } else await route.fulfill({ json: [] });
+    });
+    await page.route(`**/api/v1/products/${PRODUTO.id}`, route => route.fulfill({ json: PRODUTO }));
+
+    await page.goto("/produtos");
+    await page.getByRole("button", { name: "Criar produto" }).first().click();
+    await page.getByRole("button", { name: /continuar/i }).click();
+    await page.getByLabel("Nome do produto").fill("Contribuição livre");
+    await page.getByRole("switch", { name: /cliente define o valor/i }).check();
+    await page.getByRole("dialog").getByRole("button", { name: "Criar produto" }).click();
+
+    expect(ofertaEnviada).toMatchObject({ priceCents: 500, pricingMode: "CUSTOMER_DEFINED" });
   });
 
   test("valida nome e preço mínimo no segundo passo e passa no axe", async ({ page }) => {

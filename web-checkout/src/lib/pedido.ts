@@ -29,6 +29,7 @@ export type PedidoInput = {
   coupon: string | null;
   termsHash: string;
   reference?: string;
+  amountCents?: number;
 };
 
 export type PedidoCriado = {

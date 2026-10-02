@@ -29,6 +29,6 @@ public class CheckoutSimulationController {
     public SimulationResponse simulate(@PathVariable String slug,
             @Valid @RequestBody SimulationRequest request) {
         return SimulationResponse.from(prices.simulate(slug, request.method(),
-                request.installmentsOrOne(), request.coupon()));
+                request.installmentsOrOne(), request.coupon(), request.amountCents()));
     }
 }

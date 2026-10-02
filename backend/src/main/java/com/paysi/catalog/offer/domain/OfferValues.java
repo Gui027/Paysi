@@ -14,12 +14,14 @@ public record OfferValues(
         Set<OfferPaymentMethod> paymentMethods,
         OfferPayoutDelay payoutDelay,
         String name,
-        String returnUrl
+        String returnUrl,
+        PricingMode pricingMode
 ) {
     public static final int NAME_MAX_LENGTH = 60;
     public static final int RETURN_URL_MAX_LENGTH = 500;
 
     public OfferValues {
+        pricingMode = pricingMode == null ? PricingMode.FIXED : pricingMode;
         if (returnUrl != null) {
             returnUrl = returnUrl.strip();
             if (returnUrl.isEmpty()) returnUrl = null;
@@ -62,7 +64,16 @@ public record OfferValues(
                        int guaranteeDays, int maxInstallments, int boletoDueDays, int boletoAdvanceDays,
                        Set<OfferPaymentMethod> paymentMethods, OfferPayoutDelay payoutDelay, String name) {
         this(priceCents, cycle, trialDays, trialRequiresCard, guaranteeDays, maxInstallments, boletoDueDays,
-                boletoAdvanceDays, paymentMethods, payoutDelay, name, null);
+                boletoAdvanceDays, paymentMethods, payoutDelay, name, null, PricingMode.FIXED);
+    }
+
+    /** Mantém compatibilidade com chamadas anteriores à precificação variável. */
+    public OfferValues(long priceCents, BillingCycle cycle, int trialDays, boolean trialRequiresCard,
+                       int guaranteeDays, int maxInstallments, int boletoDueDays, int boletoAdvanceDays,
+                       Set<OfferPaymentMethod> paymentMethods, OfferPayoutDelay payoutDelay, String name,
+                       String returnUrl) {
+        this(priceCents, cycle, trialDays, trialRequiresCard, guaranteeDays, maxInstallments, boletoDueDays,
+                boletoAdvanceDays, paymentMethods, payoutDelay, name, returnUrl, PricingMode.FIXED);
     }
 
     /** Oferta sem nome (o painel exibe "Oferta 1", "Oferta 2"…). */
@@ -70,6 +81,6 @@ public record OfferValues(
                        int guaranteeDays, int maxInstallments, int boletoDueDays, int boletoAdvanceDays,
                        Set<OfferPaymentMethod> paymentMethods, OfferPayoutDelay payoutDelay) {
         this(priceCents, cycle, trialDays, trialRequiresCard, guaranteeDays, maxInstallments, boletoDueDays,
-                boletoAdvanceDays, paymentMethods, payoutDelay, null, null);
+                boletoAdvanceDays, paymentMethods, payoutDelay, null, null, PricingMode.FIXED);
     }
 }

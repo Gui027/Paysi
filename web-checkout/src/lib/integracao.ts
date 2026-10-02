@@ -1,7 +1,8 @@
 /**
  * Integração com o sistema do vendedor (SaaS, landing page): o link do checkout pode trazer
  * `?ref=` (identificador do cliente no sistema dele), `?email=` e `?name=` para pré-preencher.
- * Nada disso muda preço: o valor vem sempre da oferta, lida no servidor.
+ * Nada disso muda preço: em oferta fixa o valor vem da oferta; em oferta flexível,
+ * o comprador o informa no formulário e o servidor valida o mínimo.
  */
 export type ParametrosIntegracao = {
   reference: string | null;
