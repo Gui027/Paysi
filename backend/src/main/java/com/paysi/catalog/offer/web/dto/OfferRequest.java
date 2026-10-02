@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public record OfferRequest(
-        @NotNull @Min(500) Long priceCents,
+        @NotNull @Min(200) Long priceCents,
         BillingCycle cycle,
         @NotNull @Min(0) @Max(30) Integer trialDays,
         @NotNull Boolean trialRequiresCard,
