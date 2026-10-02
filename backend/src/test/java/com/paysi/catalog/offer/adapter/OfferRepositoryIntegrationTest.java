@@ -189,7 +189,7 @@ class OfferRepositoryIntegrationTest {
     void databaseRejectsPriceBelowMinimum() {
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO offers (id,product_id,charge_type,segment,slug,amount_cents,cycle)
-                VALUES (?,?,'IGNORED','IGNORED','baixo',1999,'MONTHLY')
+                VALUES (?,?,'IGNORED','IGNORED','baixo',199,'MONTHLY')
                 """, UUID.randomUUID(), PRODUCT)).isInstanceOf(DataIntegrityViolationException.class);
     }
 

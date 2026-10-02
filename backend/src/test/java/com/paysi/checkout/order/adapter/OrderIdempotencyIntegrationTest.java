@@ -175,7 +175,7 @@ class OrderIdempotencyIntegrationTest {
     @Test
     void bancoRecusaPedidoAbaixoDoPisoTecnico() {
         Order barato = new Order(UUID.randomUUID(), OFFER, buyerId, null, "{\"name\":\"Ana\"}",
-                17_700, 17_300, null, 400, OfferPaymentMethod.PIX, 1, OrderStatus.PENDING,
+                17_700, 17_600, null, 100, OfferPaymentMethod.PIX, 1, OrderStatus.PENDING,
                 KEY, HASH, NOW);
 
         assertThatThrownBy(() -> orders.insertIfAbsent(barato))

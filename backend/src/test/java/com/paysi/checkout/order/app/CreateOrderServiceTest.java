@@ -86,7 +86,7 @@ class CreateOrderServiceTest {
             return new Buyer(BUYER, buyer.name(), buyer.email(), buyer.personType(), buyer.taxId(),
                     buyer.legalName(), buyer.municipalReg(), buyer.address());
         });
-        when(prices.priceFor(any(), any(), anyInt(), any(), anyInt())).thenReturn(quote(CouponDiscount.none()));
+        when(prices.priceFor(any(), any(), anyInt(), any(), anyInt(), any())).thenReturn(quote(CouponDiscount.none()));
         when(orders.insertIfAbsent(any())).thenReturn(true);
         when(clicks.findLastClick(anyString(), any())).thenReturn(Optional.empty());
 
@@ -175,7 +175,7 @@ class CreateOrderServiceTest {
 
     @Test
     void repeticaoNaoConsomeUnidadeDeCupom() {
-        when(prices.priceFor(any(), any(), anyInt(), any(), anyInt()))
+        when(prices.priceFor(any(), any(), anyInt(), any(), anyInt(), any()))
                 .thenReturn(quote(new CouponDiscount(UUID.randomUUID(), "PROMO10", 1_770, 1)));
         when(orders.insertIfAbsent(any())).thenReturn(false);
         when(orders.findByIdempotencyKey(any(), anyString())).thenReturn(Optional.empty());
@@ -190,7 +190,7 @@ class CreateOrderServiceTest {
     @Test
     void cupomSoEhConsumidoDepoisQueOPedidoExiste() {
         CouponDiscount discount = new CouponDiscount(UUID.randomUUID(), "PROMO10", 1_770, 1);
-        when(prices.priceFor(any(), any(), anyInt(), any(), anyInt())).thenReturn(quote(discount));
+        when(prices.priceFor(any(), any(), anyInt(), any(), anyInt(), any())).thenReturn(quote(discount));
 
         service.create(SLUG, KEY, command(PersonType.PF, CPF, null, "PROMO10"));
 
@@ -266,7 +266,7 @@ class CreateOrderServiceTest {
         service.create(SLUG, KEY, comVisitante);
 
         assertThat(captured().affiliationId()).isEqualTo(affiliation);
-        verify(prices).priceFor(any(), eq(OfferPaymentMethod.PIX), eq(1), any(), eq(1_000));
+        verify(prices).priceFor(any(), eq(OfferPaymentMethod.PIX), eq(1), any(), eq(1_000), any());
     }
 
     @Test

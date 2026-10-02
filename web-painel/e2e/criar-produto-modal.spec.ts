@@ -53,7 +53,7 @@ test.describe("criar produto (modal em dois passos)", () => {
     await page.getByRole("switch", { name: /cliente define o valor/i }).check();
     await page.getByRole("dialog").getByRole("button", { name: "Criar produto" }).click();
 
-    expect(ofertaEnviada).toMatchObject({ priceCents: 500, pricingMode: "CUSTOMER_DEFINED" });
+    expect(ofertaEnviada).toMatchObject({ priceCents: 200, pricingMode: "CUSTOMER_DEFINED" });
   });
 
   test("valida nome e preço mínimo no segundo passo e passa no axe", async ({ page }) => {
@@ -65,9 +65,9 @@ test.describe("criar produto (modal em dois passos)", () => {
     const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     expect(axe.violations.filter(v => v.impact === "critical" || v.impact === "serious")).toEqual([]);
     await page.getByRole("button", { name: /continuar/i }).click();
-    await page.getByLabel("Preço em reais").fill("5");
+    await page.getByLabel("Preço em reais").fill("1");
     await page.getByRole("dialog").getByRole("button", { name: "Criar produto" }).click();
     await expect(page.getByText(/informe o nome do produto/i)).toBeVisible();
-    await expect(page.getByText(/preço mínimo de R\$ 20,00/i)).toBeVisible();
+    await expect(page.getByText(/preço mínimo de R$ 2,00/i)).toBeVisible();
   });
 });

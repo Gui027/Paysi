@@ -87,7 +87,7 @@ export function CriarProdutoModal({ open, onClose }: { open: boolean; onClose: (
         <select value={cycle} onChange={event => setCycle(event.target.value as BillingCycle)}>
           {Object.entries(cycleLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select></label>}
-      {chargeType === "ONE_TIME" && <label className="pe-switch"><input type="checkbox" role="switch" checked={pricingMode === "CUSTOMER_DEFINED"} onChange={event => { const custom = event.target.checked; setPricingMode(custom ? "CUSTOMER_DEFINED" : "FIXED"); if (custom && !price.trim()) setPrice("5,00"); setErrors(current => ({ ...current, price: undefined })); }} /><span className="pe-track" aria-hidden="true" /><span>Cliente define o valor no checkout</span></label>}
+      {chargeType === "ONE_TIME" && <label className="pe-switch"><input type="checkbox" role="switch" checked={pricingMode === "CUSTOMER_DEFINED"} onChange={event => { const custom = event.target.checked; setPricingMode(custom ? "CUSTOMER_DEFINED" : "FIXED"); if (custom && !price.trim()) setPrice("2,00"); setErrors(current => ({ ...current, price: undefined })); }} /><span className="pe-track" aria-hidden="true" /><span>Cliente define o valor no checkout</span></label>}
       <label className="cp-field"><span>{pricingMode === "CUSTOMER_DEFINED" ? "Valor mínimo" : "Preço"}</span>
         <span className="cp-money"><span aria-hidden="true">R$</span><input inputMode="decimal" placeholder="0,00" value={price} aria-label="Preço em reais" aria-invalid={Boolean(errors.price)} onChange={event => setPrice(event.target.value)} /></span>
         {pricingMode === "CUSTOMER_DEFINED" && <small>O comprador poderá escolher qualquer valor a partir deste mínimo.</small>}
