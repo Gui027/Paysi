@@ -53,6 +53,7 @@ test.describe("criar produto (modal em dois passos)", () => {
     await page.getByRole("switch", { name: /cliente define o valor/i }).check();
     await page.getByRole("dialog").getByRole("button", { name: "Criar produto" }).click();
 
+    await expect(page).toHaveURL(new RegExp(`/produtos/${PRODUTO.id}$`));
     expect(ofertaEnviada).toMatchObject({ priceCents: 200, pricingMode: "CUSTOMER_DEFINED" });
   });
 
