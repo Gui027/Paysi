@@ -22,6 +22,7 @@ test.describe("checkout — estados de carregamento/vazio/erro", () => {
     await mockOferta(page);
     await page.goto(`/${OFERTA_SLUG}`);
     await expect(page.getByRole("heading", { name: /quem está comprando/i })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Serviços financeiros Asaas" })).toBeVisible();
   });
 
   test("oferta inexistente mostra estado vazio", async ({ page }) => {

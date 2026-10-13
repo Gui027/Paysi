@@ -44,7 +44,8 @@ export function App() {
         <CheckoutForm slug={slug} contract={contract} />
         <footer>
           Pagamento processado por <img src="/paysi-logo.svg" alt="Paysi" />
-          <span>A Paysi não é uma instituição autorizada a funcionar pelo Banco Central.</span>
+          <img className="asaas-seal" src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=a9d026e7-160f-4d17-8e71-14e274efb29b" alt="Serviços financeiros Asaas" />
+          <span>A Paysi não é uma instituição autorizada a funcionar pelo Banco Central. Os serviços financeiros desta compra são prestados pela Asaas, instituição de pagamento autorizada.</span>
         </footer>
       </section>
     </main>

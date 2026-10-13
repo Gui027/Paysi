@@ -48,6 +48,7 @@ button, input { font: inherit; }
 .security-note { text-align: center; color: var(--texto-apoio); font-size: 12px; }
 .form-column footer { margin-top: var(--esp-8); padding-top: var(--esp-5); border-top: 1px solid var(--borda); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--esp-2); color: var(--texto-apoio); font-size: 12px; }
 .form-column footer img { width: 56px; }
+.form-column footer img.asaas-seal { width: 96px; }
 .form-column footer span { flex-basis: 100%; text-align: center; }
 
 .field-error { color: var(--erro); font-size: 12px; }
