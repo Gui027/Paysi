@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -58,6 +59,26 @@ class CheckoutControllerTest {
         when(contracts.get("rascunho")).thenThrow(new NotFoundException("OFFER_NOT_FOUND", "Oferta não encontrada"));
 
         mvc.perform(get("/v1/offers/{slug}/checkout", "rascunho"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("OFFER_NOT_FOUND"));
+    }
+
+    @Test
+    void exposesThePreviewContractByOfferIdRegardlessOfPublicationStatus() throws Exception {
+        UUID offerId = UUID.randomUUID();
+        when(contracts.preview(offerId)).thenReturn(contract());
+
+        mvc.perform(get("/v1/offers/preview/{offerId}/checkout", offerId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.product").value("Gestão Ágil"));
+    }
+
+    @Test
+    void returnsNotFoundForAnUnknownPreviewOfferId() throws Exception {
+        UUID offerId = UUID.randomUUID();
+        when(contracts.preview(offerId)).thenThrow(new NotFoundException("OFFER_NOT_FOUND", "Oferta não encontrada"));
+
+        mvc.perform(get("/v1/offers/preview/{offerId}/checkout", offerId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("OFFER_NOT_FOUND"));
     }

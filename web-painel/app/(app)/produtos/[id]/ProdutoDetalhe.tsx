@@ -335,6 +335,7 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
                 <button type="button" className="ui-button ui-button-secondary" aria-label={`Editar ${offerLabel(item, offers)}`} onClick={() => selectOffer(item, "geral")}>Editar</button>
                 <Link className="ui-button ui-button-secondary" href={`/aparencia/${item.id}`} aria-label={`Personalizar ${offerLabel(item, offers)}`}>Personalizar</Link>
                 <button type="button" className="ui-button ui-button-secondary" disabled={duplicating} aria-label={`Duplicar ${offerLabel(item, offers)}`} onClick={() => void duplicate(item)}>Duplicar</button>
+                <a className="ui-button ui-button-secondary" href={`${checkoutBase()}/preview/${item.id}`} target="_blank" rel="noopener noreferrer" aria-label={`Pré-visualizar checkout de ${offerLabel(item, offers)}`}>Pré-visualizar</a>
                 {itemPublished ? <button type="button" className="ui-button ui-button-secondary" aria-label={`Copiar link de ${offerLabel(item, offers)}`} onClick={() => copiar(`${checkoutBase()}/checkout/${item.slug}`)}>{copied ? "Link copiado" : "Copiar link"}</button> : <button type="button" className="ui-button ui-button-primary" disabled={publishing} aria-label={`Publicar ${offerLabel(item, offers)}`} onClick={() => void publish(item)}>{publishing ? "Publicando…" : "Publicar"}</button>}
               </div></td>
             </tr>;

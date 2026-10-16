@@ -108,6 +108,14 @@ test.describe("editor do produto (abas)", () => {
     await expect(page.getByLabel("URL do checkout de Oferta 1")).toHaveValue(/checkout\/curso-vendas/);
   });
 
+  test("oferta em rascunho oferece pré-visualizar o checkout pelo UUID da oferta, não pelo slug", async ({ page }) => {
+    await page.goto(`/produtos/${PRODUTO.id}?aba=checkout`);
+    const link = page.getByRole("link", { name: "Pré-visualizar checkout de Oferta 1" });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("href", new RegExp(`/preview/${OFERTA.id}$`));
+    await expect(link).toHaveAttribute("target", "_blank");
+  });
+
   test("passa no axe em todas as abas (com o programa de afiliados aberto)", async ({ page }) => {
     for (const aba of ["", "?aba=configuracoes", "?aba=checkout", "?aba=afiliados", "?aba=links"]) {
       await page.goto(`/produtos/${PRODUTO.id}${aba}`);

@@ -2,9 +2,11 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import {
   OFERTA_SLUG,
+  OFERTA_ID,
   mockOferta,
   mockOfertaNotFound,
   mockOfertaErro,
+  mockOfertaPreview,
   mockPedido,
   mockCobranca,
   COBRANCA_CARTAO_APROVADA,
@@ -40,6 +42,19 @@ test.describe("checkout — estados de carregamento/vazio/erro", () => {
   test("link sem slug mostra estado de link inválido", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /link inválido/i })).toBeVisible();
+  });
+});
+
+test.describe("checkout — pré-visualização do vendedor", () => {
+  test("pré-visualização mostra o aviso e desativa o botão de pagar, mesmo com a oferta ainda não publicada", async ({ page }) => {
+    await mockOfertaPreview(page);
+    await page.goto(`/preview/${OFERTA_ID}`);
+    await expect(page.getByRole("heading", { name: /quem está comprando/i })).toBeVisible();
+    await expect(page.getByText(/modo de pré-visualização/i)).toBeVisible();
+    const botaoPagar = page.getByRole("button", { name: /pagamento desativado/i });
+    await expect(botaoPagar).toBeVisible();
+    await expect(botaoPagar).toBeDisabled();
+    await expect(page.getByRole("img", { name: "Serviços financeiros Asaas" })).toBeVisible();
   });
 });
 

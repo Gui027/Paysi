@@ -85,6 +85,18 @@ class JdbcOfferRepository implements OfferRepository {
     }
 
     @Override
+    public Optional<Offer> findById(UUID id) {
+        return jdbc.query("""
+                SELECT o.*
+                  FROM offers o
+                  JOIN products p ON p.id = o.product_id
+                 WHERE o.id = ?
+                   AND o.archived_at IS NULL
+                   AND p.archived_at IS NULL
+                """, (rs, row) -> map(rs), id).stream().findFirst();
+    }
+
+    @Override
     public boolean hasPaidSale(UUID offerId) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
                 SELECT EXISTS (

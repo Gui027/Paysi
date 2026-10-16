@@ -2,26 +2,29 @@ import { useEffect, useState } from "react";
 import { ResumoDaOferta } from "./componentes/ResumoDaOferta";
 import { CheckoutForm } from "./telas/CheckoutForm";
 import { ApiRequestError } from "./lib/api";
-import { CheckoutContract, getCheckoutContract } from "./lib/checkout";
+import { CheckoutContract, getCheckoutContract, getCheckoutPreview } from "./lib/checkout";
 
-function slugFromLocation(): string | null {
+function targetFromLocation(): { kind: "slug" | "preview"; value: string } | null {
   const segments = window.location.pathname.split("/").filter(Boolean);
   // O painel gera links no formato /checkout/{slug}; /{slug} também continua valendo.
+  // /preview/{offerId} é a pré-visualização do próprio vendedor, por UUID — nunca é publicável nem compra de verdade.
+  if (segments[0] === "preview" && segments[1]) return { kind: "preview", value: segments[1] };
   const slug = segments[0] === "checkout" ? segments[1] : segments[0];
-  return slug ?? null;
+  return slug ? { kind: "slug", value: slug } : null;
 }
 
 export function App() {
-  const [slug] = useState(slugFromLocation);
+  const [target] = useState(targetFromLocation);
   const [contract, setContract] = useState<CheckoutContract | null>(null);
-  const [loading, setLoading] = useState(Boolean(slug));
+  const [loading, setLoading] = useState(Boolean(target));
   const [notFound, setNotFound] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  const preview = target?.kind === "preview";
 
   useEffect(() => {
-    if (!slug) return;
+    if (!target) return;
     let active = true;
-    getCheckoutContract(slug)
+    (target.kind === "preview" ? getCheckoutPreview(target.value) : getCheckoutContract(target.value))
       .then(loaded => { if (active) setContract(loaded); })
       .catch(error => {
         if (!active) return;
@@ -30,9 +33,9 @@ export function App() {
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [slug]);
+  }, [target]);
 
-  if (!slug) return <EstadoVazio titulo="Link inválido" descricao="Nenhuma oferta foi especificada nesta URL." />;
+  if (!target) return <EstadoVazio titulo="Link inválido" descricao="Nenhuma oferta foi especificada nesta URL." />;
   if (loading) return <div className="loading-state" role="status">Carregando…</div>;
   if (notFound) return <EstadoVazio titulo="Oferta não encontrada" descricao="Esta oferta não está disponível para compra." />;
   if (loadFailed || !contract) return <EstadoVazio titulo="Não foi possível carregar" descricao="Tente novamente em instantes." />;
@@ -41,7 +44,8 @@ export function App() {
     <main className="checkout-shell">
       <ResumoDaOferta contract={contract} />
       <section className="form-column">
-        <CheckoutForm slug={slug} contract={contract} />
+        {preview && <p className="preview-banner" role="status">Modo de pré-visualização — esta página não processa pagamentos reais.</p>}
+        <CheckoutForm slug={target.value} contract={contract} preview={preview} />
         <footer>
           Pagamento processado por <img src="/paysi-logo.svg" alt="Paysi" />
           <img className="asaas-seal" src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=a9d026e7-160f-4d17-8e71-14e274efb29b" alt="Serviços financeiros Asaas" />

@@ -60,7 +60,21 @@ public class CheckoutContractService {
 
     @Transactional(readOnly = true)
     public CheckoutContract get(String slug) {
-        Offer offer = offers.findPublishedBySlug(slug).orElseThrow(CheckoutContractService::notFound);
+        return build(offers.findPublishedBySlug(slug).orElseThrow(CheckoutContractService::notFound));
+    }
+
+    /**
+     * Pré-visualização do checkout pelo próprio vendedor: qualquer status (inclusive rascunho, com
+     * identidade ainda não aprovada), identificada pelo UUID da oferta (não o slug — não é descoberta por
+     * adivinhação). Não altera nada e não permite comprar: a criação de pedido continua exigindo oferta
+     * publicada, então um link de pré-visualização nunca move dinheiro de verdade.
+     */
+    @Transactional(readOnly = true)
+    public CheckoutContract preview(UUID offerId) {
+        return build(offers.findById(offerId).orElseThrow(CheckoutContractService::notFound));
+    }
+
+    private CheckoutContract build(Offer offer) {
         String product = products.findActiveProductName(offer.productId())
                 .orElseThrow(CheckoutContractService::notFound);
         Appearance appearance = appearances.findByOfferId(offer.id())

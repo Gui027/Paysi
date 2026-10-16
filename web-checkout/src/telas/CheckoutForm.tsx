@@ -23,7 +23,7 @@ import { lerParametrosIntegracao, montarUrlRetorno } from "../lib/integracao";
 const METHOD_TO_METODO: Record<PaymentMethod, Metodo> = { CARD: "cartao", PIX: "pix", BOLETO: "boleto" };
 const METODO_TO_METHOD: Record<Metodo, PaymentMethod> = { cartao: "CARD", pix: "PIX", boleto: "BOLETO" };
 
-export function CheckoutForm({ slug, contract }: { slug: string; contract: CheckoutContract }) {
+export function CheckoutForm({ slug, contract, preview = false }: { slug: string; contract: CheckoutContract; preview?: boolean }) {
   const [personType, setPersonType] = useState<PersonType>("PF");
   // O link do vendedor pode trazer ?ref=, ?email= e ?name= (integração com o sistema dele).
   const [integracao] = useState(() => lerParametrosIntegracao(window.location.search));
@@ -130,6 +130,7 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
 
   async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (preview) return;
     const nextErrors: Record<string, string | undefined> = {};
     for (const key of campos) {
       const error = validarCampo(key, values[key] ?? "", personType);
@@ -323,8 +324,8 @@ export function CheckoutForm({ slug, contract }: { slug: string; contract: Check
       </label>
       {termsError && <small className="field-error">{termsError}</small>}
 
-      <button className="pay-button" type="submit" disabled={submitting} style={{ background: contract.appearance.primaryColor }}>
-        {submitting ? "Processando…" : contract.appearance.buttonText}
+      <button className="pay-button" type="submit" disabled={submitting || preview} style={{ background: contract.appearance.primaryColor }}>
+        {preview ? "Pagamento desativado na pré-visualização" : submitting ? "Processando…" : contract.appearance.buttonText}
       </button>
       <p className="security-note">Compra protegida e processada em ambiente seguro.</p>
     </form>

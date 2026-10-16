@@ -47,3 +47,8 @@ export const cycleLabel: Record<BillingCycle, string> = {
 export function getCheckoutContract(slug: string) {
   return apiRequest<CheckoutContract>(`/v1/offers/${encodeURIComponent(slug)}/checkout`);
 }
+
+/** Pré-visualização pelo próprio vendedor (link com o UUID da oferta) — nunca permite comprar de verdade. */
+export function getCheckoutPreview(offerId: string) {
+  return apiRequest<CheckoutContract>(`/v1/offers/preview/${encodeURIComponent(offerId)}/checkout`);
+}

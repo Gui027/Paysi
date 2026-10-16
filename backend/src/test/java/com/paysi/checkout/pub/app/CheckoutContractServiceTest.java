@@ -95,6 +95,27 @@ class CheckoutContractServiceTest {
                         error -> assertThat(error.code()).isEqualTo("OFFER_NOT_FOUND"));
     }
 
+    @Test
+    void previewReturnsTheContractOfADraftOfferByItsId() {
+        UUID offerId = UUID.randomUUID();
+        Offer draft = new Offer(offerId, PRODUCT, ChargeType.ONE_TIME, Segment.DIGITAL, "ainda-nao-publicada",
+                10_000, null, 0, true, 7, 1, 3, 5, Set.of(OfferPaymentMethod.PIX), OfferPayoutDelay.D7,
+                OfferStatus.DRAFT, null, NOW, NOW);
+        var service = service(draft, Map.of(), Map.of());
+
+        CheckoutContract contract = service.preview(offerId);
+
+        assertThat(contract.product()).isEqualTo("Produto Teste");
+    }
+
+    @Test
+    void previewThrowsNotFoundForAnUnknownOfferId() {
+        var service = service(null, Map.of(), Map.of());
+        assertThatThrownBy(() -> service.preview(UUID.randomUUID()))
+                .isInstanceOfSatisfying(NotFoundException.class,
+                        error -> assertThat(error.code()).isEqualTo("OFFER_NOT_FOUND"));
+    }
+
     private static Offer offer(String slug, ChargeType chargeType, Segment segment, BillingCycle cycle) {
         return offer(UUID.randomUUID(), slug, chargeType, segment, cycle);
     }
@@ -120,6 +141,9 @@ class CheckoutContractServiceTest {
         public Optional<Offer> findActiveOwned(UUID sellerId, UUID offerId) { return Optional.empty(); }
         public Optional<Offer> findPublishedBySlug(String slug) {
             return offer != null && offer.slug().equals(slug) ? Optional.of(offer) : Optional.empty();
+        }
+        public Optional<Offer> findById(UUID id) {
+            return offer != null && offer.id().equals(id) ? Optional.of(offer) : Optional.empty();
         }
         public void update(Offer offer) { }
         public boolean publish(UUID sellerId, UUID offerId, Instant publishedAt) { return false; }

@@ -15,6 +15,11 @@ public interface OfferRepository {
 
     Optional<Offer> findPublishedBySlug(String slug);
 
+    /** Qualquer status (inclusive rascunho) — usado só pela pré-visualização do próprio vendedor. */
+    default Optional<Offer> findById(UUID id) {
+        return Optional.empty();
+    }
+
     default boolean hasPaidSale(UUID offerId) {
         return false;
     }

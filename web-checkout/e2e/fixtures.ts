@@ -51,6 +51,14 @@ export async function mockOfertaNotFound(page: Page) {
   });
 }
 
+export const OFERTA_ID = "a1111111-1111-1111-1111-111111111111";
+
+export async function mockOfertaPreview(page: Page, overrides: Partial<Record<string, unknown>> = {}) {
+  await page.route(`**/v1/offers/preview/${OFERTA_ID}/checkout`, async (route) => {
+    await route.fulfill({ json: contractFixture(overrides) });
+  });
+}
+
 export async function mockOfertaErro(page: Page) {
   await page.route(`**/v1/offers/${OFERTA_SLUG}/checkout`, async (route) => {
     await route.fulfill({ status: 500, json: { code: "INTERNAL", message: "Erro interno." } });

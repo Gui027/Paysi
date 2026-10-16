@@ -44,6 +44,8 @@ button, input { font: inherit; }
 .provider-frame small { color: var(--texto-apoio); }
 .pay-button { width: 100%; min-height: 52px; margin-top: var(--esp-6); border: 0; border-radius: var(--raio-md); color: white; background: var(--acao-primaria); font-weight: 600; cursor: pointer; }
 .pay-button:hover { background: var(--acao-primaria-hover); }
+.pay-button:disabled { cursor: not-allowed; opacity: .6; }
+.preview-banner { margin-bottom: var(--esp-5); padding: var(--esp-3) var(--esp-4); border-radius: var(--raio-sm); color: var(--blue-700); background: var(--blue-50); font-size: 13px; font-weight: 600; text-align: center; }
 .pay-button:focus-visible { outline: 2px solid var(--borda-foco); outline-offset: 2px; box-shadow: var(--anel-foco); }
 .security-note { text-align: center; color: var(--texto-apoio); font-size: 12px; }
 .form-column footer { margin-top: var(--esp-8); padding-top: var(--esp-5); border-top: 1px solid var(--borda); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--esp-2); color: var(--texto-apoio); font-size: 12px; }
