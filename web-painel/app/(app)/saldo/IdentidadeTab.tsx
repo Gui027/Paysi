@@ -233,6 +233,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
 
     {!approved && <Janela open={modalOpen} title="Verificação de identidade" wide onClose={() => setModalOpen(false)}>
       <ol className="id-steps" aria-label={`Etapa ${currentStep} de 3`}>{["Seus dados", "Documentos", "Análise"].map((label, index) => <li key={label} className={currentStep > index + 1 ? "is-done" : currentStep === index + 1 ? "is-current" : ""}><span>{currentStep > index + 1 ? "✓" : index + 1}</span><small>{label}</small></li>)}</ol>
+      <p className="id-asaas-badge">Conta de recebimento aberta com <img src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=a9d026e7-160f-4d17-8e71-14e274efb29b" alt="Serviços financeiros Asaas" /></p>
       <div className="id-step-panel">
         {error && !connectionUnavailable && <Toast tone="danger">{refreshFeedback ?? "Não foi possível consultar a Asaas. Tente novamente."}</Toast>}
         {needsProfile ? <><div className="id-step-heading"><span>1</span><div><h3>Complete seus dados</h3><p>Primeiro, confirme algumas informações.</p></div></div><CompleteProfileForm onSaved={begin} /></> : needsDocuments ? <>

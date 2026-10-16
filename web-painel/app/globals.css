@@ -858,6 +858,8 @@ button { cursor: pointer; }
 .id-analysis p { max-width: 390px; color: #5C6472; }
 .id-analysis .id-refresh-feedback { color: #087443; font-size: 13px; font-weight: 600; }
 .id-preparing, .id-privacy { margin: 0; color: #667085; text-align: center; font-size: 13px; }
+.id-asaas-badge { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 0 var(--esp-4); color: #667085; font-size: 12px; }
+.id-asaas-badge img { height: 22px; }
 @media (max-width: 640px) {
   .id-overview { grid-template-columns: auto 1fr; }
   .id-overview .ui-button { grid-column: 1 / -1; width: 100%; justify-content: center; }
