@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PAINEL_BASE_URL } from "@/lib/urls";
 import { IconUser } from "./icons";
 
-export function Header() {
+export function Header({ base = "" }: { base?: string }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -17,9 +17,9 @@ export function Header() {
   return (
     <header className="site-header" data-scrolled={scrolled}>
       <div className="site-container site-header-row">
-        <img className="site-logo" src="/paysi-logo.svg" alt="Paysi" />
+        <a href={base || "/"} aria-label="Paysi — página inicial"><img className="site-logo" src="/paysi-logo.svg" alt="Paysi" /></a>
         <div className="site-header-actions">
-          <a className="site-nav-link" href="#recursos">
+          <a className="site-nav-link" href={`${base}#recursos`}>
             <IconUser size={18} />
             Sou lojista
           </a>
@@ -29,7 +29,7 @@ export function Header() {
           <a className="btn btn-contorno" href={`${PAINEL_BASE_URL}/criar-conta`}>
             Criar conta
           </a>
-          <a className="btn btn-primaria" href="#contato">
+          <a className="btn btn-primaria" href={`${base}#contato`}>
             Entre em contato
           </a>
         </div>
