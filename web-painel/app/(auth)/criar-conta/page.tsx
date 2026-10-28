@@ -18,6 +18,7 @@ type AccountCreated = {
 };
 
 const TERMS_VERSION = "paysi-termos-v1";
+const SITE_BASE_URL = (process.env.NEXT_PUBLIC_SITE_BASE_URL ?? "https://paysi.com.br").replace(/\/$/, "");
 
 function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
@@ -166,11 +167,11 @@ export default function CriarContaPage() {
           </fieldset>
 
           <div className="legal-note">
-            A Paysi organiza pagamentos e repasses por meio de provedores parceiros. A abertura da conta não representa conta bancária nem aprovação automática de KYC.
+            A Paysi é uma plataforma de software e não é instituição financeira. Os serviços financeiros são prestados pelo Asaas Gestão Financeira Instituição de Pagamento S.A. A abertura da conta na Paysi não representa conta bancária nem aprovação automática da verificação de identidade.
           </div>
           <label className="inline-check terms-check">
             <input name="termsAccepted" type="checkbox" aria-invalid={!!errors.termsAccepted} aria-describedby={errors.termsAccepted ? "terms-error" : undefined} />
-            <span>Li e aceito os Termos de Uso e a Política de Privacidade.</span>
+            <span>Li e aceito os <a href={`${SITE_BASE_URL}/termos`} target="_blank" rel="noreferrer">Termos de Uso</a> e a <a href={`${SITE_BASE_URL}/privacidade`} target="_blank" rel="noreferrer">Política de Privacidade</a>.</span>
           </label>
           {errors.termsAccepted && <small id="terms-error" className="field-error block-error">{errors.termsAccepted}</small>}
 
