@@ -9,15 +9,6 @@ import com.paysi.identity.kyc.port.KycStore;
 import com.paysi.identity.kyc.domain.KycProcess;
 import com.paysi.identity.kyc.domain.KycRequirement;
 import com.paysi.identity.port.AccountRepository;
-import com.paysi.ledger.app.LedgerService;
-import com.paysi.ledger.domain.Bucket;
-import com.paysi.ledger.domain.Direction;
-import com.paysi.ledger.domain.LedgerCommand;
-import com.paysi.ledger.domain.LedgerEntry;
-import com.paysi.ledger.domain.LedgerReference;
-import com.paysi.ledger.domain.Origin;
-import com.paysi.ledger.domain.ReferenceType;
-import com.paysi.ledger.domain.TransactionType;
 import com.paysi.payment.provider.SubaccountProvider;
 import com.paysi.payment.provider.SubaccountProvider.SubaccountCreationException;
 import org.springframework.stereotype.Service;
@@ -35,26 +26,22 @@ public class KycService {
     private static final java.util.Set<String> ALLOWED_DOCUMENT_TYPES = java.util.Set.of(
             "image/png", "image/jpeg", "application/pdf");
     private static final long MAX_DOCUMENT_BYTES = 10L * 1024 * 1024;
-    private static final long VERIFICATION_FEE_CENTS = 1200;
-    private static final UUID PLATFORM_REVENUE = UUID.fromString("00000000-0000-0000-0000-0000000000c2");
 
     private final AccountRepository accounts;
     private final KycStore store;
     private final KycProvider provider;
     private final SubaccountProvider subaccounts;
-    private final LedgerService ledger;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
-    public KycService(AccountRepository accounts, KycStore store, KycProvider provider, SubaccountProvider subaccounts,
-                      LedgerService ledger) {
-        this(accounts, store, provider, subaccounts, ledger, Clock.systemUTC());
+    public KycService(AccountRepository accounts, KycStore store, KycProvider provider, SubaccountProvider subaccounts) {
+        this(accounts, store, provider, subaccounts, Clock.systemUTC());
     }
 
     KycService(AccountRepository accounts, KycStore store, KycProvider provider, SubaccountProvider subaccounts,
-               LedgerService ledger, Clock clock) {
+               Clock clock) {
         this.accounts = accounts; this.store = store; this.provider = provider; this.subaccounts = subaccounts;
-        this.ledger = ledger; this.clock = clock;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -160,12 +147,6 @@ public class KycService {
                         : "A análise da Asaas ainda está em andamento.", null));
         store.updateStatus(accountId, next, requirements);
 
-        if (next == KycStatus.APPROVED) {
-            ledger.write(new LedgerCommand(TransactionType.PLATFORM_FEE,
-                    new LedgerReference(ReferenceType.VERIFICATION, accountId.toString()), "Taxa de verificação KYC",
-                    List.of(new LedgerEntry(accountId, Bucket.DEBT, Direction.DEBIT, VERIFICATION_FEE_CENTS, Origin.FEE, null),
-                            new LedgerEntry(PLATFORM_REVENUE, Bucket.SYSTEM, Direction.CREDIT, VERIFICATION_FEE_CENTS, Origin.FEE, null))));
-        }
         String providerUrl = store.findProcess(accountId).map(KycProcess::providerUrl).orElse(null);
         return new KycView(accountId, next, providerUrl, requirements);
     }

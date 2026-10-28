@@ -6,9 +6,6 @@ import com.paysi.identity.domain.KycStatus;
 import com.paysi.identity.kyc.port.KycProvider;
 import com.paysi.identity.kyc.webhook.port.KycWebhookStore;
 import com.paysi.identity.kyc.webhook.port.WebhookSignatureVerifier;
-import com.paysi.ledger.app.LedgerService;
-import com.paysi.ledger.domain.Bucket;
-import com.paysi.ledger.domain.Direction;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -33,11 +30,11 @@ class KycWebhookServiceTest {
         assertThatThrownBy(() -> fixture.service.handle(PAYLOAD, "invalid"))
                 .isInstanceOf(UnauthorizedException.class);
 
-        verifyNoInteractions(fixture.store, fixture.provider, fixture.ledger);
+        verifyNoInteractions(fixture.store, fixture.provider);
     }
 
     @Test
-    void appliesRejectionWithoutCreatingSubaccountOrChargingFee() {
+    void appliesRejectionWithoutCreatingSubaccount() {
         var fixture = fixture(true, "RECEIVED", KycStatus.SUBMITTED);
         String payload = PAYLOAD.replace("APPROVED", "REJECTED");
 
@@ -46,11 +43,11 @@ class KycWebhookServiceTest {
         assertThat(result.idempotentReplay()).isFalse();
         verify(fixture.store).apply(ACCOUNT_ID, KycStatus.REJECTED, null, java.util.List.of());
         verify(fixture.store).markProcessed(EVENT_ID);
-        verifyNoInteractions(fixture.provider, fixture.ledger);
+        verifyNoInteractions(fixture.provider);
     }
 
     @Test
-    void approvesAccountCreatesSubaccountAndChargesBalancedFee() {
+    void approvesAccountAndCreatesSubaccountWithoutChargingAnyFee() {
         var fixture = fixture(true, "RECEIVED", KycStatus.SUBMITTED);
         when(fixture.provider.ensureSubaccount(ACCOUNT_ID)).thenReturn("subaccount-one");
 
@@ -58,13 +55,6 @@ class KycWebhookServiceTest {
 
         assertThat(result.idempotentReplay()).isFalse();
         verify(fixture.store).apply(ACCOUNT_ID, KycStatus.APPROVED, "subaccount-one", java.util.List.of());
-        var command = org.mockito.ArgumentCaptor.forClass(com.paysi.ledger.domain.LedgerCommand.class);
-        verify(fixture.ledger).write(command.capture());
-        assertThat(command.getValue().entries()).hasSize(2);
-        assertThat(command.getValue().entries().get(0).bucket()).isEqualTo(Bucket.DEBT);
-        assertThat(command.getValue().entries().get(0).direction()).isEqualTo(Direction.DEBIT);
-        assertThat(command.getValue().entries().get(0).amountCents()).isEqualTo(1200);
-        assertThat(command.getValue().entries().get(1).direction()).isEqualTo(Direction.CREDIT);
         verify(fixture.store).markProcessed(EVENT_ID);
     }
 
@@ -76,15 +66,14 @@ class KycWebhookServiceTest {
 
         verify(fixture.store).receive(EVENT_ID, PAYLOAD);
         verify(fixture.store).lockStatus(EVENT_ID);
-        verifyNoInteractions(fixture.provider, fixture.ledger);
+        verifyNoInteractions(fixture.provider);
         verify(fixture.store, never()).lockAccount(any());
     }
 
     @Test
-    void doesNotMarkEventProcessedWhenLedgerWriteFails() {
+    void doesNotMarkEventProcessedWhenSubaccountCreationFails() {
         var fixture = fixture(true, "RECEIVED", KycStatus.SUBMITTED);
-        when(fixture.provider.ensureSubaccount(ACCOUNT_ID)).thenReturn("subaccount-one");
-        doThrow(new IllegalStateException("ledger unavailable")).when(fixture.ledger).write(any());
+        when(fixture.provider.ensureSubaccount(ACCOUNT_ID)).thenThrow(new IllegalStateException("provider unavailable"));
 
         assertThatThrownBy(() -> fixture.service.handle(PAYLOAD, "valid"))
                 .isInstanceOf(IllegalStateException.class);
@@ -99,22 +88,20 @@ class KycWebhookServiceTest {
         assertThat(fixture.service.handle(PAYLOAD, "valid").idempotentReplay()).isTrue();
 
         verify(fixture.store).markProcessed(EVENT_ID);
-        verifyNoInteractions(fixture.provider, fixture.ledger);
+        verifyNoInteractions(fixture.provider);
     }
 
     private static Fixture fixture(boolean signatureValid, String eventStatus, KycStatus accountStatus) {
         var signatures = mock(WebhookSignatureVerifier.class);
         var store = mock(KycWebhookStore.class);
         var provider = mock(KycProvider.class);
-        var ledger = mock(LedgerService.class);
         when(signatures.valid(any(), any())).thenReturn(signatureValid);
         when(store.lockStatus(EVENT_ID)).thenReturn(eventStatus);
         when(store.lockAccount(ACCOUNT_ID))
                 .thenReturn(Optional.of(new KycWebhookStore.AccountKycState(accountStatus, null)));
         var mapper = new ObjectMapper().findAndRegisterModules();
-        return new Fixture(new KycWebhookService(mapper, signatures, store, provider, ledger), store, provider, ledger);
+        return new Fixture(new KycWebhookService(mapper, signatures, store, provider), store, provider);
     }
 
-    private record Fixture(KycWebhookService service, KycWebhookStore store, KycProvider provider,
-                           LedgerService ledger) { }
+    private record Fixture(KycWebhookService service, KycWebhookStore store, KycProvider provider) { }
 }
