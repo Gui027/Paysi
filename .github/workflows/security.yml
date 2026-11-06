@@ -27,7 +27,7 @@ jobs:
       matrix:
         language: [java-kotlin, javascript-typescript]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
@@ -40,7 +40,7 @@ jobs:
     name: Dependências, segredos e configuração
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Varredura do repositório
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -58,7 +58,7 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: OWASP ZAP Baseline
         uses: zaproxy/action-baseline@v0.15.0
         with:
