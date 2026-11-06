@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: production-smoke
@@ -26,3 +27,57 @@ jobs:
           curl --fail --silent --show-error --location --retry 3 --retry-all-errors --max-time 20 https://app.paysi.com.br/ > /dev/null
           curl --fail --silent --show-error --retry 3 --retry-all-errors --max-time 20 https://checkout.paysi.com.br/ > /dev/null
           curl --fail --silent --show-error --retry 3 --retry-all-errors --max-time 20 https://api.paysi.com.br/actuator/health | grep -q '"status":"UP"'
+
+  infraestrutura:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: staging
+    steps:
+      - name: Preparar acesso SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.KVM2_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.KVM2_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/paysi-kvm2
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/paysi-kvm2 ~/.ssh/known_hosts
+      - name: Verificar serviços, banco e backup
+        env:
+          KVM2_HOST: ${{ secrets.KVM2_HOST }}
+          KVM2_USER: ${{ secrets.KVM2_USER }}
+        run: |
+          set -euo pipefail
+          SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
+          "${SSH[@]}" 'curl -fsS -m 8 http://127.0.0.1:8090/actuator/health' | grep -q '"status":"UP"'
+          "${SSH[@]}" 'test -z "$(docker ps --filter health=unhealthy --format "{{.Names}}" | grep "^paysi-" || true)"'
+          "${SSH[@]}" 'test -n "$(find /opt/paysi/backups -maxdepth 1 -name "paysi-db-*.dump" -mmin -1560 -print -quit 2>/dev/null)"'
+          "${SSH[@]}" 'set -- $(df -P /opt/paysi | tail -1); usage=${5%\%}; test "$usage" -lt 85'
+
+  alerta:
+    if: always()
+    needs: [endpoints, infraestrutura]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Abrir ou encerrar alerta operacional
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENDPOINTS: ${{ needs.endpoints.result }}
+          INFRAESTRUTURA: ${{ needs.infraestrutura.result }}
+        run: |
+          set -euo pipefail
+          title='[ALERTA] Smoke de produção falhou'
+          open_issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [[ "$ENDPOINTS" != success || "$INFRAESTRUTURA" != success ]]; then
+            if [[ -z "$open_issue" ]]; then
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "Falha detectada em $(date -u +%FT%TZ). Endpoints: $ENDPOINTS. Infraestrutura: $INFRAESTRUTURA. Execução: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            else
+              gh issue comment "$open_issue" --repo "$GITHUB_REPOSITORY" --body "Falha recorrente em $(date -u +%FT%TZ). Endpoints: $ENDPOINTS. Infraestrutura: $INFRAESTRUTURA. Execução: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            fi
+            exit 1
+          fi
+          if [[ -n "$open_issue" ]]; then
+            gh issue comment "$open_issue" --repo "$GITHUB_REPOSITORY" --body "Monitoramento normalizado em $(date -u +%FT%TZ). Execução: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            gh issue close "$open_issue" --repo "$GITHUB_REPOSITORY" --reason completed
+          fi

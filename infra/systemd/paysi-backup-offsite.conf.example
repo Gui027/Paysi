@@ -1,0 +1,11 @@
+# Copiar para /etc/systemd/system/paysi-backup.service.d/offsite.conf.
+# Não coloque senhas aqui. Crie credenciais criptografadas com systemd-creds.
+[Service]
+Environment=PAYSI_BACKUP_REQUIRE_OFFSITE=true
+Environment=RESTIC_REPOSITORY=s3:https://ENDPOINT/BUCKET/paysi
+LoadCredentialEncrypted=restic-password:/etc/credstore.encrypted/paysi-restic-password
+LoadCredentialEncrypted=aws-access-key-id:/etc/credstore.encrypted/paysi-aws-access-key-id
+LoadCredentialEncrypted=aws-secret-access-key:/etc/credstore.encrypted/paysi-aws-secret-access-key
+Environment=RESTIC_PASSWORD_FILE=%d/restic-password
+Environment=AWS_ACCESS_KEY_ID_FILE=%d/aws-access-key-id
+Environment=AWS_SECRET_ACCESS_KEY_FILE=%d/aws-secret-access-key

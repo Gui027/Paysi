@@ -77,8 +77,14 @@ atualiza `infra/kvm2-compose.yml` no KVM2 por SSH. O deploy confirma o health
 check do backend e solicita rollback para a tag anterior se a versão nova não
 ficar saudável.
 
-As variáveis de produção ficam exclusivamente em `/opt/paysi/.env`, com
-permissão `600`; elas não fazem parte do repositório. PostgreSQL, Redis e
+As variáveis de produção não sensíveis e os segredos legados ficam em
+`/opt/paysi/.env`, com permissão `600`; esse arquivo não faz parte do
+repositório. A `ASAAS_API_KEY` e a `MFA_ENCRYPTION_KEY_BASE64` são exceções
+deliberadas: ficam no cofre do GitHub Environment `staging`, são transmitidas
+pelo canal SSH apenas durante o deploy e existem somente na memória do processo
+do Compose e do backend. O workflow remove qualquer cópia legada delas do
+`.env` antes de subir a stack.
+PostgreSQL, Redis e
 RabbitMQ não publicam portas no host. Site, painel, checkout e API escutam
 somente em `127.0.0.1` e são publicados pelo Nginx com HTTPS.
 

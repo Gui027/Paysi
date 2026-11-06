@@ -1,6 +1,6 @@
 # Runbook — Backup e Restore
 
-**BE-15.1 · checklist #32 do documento 3 · RNF-008 (RPO 5 min), RNF-009/009a (RTO 1h/4h), RNF-010 (restauração trimestral com evidência)**
+**BE-15.1 · checklist #32 do documento 3 · restauração trimestral com evidência**
 
 Este runbook cobre o procedimento operacional de restauração de backup do Postgres
 e registra a evidência de um ciclo de restauração executado de ponta a ponta
@@ -10,20 +10,17 @@ durante o desenvolvimento do BE-15.1.
 
 | Item | Definição |
 |---|---|
-| RPO (perda máxima aceitável) | 5 minutos — arquivamento contínuo de WAL do provedor gerenciado |
-| RTO em horário comercial estendido | 1 hora |
-| RTO fora do horário comercial | 4 horas |
+| RPO operacional atual | 24 horas — dump diário; meta de 5 minutos depende de PITR ainda não ativo |
+| RTO em horário comercial estendido | 4 horas |
+| RTO fora do horário comercial | 8 horas |
 | Teste de restauração | Trimestral, com evidência registrada (este documento é o modelo do registro) |
 | Cópia geográfica | Região distinta dentro do território nacional (ADR-10) |
 
-Em produção, o RPO de 5 minutos depende do arquivamento contínuo de WAL do
-provedor gerenciado de Postgres (point-in-time recovery), não de `pg_dump`
-periódico. `pg_dump` é o mecanismo verificado neste runbook porque é o que
-pode ser executado e evidenciado neste ambiente de desenvolvimento; em
-produção o procedimento de restauração real usa o PITR do provedor, e o
-runbook do provedor específico deve ser anexado a este documento quando a
-infraestrutura de produção for definida (pendência `JUR`/`FIS`-adjacente:
-depende da nuvem escolhida, ADR-10).
+O RPO de cinco minutos permanece uma meta e não é apresentado como controle
+ativo. O mecanismo disponível e verificável é `pg_dump` diário. A cópia externa
+cifrada com restic e o caminho de evolução estão definidos em
+`docs/continuidade-operacional.md`; sua ativação exige destino e credenciais
+externos.
 
 ## 2. Procedimento de restauração
 

@@ -5,6 +5,23 @@ on:
   pull_request:
 
 jobs:
+  security:
+    name: Segurança bloqueante
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar dependências, segredos e configurações
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+          version: v0.76.2
+
   database:
     runs-on: ubuntu-latest
     services:

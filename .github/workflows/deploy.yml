@@ -87,10 +87,17 @@ jobs:
           KVM2_HOST: ${{ secrets.KVM2_HOST }}
           KVM2_USER: ${{ secrets.KVM2_USER }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Credencial de produção mantida no cofre do GitHub Environment.
+          # Ela segue pelo canal SSH apenas na memória do processo remoto e
+          # nunca é persistida no /opt/paysi/.env nem copiada para uma imagem.
+          ASAAS_API_KEY: ${{ secrets.ASAAS_API_KEY }}
+          MFA_ENCRYPTION_KEY_BASE64: ${{ secrets.MFA_ENCRYPTION_KEY_BASE64 }}
           GHCR_USER: ${{ github.actor }}
           TAG: ${{ needs.images.outputs.tag }}
         run: |
           set -euo pipefail
+          test -n "$ASAAS_API_KEY" || { echo "::error::secret ASAAS_API_KEY ausente no environment staging"; exit 1; }
+          test -n "$MFA_ENCRYPTION_KEY_BASE64" || { echo "::error::secret MFA_ENCRYPTION_KEY_BASE64 ausente no environment staging"; exit 1; }
           SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
           "${SSH[@]}" test -s /opt/paysi/.env || { echo "::error::/opt/paysi/.env não encontrado"; exit 1; }
           PREVIOUS_TAG="$("${SSH[@]}" "cd /opt/paysi && if test -s current-tag; then cat current-tag; else docker inspect --format='{{.Config.Image}}' paysi-backend-1 2>/dev/null | sed 's/.*://'; fi")"
@@ -100,13 +107,25 @@ jobs:
           scp -i ~/.ssh/paysi-kvm2 infra/backup-paysi.sh "$KVM2_USER@$KVM2_HOST:/opt/paysi/backup.sh"
           "${SSH[@]}" chmod 700 /opt/paysi/backup.sh
           printf '%s' "$GHCR_TOKEN" | "${SSH[@]}" docker login ghcr.io -u "$GHCR_USER" --password-stdin
-          "${SSH[@]}" "cd /opt/paysi && PAYSI_IMAGE_TAG='$TAG' docker compose --env-file .env -f compose.yml up -d --pull always --remove-orphans"
+          # Remove eventual cópia legada antes de subir a stack. A credencial é
+          # lida do stdin e exportada somente para este processo do Compose.
+          "${SSH[@]}" sed -i -e '/^ASAAS_API_KEY=/d' -e '/^MFA_ENCRYPTION_KEY_BASE64=/d' /opt/paysi/.env
+          printf '%s\n%s\n' "$ASAAS_API_KEY" "$MFA_ENCRYPTION_KEY_BASE64" | "${SSH[@]}" "
+            IFS= read -r ASAAS_API_KEY
+            IFS= read -r MFA_ENCRYPTION_KEY_BASE64
+            export ASAAS_API_KEY
+            export MFA_ENCRYPTION_KEY_BASE64
+            cd /opt/paysi
+            PAYSI_IMAGE_TAG='$TAG' docker compose --env-file .env -f compose.yml up -d --pull always --remove-orphans
+          "
           echo "Stack atualizada para a tag $TAG"
 
       - name: Esperar o backend ficar saudável
         env:
           KVM2_HOST: ${{ secrets.KVM2_HOST }}
           KVM2_USER: ${{ secrets.KVM2_USER }}
+          ASAAS_API_KEY: ${{ secrets.ASAAS_API_KEY }}
+          MFA_ENCRYPTION_KEY_BASE64: ${{ secrets.MFA_ENCRYPTION_KEY_BASE64 }}
           TAG: ${{ needs.images.outputs.tag }}
         run: |
           set -euo pipefail
@@ -121,6 +140,13 @@ jobs:
           PREVIOUS_TAG="$("${SSH[@]}" cat /opt/paysi/previous-tag 2>/dev/null || true)"
           if [[ "$PREVIOUS_TAG" =~ ^[0-9a-f]{7}$ ]]; then
             echo "Backend não ficou saudável; restaurando a versão $PREVIOUS_TAG"
-            "${SSH[@]}" "cd /opt/paysi && PAYSI_IMAGE_TAG='$PREVIOUS_TAG' docker compose --env-file .env -f compose.yml up -d --pull always --remove-orphans"
+            printf '%s\n%s\n' "$ASAAS_API_KEY" "$MFA_ENCRYPTION_KEY_BASE64" | "${SSH[@]}" "
+              IFS= read -r ASAAS_API_KEY
+              IFS= read -r MFA_ENCRYPTION_KEY_BASE64
+              export ASAAS_API_KEY
+              export MFA_ENCRYPTION_KEY_BASE64
+              cd /opt/paysi
+              PAYSI_IMAGE_TAG='$PREVIOUS_TAG' docker compose --env-file .env -f compose.yml up -d --pull always --remove-orphans
+            "
           fi
           echo "::error::o backend não ficou saudável; rollback solicitado"; exit 1
