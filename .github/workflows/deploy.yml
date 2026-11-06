@@ -35,7 +35,7 @@ jobs:
           - { name: site, dockerfile: web-site/Dockerfile }
           - { name: postgres, dockerfile: infra/postgres/Dockerfile }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
       - id: meta
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
