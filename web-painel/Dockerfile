@@ -1,4 +1,4 @@
-FROM node:20-alpine AS dependencies
+FROM node:25-alpine AS dependencies
 
 WORKDIR /workspace
 COPY package.json package-lock.json ./
@@ -11,7 +11,7 @@ COPY shared shared
 COPY web-painel web-painel
 RUN npm run build --workspace web-painel
 
-FROM node:20-alpine
+FROM node:25-alpine
 
 ENV NODE_ENV=production
 WORKDIR /workspace
