@@ -43,6 +43,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Varredura do repositório
         uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          # Evita falhas transitórias por rate limit dos repositórios Maven.
+          TRIVY_OFFLINE_SCAN: "true"
         with:
           scan-type: fs
           scan-ref: .

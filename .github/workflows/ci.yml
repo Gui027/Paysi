@@ -12,6 +12,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verificar dependências, segredos e configurações
         uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          # Evita consultas ao Maven Central durante a análise. O repositório
+          # aplica e testa as dependências Java no job dedicado de backend.
+          TRIVY_OFFLINE_SCAN: "true"
         with:
           scan-type: fs
           scan-ref: .
