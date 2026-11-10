@@ -3,12 +3,12 @@
   "info": {
     "title": "Paysi Public API",
     "version": "1.0.0",
-    "description": "API pública da Paysi para criar pagamentos e operar vendas. Valores monetários são inteiros em centavos; datas usam ISO 8601 em UTC."
+    "description": "API pública da Paysi para criar pagamentos, operar assinaturas recorrentes e consultar vendas. Valores monetários são inteiros em centavos; datas usam ISO 8601 em UTC."
   },
   "servers": [{ "url": "https://api.paysi.com.br/v1/public", "description": "Produção" }],
   "security": [{ "apiKey": [] }],
   "tags": [
-    { "name": "Autenticação" }, { "name": "Pagamentos" }, { "name": "Vendas" },
+    { "name": "Autenticação" }, { "name": "Pagamentos" }, { "name": "Assinaturas" }, { "name": "Vendas" },
     { "name": "Catálogo" }, { "name": "Financeiro" }, { "name": "Webhooks" }
   ],
   "paths": {
@@ -35,6 +35,33 @@
         "responses": { "200": { "description": "Estado atual", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Payment" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
       }
     },
+    "/subscriptions": {
+      "post": {
+        "tags": ["Assinaturas"], "summary": "Criar assinatura recorrente", "description": "Exige subscriptions_write, uma oferta de assinatura da conta e Idempotency-Key. O cartão é tokenizado e não é persistido.",
+        "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateSubscription" } } } },
+        "responses": { "201": { "description": "Assinatura criada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriptionDetail" } } } }, "200": { "description": "Replay idempotente da assinatura existente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriptionDetail" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "$ref": "#/components/responses/Conflict" }, "429": { "$ref": "#/components/responses/RateLimited" } }
+      },
+      "get": {
+        "tags": ["Assinaturas"], "summary": "Listar assinaturas", "description": "Exige subscriptions_read.",
+        "parameters": [{ "name": "cursor", "in": "query", "schema": { "type": "string" } }, { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } }],
+        "responses": { "200": { "description": "Página de assinaturas", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriptionPage" } } } } }
+      }
+    },
+    "/subscriptions/{subscriptionId}": {
+      "get": {
+        "tags": ["Assinaturas"], "summary": "Consultar assinatura", "description": "Exige subscriptions_read.",
+        "parameters": [{ "$ref": "#/components/parameters/SubscriptionId" }],
+        "responses": { "200": { "description": "Assinatura e cobranças", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriptionDetail" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/subscriptions/{subscriptionId}/cancel": {
+      "post": {
+        "tags": ["Assinaturas"], "summary": "Cancelar assinatura ao fim do período", "description": "Exige subscriptions_write. A operação é idempotente.",
+        "parameters": [{ "$ref": "#/components/parameters/SubscriptionId" }],
+        "responses": { "204": { "description": "Cancelamento agendado" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
     "/sales": { "get": { "tags": ["Vendas"], "summary": "Listar vendas", "parameters": [{ "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/Size" }, { "name": "status", "in": "query", "schema": { "type": "array", "items": { "type": "string" } } }, { "name": "method", "in": "query", "schema": { "type": "string" } }, { "name": "from", "in": "query", "schema": { "type": "string", "format": "date" } }, { "name": "to", "in": "query", "schema": { "type": "string", "format": "date" } }], "responses": { "200": { "description": "Página de vendas" } } } },
     "/sales/{chargeId}": { "get": { "tags": ["Vendas"], "summary": "Detalhar venda", "parameters": [{ "$ref": "#/components/parameters/ChargeId" }], "responses": { "200": { "description": "Detalhes da venda" }, "404": { "$ref": "#/components/responses/NotFound" } } } },
     "/sales/{chargeId}/refund": { "post": { "tags": ["Vendas"], "summary": "Reembolsar venda", "description": "Exige sales_refund. Omita amountCents para reembolso total.", "parameters": [{ "$ref": "#/components/parameters/ChargeId" }, { "$ref": "#/components/parameters/IdempotencyKey" }], "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Refund" } } } }, "responses": { "201": { "description": "Reembolso criado" }, "409": { "$ref": "#/components/responses/Conflict" } } } },
@@ -55,6 +82,7 @@
     "parameters": {
       "IdempotencyKey": { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string", "maxLength": 128 }, "description": "Identificador estável da operação no seu sistema." },
       "ChargeId": { "name": "chargeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+      "SubscriptionId": { "name": "subscriptionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
       "Page": { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 0, "default": 0 } },
       "Size": { "name": "size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } }
     },
@@ -67,6 +95,11 @@
       "CreatePayment": { "type": "object", "required": ["offerSlug", "buyer", "method", "termsHash", "termsAcceptedAt"], "properties": { "offerSlug": { "type": "string" }, "buyer": { "$ref": "#/components/schemas/Buyer" }, "method": { "type": "string", "enum": ["PIX", "BOLETO", "CARD"] }, "installments": { "type": "integer", "minimum": 1, "maximum": 12, "default": 1 }, "coupon": { "type": "string" }, "reference": { "type": "string", "maxLength": 128 }, "amountCents": { "type": "integer", "minimum": 200 }, "visitorKey": { "type": "string" }, "customerIp": { "type": "string", "maxLength": 64, "description": "IP do comprador final para evidência antifraude; não envie o IP do servidor da integração." }, "termsHash": { "type": "string" }, "termsAcceptedAt": { "type": "string", "format": "date-time" }, "card": { "$ref": "#/components/schemas/Card" } } },
       "Payment": { "type": "object", "properties": { "chargeId": { "type": "string", "format": "uuid" }, "method": { "type": "string", "enum": ["PIX", "BOLETO", "CARD"] }, "status": { "type": "string", "enum": ["PENDING", "PAID", "FAILED", "EXPIRED", "REFUNDED", "PARTIALLY_REFUNDED", "CHARGEBACK"] }, "boletoBarcode": { "type": ["string", "null"] }, "boletoUrl": { "type": ["string", "null"], "format": "uri" }, "pixQrCode": { "type": ["string", "null"] }, "expiresAt": { "type": ["string", "null"], "format": "date-time" } } },
       "CreatePaymentResponse": { "type": "object", "properties": { "order": { "type": "object" }, "payment": { "$ref": "#/components/schemas/Payment" }, "nextAction": { "type": "string", "enum": ["display_pix_qr_code", "display_boleto", "complete_3ds", "none"] } } },
+      "CreateSubscription": { "type": "object", "required": ["offerSlug", "buyer"], "properties": { "offerSlug": { "type": "string", "maxLength": 200 }, "buyer": { "$ref": "#/components/schemas/Buyer" }, "method": { "type": "string", "const": "CARD", "default": "CARD" }, "visitorKey": { "type": "string", "maxLength": 128 }, "customerIp": { "type": "string", "maxLength": 64, "description": "IP do comprador final; não envie o IP do servidor da integração." }, "card": { "$ref": "#/components/schemas/Card", "description": "Obrigatório fora de testes gratuitos sem cartão." } } },
+      "Subscription": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" }, "orderId": { "type": "string", "format": "uuid" }, "offerId": { "type": "string", "format": "uuid" }, "status": { "type": "string", "enum": ["TRIAL", "ACTIVE", "PAST_DUE", "CANCELED"] }, "cycleNumber": { "type": "integer" }, "trialEndsAt": { "type": ["string", "null"], "format": "date-time" }, "nextChargeAt": { "type": ["string", "null"], "format": "date-time" }, "canceledAt": { "type": ["string", "null"], "format": "date-time" }, "cancelPending": { "type": "boolean" }, "hasPaymentMethod": { "type": "boolean" }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "SubscriptionCharge": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" }, "cycleNumber": { "type": "integer" }, "amountCents": { "type": "integer" }, "status": { "type": "string" }, "attemptCount": { "type": "integer" }, "nextRetryAt": { "type": ["string", "null"], "format": "date-time" }, "paidAt": { "type": ["string", "null"], "format": "date-time" }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "SubscriptionDetail": { "type": "object", "properties": { "subscription": { "$ref": "#/components/schemas/Subscription" }, "charges": { "type": "array", "items": { "$ref": "#/components/schemas/SubscriptionCharge" } } } },
+      "SubscriptionPage": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Subscription" } }, "nextCursor": { "type": ["string", "null"] } } },
       "Refund": { "type": "object", "properties": { "amountCents": { "type": "integer", "minimum": 1 }, "reason": { "type": "string" } } },
       "Webhook": { "type": "object", "required": ["name", "url", "events", "enabled"], "properties": { "name": { "type": "string" }, "productId": { "type": ["string", "null"], "format": "uuid" }, "url": { "type": "string", "format": "uri" }, "events": { "type": "array", "items": { "type": "string" } }, "enabled": { "type": "boolean" } } },
       "Error": { "type": "object", "properties": { "code": { "type": "string" }, "message": { "type": "string" }, "field": { "type": ["string", "null"] }, "correlationId": { "type": ["string", "null"] } } }

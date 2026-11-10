@@ -31,6 +31,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -94,14 +95,8 @@ public class SubscriptionService {
         }
 
         String requestHash = hash(command);
-        var replay = subscriptions.findOrderByIdempotency(offer.id(), command.idempotencyKey());
-        if (replay.isPresent()) {
-            if (!replay.get().requestHash().equals(requestHash)) {
-                throw new ConflictException("IDEMPOTENCY_CONFLICT",
-                        "Já existe uma solicitação diferente com esta chave", "idempotencyKey");
-            }
-            return new SubscriptionCreationResult(replay.get().subscriptionId(), true);
-        }
+        var replay = replayFor(offer, command, requestHash);
+        if (replay.isPresent()) return replay.get();
 
         UUID sellerId = subscriptions.sellerIdForOffer(offer.id()).orElseThrow(SubscriptionService::offerNotFound);
         UUID buyerId = resolveBuyer(command);
@@ -224,6 +219,13 @@ public class SubscriptionService {
         return new SubscriptionPage(page, next);
     }
 
+    /** Consulta idempotência antes da tokenização para um retry não tocar novamente nos dados do cartão. */
+    @Transactional(readOnly = true)
+    public Optional<SubscriptionCreationResult> findReplay(CreateSubscriptionCommand command) {
+        Offer offer = offers.findPublishedBySlug(command.offerSlug()).orElseThrow(SubscriptionService::offerNotFound);
+        return replayFor(offer, command, hash(command));
+    }
+
     @Transactional(readOnly = true)
     public SubscriptionDetail detail(UUID sellerId, UUID subscriptionId) {
         Subscription subscription = subscriptions.findOwned(sellerId, subscriptionId)
@@ -284,8 +286,7 @@ public class SubscriptionService {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             String payload = String.join("|", command.offerSlug(), command.buyerName(), command.buyerEmail(),
                     command.personType(), command.taxId(), String.valueOf(command.legalName()),
-                    String.valueOf(command.municipalReg()), String.valueOf(command.cardToken()),
-                    command.normalizedMethod());
+                    String.valueOf(command.municipalReg()), command.normalizedMethod());
             return HexFormat.of().formatHex(digest.digest(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException error) {
             throw new IllegalStateException(error);
@@ -294,6 +295,17 @@ public class SubscriptionService {
 
     private static NotFoundException offerNotFound() {
         return new NotFoundException("OFFER_NOT_FOUND", "Oferta não encontrada");
+    }
+
+    private Optional<SubscriptionCreationResult> replayFor(Offer offer, CreateSubscriptionCommand command,
+                                                            String requestHash) {
+        var replay = subscriptions.findOrderByIdempotency(offer.id(), command.idempotencyKey());
+        if (replay.isEmpty()) return Optional.empty();
+        if (!replay.get().requestHash().equals(requestHash)) {
+            throw new ConflictException("IDEMPOTENCY_CONFLICT",
+                    "Já existe uma solicitação diferente com esta chave", "idempotencyKey");
+        }
+        return Optional.of(new SubscriptionCreationResult(replay.get().subscriptionId(), true));
     }
 
     private static NotFoundException subscriptionNotFound() {

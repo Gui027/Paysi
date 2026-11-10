@@ -96,6 +96,10 @@ paysi:
     from: ${PAYSI_MAIL_FROM:nao-responda@paysi.local}
   session:
     cookie-secure: ${SESSION_COOKIE_SECURE:false}
+  admin-dashboard:
+    username: ${PAYSI_ADMIN_USERNAME:admin}
+    # Hash Argon2id da senha inicial. Em produção, substitua por PAYSI_ADMIN_PASSWORD_HASH.
+    password-hash: '${PAYSI_ADMIN_PASSWORD_HASH:$argon2id$v=19$m=16384,t=2,p=1$2gFORnTF9Q8UYCH9mpXkQQ$96nP8dMkHPjpecIOdNmYjed5ndBKvQ8s9OQ950bvutE}'
   kyc:
     provider: ${KYC_PROVIDER:configured}
     provider-base-url: ${KYC_PROVIDER_BASE_URL:https://kyc.local/process}

@@ -31,6 +31,7 @@ export const eventCatalog: readonly { key: string; label: string; types: string[
   { key: "approved", label: "Compra aprovada", types: ["PAYMENT.APPROVED"] },
   { key: "refund", label: "Reembolso", types: ["PAYMENT.REFUNDED", "PAYMENT.PARTIALLY_REFUNDED"] },
   { key: "chargeback", label: "Chargeback", types: ["CHARGEBACK.OPENED"] },
+  { key: "sub_created", label: "Assinatura criada", types: ["SUBSCRIPTION.CREATED"] },
   { key: "sub_canceled", label: "Assinatura cancelada", types: ["SUBSCRIPTION.CANCELED"] },
   { key: "sub_past_due", label: "Assinatura atrasada", types: ["SUBSCRIPTION.PAST_DUE"] },
   { key: "sub_renewed", label: "Assinatura renovada", types: ["SUBSCRIPTION.RENEWED"] },

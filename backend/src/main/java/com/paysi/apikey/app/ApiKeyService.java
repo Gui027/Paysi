@@ -94,6 +94,9 @@ public class ApiKeyService {
         if (granted.contains(ApiKeyModels.PAYMENTS_WRITE) && !granted.contains(ApiKeyModels.PAYMENTS_READ)) {
             throw new ValidationException("API_KEY_SCOPE_INVALID", "Para criar pagamentos, marque também Ler pagamentos", "scopes");
         }
+        if (granted.contains(ApiKeyModels.SUBSCRIPTIONS_WRITE) && !granted.contains(ApiKeyModels.SUBSCRIPTIONS_READ)) {
+            throw new ValidationException("API_KEY_SCOPE_INVALID", "Para gerenciar assinaturas, marque também Ler assinaturas", "scopes");
+        }
         return granted;
     }
 }

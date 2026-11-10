@@ -97,6 +97,12 @@ class SubscriptionServiceTest {
     }
 
     @Test
+    void idempotencyHashDoesNotDependOnProviderCardToken() {
+        assertThat(SubscriptionService.hash(command("tok_primeiro")))
+                .isEqualTo(SubscriptionService.hash(command("tok_retry")));
+    }
+
+    @Test
     void sameIdempotencyKeyDifferentBodyConflicts() {
         var fixture = fixture(offer(0, true));
         when(fixture.repository.findOrderByIdempotency(OFFER, "idem-1"))

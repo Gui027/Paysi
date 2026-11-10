@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-export const metadata = { title: "Referência da API | Paysi", description: "Documentação oficial da API Paysi para pagamentos e integrações." };
+export const metadata = { title: "Referência da API | Paysi", description: "Documentação oficial da API Paysi para pagamentos, assinaturas e integrações." };
 
 const BASE = "https://api.paysi.com.br";
 
 function Code({ children }: { children: string }) {
-  return <pre className="api-doc-code"><code>{children}</code></pre>;
+  return <pre className="api-doc-code" tabIndex={0}><code>{children}</code></pre>;
 }
 
 function Endpoint({ method, path, title, scope, children }: { method: "GET" | "POST" | "PUT"; path: string; title: string; scope: string; children: ReactNode }) {
@@ -19,6 +19,7 @@ function Endpoint({ method, path, title, scope, children }: { method: "GET" | "P
 const nav = [
   ["Começar", [["Introdução", "introduction"], ["Autenticação", "authentication"], ["Primeiro pagamento", "quickstart"]]],
   ["Pagamentos", [["Criar pagamento", "create-payment"], ["Consultar pagamento", "get-payment"], ["Métodos e status", "payment-status"]]],
+  ["Assinaturas", [["Criar assinatura", "create-subscription"], ["Consultar e listar", "get-subscription"], ["Cancelar", "cancel-subscription"]]],
   ["Operações", [["Vendas", "sales"], ["Reembolsos", "refunds"], ["Catálogo e financeiro", "other-resources"], ["Webhooks", "webhooks"]]],
   ["Referência", [["Idempotência", "idempotency"], ["Erros", "errors"], ["Limites e segurança", "security"]]],
 ] as const;
@@ -36,7 +37,7 @@ export default function Page() {
       <section id="introduction" className="api-doc-hero">
         <span className="api-doc-version">API v1</span>
         <h1>API da Paysi</h1>
-        <p>Integre Pix, boleto e cartão à sua plataforma. A API usa JSON, HTTPS, valores inteiros em centavos e respostas previsíveis para facilitar integrações server-to-server.</p>
+        <p>Integre Pix, boleto, cartão e assinaturas recorrentes à sua plataforma. A API usa JSON, HTTPS, valores inteiros em centavos e respostas previsíveis para facilitar integrações server-to-server.</p>
         <div className="api-base-url"><span>URL base</span><code>{BASE}/v1/public</code></div>
       </section>
 
@@ -113,6 +114,70 @@ export default function Page() {
         <p>Status comuns: <code>PENDING</code>, <code>PAID</code>, <code>FAILED</code>, <code>EXPIRED</code>, <code>REFUNDED</code> e <code>PARTIALLY_REFUNDED</code>.</p>
       </section>
 
+      <section id="create-subscription" className="api-doc-section">
+        <h2>Assinaturas recorrentes</h2>
+        <p>Crie uma oferta do tipo assinatura no painel e use o slug para iniciar a recorrência. O cartão é tokenizado durante a chamada e não é persistido pela Paysi. A chave precisa das permissões <code>subscriptions_read</code> e <code>subscriptions_write</code>.</p>
+        <Endpoint method="POST" path="/subscriptions" title="Criar assinatura" scope="subscriptions_write">
+          <p>Exige <code>Idempotency-Key</code>. A mesma chave e o mesmo corpo retornam a assinatura original com HTTP 200, sem tokenizar ou cobrar o cartão novamente.</p>
+          <Code>{`curl -X POST ${BASE}/v1/public/subscriptions \\
+  -H "Authorization: Bearer paysi_live_SUA_CHAVE" \\
+  -H "Idempotency-Key: assinatura-cliente-8472" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "offerSlug": "plano-pro-mensal",
+    "method": "CARD",
+    "buyer": {
+      "name": "Ana Silva",
+      "email": "ana@exemplo.com",
+      "personType": "PF",
+      "taxId": "12345678909"
+    },
+    "card": {
+      "holderName": "Ana Silva",
+      "number": "4242424242424242",
+      "expiryMonth": "12",
+      "expiryYear": "2030",
+      "ccv": "123",
+      "postalCode": "01310100",
+      "addressNumber": "100",
+      "phone": "11999999999"
+    },
+    "customerIp": "203.0.113.42",
+    "visitorKey": "cliente-8472"
+  }'`}</Code>
+          <div className="api-callout"><strong>Dados de cartão.</strong> Envie esta chamada somente do seu backend, nunca registre o corpo e mantenha seu ambiente compatível com as obrigações de PCI DSS.</div>
+          <h4>Resposta — 201</h4><Code>{`{
+  "subscription": {
+    "id": "6c8...",
+    "status": "ACTIVE",
+    "cycleNumber": 1,
+    "nextChargeAt": "2026-12-10T15:00:00Z",
+    "cancelPending": false,
+    "hasPaymentMethod": true
+  },
+  "charges": [{ "cycleNumber": 1, "amountCents": 4990, "status": "PAID" }]
+}`}</Code>
+        </Endpoint>
+      </section>
+
+      <section id="get-subscription" className="api-doc-section">
+        <Endpoint method="GET" path="/subscriptions/{subscriptionId}" title="Consultar assinatura" scope="subscriptions_read">
+          <p>Retorna estado, próximo vencimento, cancelamento pendente e histórico de cobranças. Recursos de outra conta respondem como não encontrados.</p>
+        </Endpoint>
+        <Endpoint method="GET" path="/subscriptions" title="Listar assinaturas" scope="subscriptions_read">
+          <p>Use <code>cursor</code> e <code>limit</code> (máximo 100). A resposta inclui <code>items</code> e <code>nextCursor</code>.</p>
+        </Endpoint>
+      </section>
+
+      <section id="cancel-subscription" className="api-doc-section">
+        <Endpoint method="POST" path="/subscriptions/{subscriptionId}/cancel" title="Cancelar ao fim do período" scope="subscriptions_write">
+          <p>Agenda o cancelamento para o fim do ciclo vigente e responde HTTP 204. Repetir a solicitação é seguro e não antecipa o encerramento.</p>
+          <Code>{`curl -X POST ${BASE}/v1/public/subscriptions/6c8.../cancel \\
+  -H "Authorization: Bearer paysi_live_SUA_CHAVE"`}</Code>
+        </Endpoint>
+        <p>Status possíveis: <code>TRIAL</code>, <code>ACTIVE</code>, <code>PAST_DUE</code> e <code>CANCELED</code>. Renovações e falhas seguem as retentativas automáticas da Paysi.</p>
+      </section>
+
       <section id="sales" className="api-doc-section"><h2>Vendas</h2>
         <Endpoint method="GET" path="/sales" title="Listar vendas" scope="sales"><p>Filtros: <code>status</code>, <code>method</code>, <code>productId</code>, <code>from</code>, <code>to</code>, <code>page</code> e <code>size</code>.</p></Endpoint>
         <Endpoint method="GET" path="/sales/{chargeId}" title="Detalhar venda" scope="sales"><p>Retorna comprador, valores, divisão financeira, método e histórico do pagamento.</p></Endpoint>
@@ -141,9 +206,10 @@ export default function Page() {
         <Code>{`{
   "name": "Produção",
   "url": "https://sua-plataforma.com/webhooks/paysi",
-  "events": ["PAYMENT.APPROVED", "PAYMENT.REFUSED", "PAYMENT.EXPIRED", "PAYMENT.REFUNDED"],
+  "events": ["PAYMENT.APPROVED", "PAYMENT.REFUSED", "SUBSCRIPTION.CREATED", "SUBSCRIPTION.RENEWED", "SUBSCRIPTION.PAST_DUE", "SUBSCRIPTION.CANCELED"],
   "enabled": true
 }`}</Code>
+        <p>Para assinaturas, acompanhe <code>SUBSCRIPTION.CREATED</code>, <code>SUBSCRIPTION.RENEWED</code>, <code>SUBSCRIPTION.PAST_DUE</code> e <code>SUBSCRIPTION.CANCELED</code>. A cobrança inicial aprovada também produz <code>PAYMENT.APPROVED</code>.</p>
         <div className="api-callout">Valide a assinatura antes de processar o evento, responda com HTTP 2xx rapidamente e trate eventos repetidos de forma idempotente.</div>
       </section>
 

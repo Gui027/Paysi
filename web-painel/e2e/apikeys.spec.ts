@@ -56,7 +56,7 @@ test.describe("apps e API", () => {
     await page.goto("/apps/api");
     await page.getByRole("button", { name: /Criar chave de API/ }).click();
     await expect(page.getByRole("heading", { name: "Criar API Key" })).toBeVisible();
-    for (const nome of ["Ler pagamentos", "Criar pagamentos", "Ler relatórios", "Ler produtos", "Ler vendas", "Estornar vendas", "Ler afiliados", "Ler financeiro", "Gerenciar webhooks"]) await expect(page.getByRole("checkbox", { name: new RegExp(`^${nome}`) })).toBeChecked();
+    for (const nome of ["Ler pagamentos", "Criar pagamentos", "Ler assinaturas", "Gerenciar assinaturas", "Ler relatórios", "Ler produtos", "Ler vendas", "Estornar vendas", "Ler afiliados", "Ler financeiro", "Gerenciar webhooks"]) await expect(page.getByRole("checkbox", { name: new RegExp(`^${nome}`) })).toBeChecked();
 
     await page.getByRole("dialog").getByRole("button", { name: "Criar API Key" }).click();
     await expect(page.getByRole("dialog").getByRole("alert")).toContainText("Informe um nome");
@@ -113,6 +113,7 @@ test.describe("apps e API", () => {
     await expect(page.getByRole("heading", { name: "API da Paysi" })).toBeVisible();
     await expect(page.getByText("https://api.paysi.com.br/v1/public", { exact: true })).toBeVisible();
     await expect(page.getByText("/sales/{chargeId}/refund", { exact: true })).toBeVisible();
+    await expect(page.getByText("/subscriptions/{subscriptionId}/cancel", { exact: true })).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 });

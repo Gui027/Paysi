@@ -11,12 +11,17 @@ test("desmarcar Vendas desmarca Reembolsar vendas", () => {
   assert.deepEqual(toggleScope(["sales", "sales_refund"], "sales_refund", false), ["sales"]);
 });
 
-test("não duplica escopos e lista as nove permissões", () => {
+test("não duplica escopos e lista as onze permissões", () => {
   assert.deepEqual(toggleScope(["finance"], "finance", true), ["finance"]);
-  assert.equal(allScopes.length, 9);
+  assert.equal(allScopes.length, 11);
 });
 
 test("criar pagamentos depende da leitura de pagamentos", () => {
   assert.deepEqual(toggleScope([], "payments_write", true).sort(), ["payments_read", "payments_write"]);
   assert.deepEqual(toggleScope(["payments_read", "payments_write"], "payments_read", false), []);
+});
+
+test("gerenciar assinaturas depende da leitura de assinaturas", () => {
+  assert.deepEqual(toggleScope([], "subscriptions_write", true).sort(), ["subscriptions_read", "subscriptions_write"]);
+  assert.deepEqual(toggleScope(["subscriptions_read", "subscriptions_write"], "subscriptions_read", false), []);
 });
