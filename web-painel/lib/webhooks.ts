@@ -27,6 +27,7 @@ export const eventCatalog: readonly { key: string; label: string; types: string[
   { key: "pix", label: "Pix gerado", types: ["PIX.GENERATED"] },
   { key: "cart", label: "Carrinho abandonado", types: ["CART.ABANDONED"] },
   { key: "refused", label: "Compra recusada", types: ["PAYMENT.REFUSED"] },
+  { key: "expired", label: "Pagamento expirado", types: ["PAYMENT.EXPIRED"] },
   { key: "approved", label: "Compra aprovada", types: ["PAYMENT.APPROVED"] },
   { key: "refund", label: "Reembolso", types: ["PAYMENT.REFUNDED", "PAYMENT.PARTIALLY_REFUNDED"] },
   { key: "chargeback", label: "Chargeback", types: ["CHARGEBACK.OPENED"] },

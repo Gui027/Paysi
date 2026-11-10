@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class JdbcProviderEventRepository implements ProviderEventRepository {
@@ -97,6 +99,18 @@ public class JdbcProviderEventRepository implements ProviderEventRepository {
             String raw = rs.getString(4);
             return new StoredProviderEvent(rs.getString(1), parse(raw), raw, rs.getInt(5));
         }, Timestamp.from(now), limit);
+    }
+
+    @Override
+    public Optional<UUID> findAccountId(UUID chargeId) {
+        return jdbc.query("""
+                select p.seller_id
+                  from charges c
+                  join orders o on o.id = c.order_id
+                  join offers of on of.id = o.offer_id
+                  join products p on p.id = of.product_id
+                 where c.id = ?
+                """, (rs, row) -> rs.getObject(1, UUID.class), chargeId).stream().findFirst();
     }
 
     private ProviderEventPayload parse(String raw) {

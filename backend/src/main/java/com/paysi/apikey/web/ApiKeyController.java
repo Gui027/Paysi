@@ -45,13 +45,13 @@ public class ApiKeyController {
     }
 
     @GetMapping("/v1/api-keys/{id}")
-    @Operation(summary = "Detalhar uma API Key (o client_secret nunca é devolvido)")
+    @Operation(summary = "Detalhar uma chave (o valor completo nunca é devolvido)")
     public ApiKey get(@CookieValue(name = COOKIE_NAME, required = false) String token, @PathVariable UUID id) {
         return keys.get(owner(token), id);
     }
 
     @PostMapping("/v1/api-keys")
-    @Operation(summary = "Criar uma API Key; o client_secret aparece só nesta resposta")
+    @Operation(summary = "Criar uma chave Paysi; o valor completo aparece só nesta resposta")
     public ResponseEntity<CreatedApiKey> create(@CookieValue(name = COOKIE_NAME, required = false) String token,
                                                 @RequestBody ApiKeyRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(keys.create(owner(token), request.name(), request.scopes()));

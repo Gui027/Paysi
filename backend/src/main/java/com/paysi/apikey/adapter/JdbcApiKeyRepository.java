@@ -17,9 +17,9 @@ import java.util.UUID;
 
 @Repository
 class JdbcApiKeyRepository implements ApiKeyRepository {
-    private static final String COLUMNS = "id, name, secret_last4, scopes, created_at, last_used_at, client_id, account_id";
+    private static final String COLUMNS = "id, name, key_prefix, secret_last4, scopes, created_at, last_used_at, client_id, account_id";
     private static final RowMapper<ApiKey> MAPPER = (rs, row) -> new ApiKey(rs.getObject("id", UUID.class), rs.getString("name"),
-            "*****" + rs.getString("secret_last4"), List.of((String[]) rs.getArray("scopes").getArray()),
+            rs.getString("key_prefix") + "_••••" + rs.getString("secret_last4"), List.of((String[]) rs.getArray("scopes").getArray()),
             rs.getTimestamp("created_at").toInstant(), instant(rs.getTimestamp("last_used_at")),
             rs.getObject("client_id", UUID.class), rs.getObject("account_id", UUID.class));
 
@@ -46,7 +46,7 @@ class JdbcApiKeyRepository implements ApiKeyRepository {
 
     @Override
     public void insert(UUID id, UUID accountId, String name, UUID clientId, String secretHash, String last4, List<String> scopes) {
-        jdbc.update("INSERT INTO public_api_keys (id, account_id, name, client_id, secret_hash, secret_last4, scopes) VALUES (?, ?, ?, ?, ?, ?, ?::text[])",
+        jdbc.update("INSERT INTO public_api_keys (id, account_id, name, client_id, secret_hash, secret_last4, scopes, key_prefix) VALUES (?, ?, ?, ?, ?, ?, ?::text[], 'paysi_live')",
                 id, accountId, name, clientId, secretHash, last4, array(scopes));
     }
 

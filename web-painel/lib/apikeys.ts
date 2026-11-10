@@ -1,20 +1,23 @@
 import { apiRequest } from "./api";
 
-export type ApiScope = "reports" | "products" | "sales" | "sales_refund" | "affiliates" | "finance" | "webhooks";
+export type ApiScope = "payments_read" | "payments_write" | "reports" | "products" | "sales" | "sales_refund" | "affiliates" | "finance" | "webhooks";
 export type ApiKey = { id: string; name: string; keyHint: string; scopes: ApiScope[]; createdAt: string; lastUsedAt: string | null; clientId: string; accountId: string };
-export type CreatedApiKey = { key: ApiKey; clientSecret: string };
+export type CreatedApiKey = { key: ApiKey; apiKey: string };
 
 /** Endpoints que a chave pode acessar; "Reembolsar vendas" só vale junto com "Vendas". */
-export const scopeOptions: readonly { scope: ApiScope; label: string; parent?: ApiScope }[] = [
-  { scope: "reports", label: "Relatórios" },
-  { scope: "products", label: "Produtos" },
-  { scope: "sales", label: "Vendas" },
-  { scope: "sales_refund", label: "Reembolsar vendas", parent: "sales" },
-  { scope: "affiliates", label: "Afiliados" },
-  { scope: "finance", label: "Financeiro" },
-  { scope: "webhooks", label: "Webhooks" },
+export const scopeOptions: readonly { scope: ApiScope; label: string; description: string; group: string; parent?: ApiScope }[] = [
+  { scope: "payments_read", label: "Ler pagamentos", description: "Consultar status, QR Code Pix e boleto.", group: "Pagamentos" },
+  { scope: "payments_write", label: "Criar pagamentos", description: "Criar cobranças Pix, boleto e cartão.", group: "Pagamentos", parent: "payments_read" },
+  { scope: "sales", label: "Ler vendas", description: "Listar e consultar vendas da conta.", group: "Transações" },
+  { scope: "sales_refund", label: "Estornar vendas", description: "Emitir reembolsos totais ou parciais.", group: "Transações", parent: "sales" },
+  { scope: "finance", label: "Ler financeiro", description: "Consultar saldo e saques.", group: "Financeiro" },
+  { scope: "products", label: "Ler produtos", description: "Listar e consultar produtos.", group: "Catálogo" },
+  { scope: "affiliates", label: "Ler afiliados", description: "Listar afiliados dos seus produtos.", group: "Catálogo" },
+  { scope: "reports", label: "Ler relatórios", description: "Consultar relatórios operacionais.", group: "Relatórios" },
+  { scope: "webhooks", label: "Gerenciar webhooks", description: "Criar, editar e listar endpoints.", group: "Webhooks" },
 ];
 export const allScopes: ApiScope[] = scopeOptions.map(option => option.scope);
+export const scopeGroups = [...new Set(scopeOptions.map(option => option.group))];
 
 /** Marca ou desmarca um escopo respeitando a dependência: sem Vendas, não há Reembolsar vendas. */
 export function toggleScope(current: ApiScope[], scope: ApiScope, on: boolean): ApiScope[] {

@@ -21,19 +21,19 @@ public record ChargeStartResponse(
         return switch (result.method()) {
             case "CARD" -> {
                 var card = result.card();
-                yield new ChargeStartResponse(result.chargeId(), "CARD", card.status(), card.idempotentReplay(),
+                yield new ChargeStartResponse(result.chargeId(), "CARD", canonical(card.status()), card.idempotentReplay(),
                         new CardThreeDsView(card.threeDs().required(), card.threeDs().status(),
                                 card.threeDs().challengeUrl()),
                         null, null, null, card.pixAlternativeExpiresAt());
             }
             case "BOLETO" -> {
                 var boleto = result.boleto();
-                yield new ChargeStartResponse(result.chargeId(), "BOLETO", boleto.status(),
+                yield new ChargeStartResponse(result.chargeId(), "BOLETO", canonical(boleto.status()),
                         boleto.idempotentReplay(), null, boleto.barcode(), boleto.pdfUrl(), null, boleto.dueAt());
             }
             case "PIX" -> {
                 var pix = result.pix();
-                yield new ChargeStartResponse(result.chargeId(), "PIX", pix.status(), pix.idempotentReplay(),
+                yield new ChargeStartResponse(result.chargeId(), "PIX", canonical(pix.status()), pix.idempotentReplay(),
                         null, null, null, pix.qrCode(), pix.expiresAt());
             }
             default -> throw new IllegalStateException("Método de cobrança desconhecido: " + result.method());
@@ -41,11 +41,20 @@ public record ChargeStartResponse(
     }
 
     public static ChargeStartResponse fromCard(UUID chargeId, CardPaymentResult card) {
-        return new ChargeStartResponse(chargeId, "CARD", card.status(), card.idempotentReplay(),
+        return new ChargeStartResponse(chargeId, "CARD", canonical(card.status()), card.idempotentReplay(),
                 new CardThreeDsView(card.threeDs().required(), card.threeDs().status(), card.threeDs().challengeUrl()),
                 null, null, null, card.pixAlternativeExpiresAt());
     }
 
     public record CardThreeDsView(boolean required, String status, String challengeUrl) {
+    }
+
+    private static String canonical(String status) {
+        if (status == null) return "PENDING";
+        return switch (status.toUpperCase(java.util.Locale.ROOT)) {
+            case "APPROVED", "PAID" -> "PAID";
+            case "DECLINED", "ERROR" -> "FAILED";
+            default -> status.toUpperCase(java.util.Locale.ROOT);
+        };
     }
 }

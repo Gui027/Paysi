@@ -39,8 +39,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * API pública da Paysi para integrações: autenticada por token Bearer (obtido com client_id + client_secret) e
- * limitada aos endpoints que o vendedor liberou na API Key. Reaproveita os mesmos serviços do painel.
+ * API pública da Paysi para integrações: autenticada diretamente pela chave Paysi ou por um token Bearer temporário
+ * obtido com client credentials, e limitada às permissões concedidas. Reaproveita os mesmos serviços do painel.
  */
 @RestController
 @Tag(name = "API pública")

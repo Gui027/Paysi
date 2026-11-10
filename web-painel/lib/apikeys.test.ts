@@ -11,7 +11,12 @@ test("desmarcar Vendas desmarca Reembolsar vendas", () => {
   assert.deepEqual(toggleScope(["sales", "sales_refund"], "sales_refund", false), ["sales"]);
 });
 
-test("não duplica escopos e lista os sete endpoints", () => {
+test("não duplica escopos e lista as nove permissões", () => {
   assert.deepEqual(toggleScope(["finance"], "finance", true), ["finance"]);
-  assert.equal(allScopes.length, 7);
+  assert.equal(allScopes.length, 9);
+});
+
+test("criar pagamentos depende da leitura de pagamentos", () => {
+  assert.deepEqual(toggleScope([], "payments_write", true).sort(), ["payments_read", "payments_write"]);
+  assert.deepEqual(toggleScope(["payments_read", "payments_write"], "payments_read", false), []);
 });

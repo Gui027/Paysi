@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.HexFormat;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,9 +47,11 @@ public class ApiKeyService {
         }
         byte[] bytes = new byte[32];
         RANDOM.nextBytes(bytes);
-        String secret = HexFormat.of().formatHex(bytes);
+        UUID clientId = UUID.randomUUID();
+        String secret = "paysi_live_" + clientId.toString().replace("-", "") + "_"
+                + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         UUID id = UUID.randomUUID();
-        repository.insert(id, accountId, name, UUID.randomUUID(), ApiAuthService.hash(secret), secret.substring(secret.length() - 4), granted);
+        repository.insert(id, accountId, name, clientId, ApiAuthService.hash(secret), secret.substring(secret.length() - 4), granted);
         return new CreatedApiKey(get(accountId, id), secret);
     }
 
@@ -88,6 +90,9 @@ public class ApiKeyService {
         }
         if (granted.contains(ApiKeyModels.SALES_REFUND) && !granted.contains(ApiKeyModels.SALES)) {
             throw new ValidationException("API_KEY_SCOPE_INVALID", "Para reembolsar vendas, marque também Vendas", "scopes");
+        }
+        if (granted.contains(ApiKeyModels.PAYMENTS_WRITE) && !granted.contains(ApiKeyModels.PAYMENTS_READ)) {
+            throw new ValidationException("API_KEY_SCOPE_INVALID", "Para criar pagamentos, marque também Ler pagamentos", "scopes");
         }
         return granted;
     }

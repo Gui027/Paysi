@@ -18,6 +18,11 @@ public interface ChargeCreationRepository {
     /** Leitura sem lock, para o front consultar o status enquanto aguarda Pix/boleto confirmar. */
     Optional<ChargeView> findChargeView(UUID chargeId);
 
+    /** Leitura da cobrança restrita ao vendedor dono do produto. */
+    default Optional<ChargeView> findChargeView(UUID sellerId, UUID chargeId) {
+        return Optional.empty();
+    }
+
     record OrderContext(UUID sellerId, UUID affiliateId, int commissionBps, long paidCents, String method,
                          int installments, String buyerName, String buyerEmail, String personType,
                          String taxId, int boletoDueDays, int guaranteeDays) {

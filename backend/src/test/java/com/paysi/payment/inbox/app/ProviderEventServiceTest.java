@@ -5,6 +5,7 @@ import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.inbox.adapter.DispatchingProviderEventNormalizer;
 import com.paysi.payment.inbox.domain.ProviderEventPayload;
 import com.paysi.payment.inbox.port.*;
+import com.paysi.webhook.app.OutboxService;
 import org.junit.jupiter.api.Test;
 
 import java.time.*;
@@ -35,7 +36,8 @@ class ProviderEventServiceTest {
                 .thenAnswer(call -> first.compareAndSet(true, false));
         when(repository.applyEffect(any())).thenReturn(true);
         var saleLedger = mock(SaleLedgerService.class);
-        var service = service(signatures, repository, saleLedger);
+        var outbox = mock(OutboxService.class);
+        var service = service(signatures, repository, saleLedger, outbox);
 
         try (var executor = Executors.newFixedThreadPool(8)) {
             var calls = java.util.stream.IntStream.range(0, 40)
@@ -57,6 +59,23 @@ class ProviderEventServiceTest {
         verify(saleLedger, times(1)).creditForCharge(
                 java.util.UUID.fromString("11111111-1111-1111-1111-111111111111"),
                 Instant.parse("2026-08-28T11:59:00Z"));
+        verify(outbox, never()).append(any(), any(), any()); // aprovação é publicada pelo trigger transacional V056
+    }
+
+    @Test
+    void declinedPaymentPublishesFailedEvent() {
+        var repository = mock(ProviderEventRepository.class);
+        var signatures = mock(PaymentEventSignatureVerifier.class);
+        when(signatures.valid(any(), any(), any())).thenReturn(true);
+        when(repository.receive(any(), any(), any(), eq(true))).thenReturn(true);
+        when(repository.applyEffect(any())).thenReturn(true);
+        var outbox = mock(OutboxService.class);
+        var service = service(signatures, repository, mock(SaleLedgerService.class), outbox);
+        String declined = RAW.replace("PAYMENT_CONFIRMED", "PAYMENT_DECLINED");
+
+        assertThat(service.handle("fake", declined, "signature").status()).isEqualTo("PROCESSED");
+        verify(outbox).append(eq(java.util.UUID.fromString("22222222-2222-2222-2222-222222222222")),
+                eq("payment.refused"), any(ProviderEventService.PaymentEvent.class));
     }
 
     @Test
@@ -94,8 +113,16 @@ class ProviderEventServiceTest {
 
     private static ProviderEventService service(PaymentEventSignatureVerifier signatures,
                                                  ProviderEventRepository repository, SaleLedgerService saleLedger) {
+        return service(signatures, repository, saleLedger, mock(OutboxService.class));
+    }
+
+    private static ProviderEventService service(PaymentEventSignatureVerifier signatures,
+                                                 ProviderEventRepository repository, SaleLedgerService saleLedger,
+                                                 OutboxService outbox) {
         var json = new ObjectMapper().findAndRegisterModules();
+        when(repository.findAccountId(any())).thenReturn(java.util.Optional.of(
+                java.util.UUID.fromString("22222222-2222-2222-2222-222222222222")));
         return new ProviderEventService(json, signatures, new DispatchingProviderEventNormalizer(json, providerId -> java.util.Optional.empty()),
-                repository, saleLedger, Clock.fixed(NOW, ZoneOffset.UTC));
+                repository, saleLedger, outbox, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 }

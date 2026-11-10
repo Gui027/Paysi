@@ -22,8 +22,8 @@ import java.util.HexFormat;
 import java.util.UUID;
 
 /**
- * Autenticação da API pública: troca client_id + client_secret por um token de acesso de 1 hora e valida esse token
- * (com o escopo pedido) em cada chamada. Só o hash do token e o hash do segredo ficam no banco.
+ * Autenticação da API pública. A chave Paysi pode ser usada diretamente como Bearer token; o fluxo opcional de
+ * token curto por client credentials continua disponível para integrações que fazem rotação de credenciais.
  */
 @Service
 public class ApiAuthService {
@@ -87,8 +87,9 @@ public class ApiAuthService {
         if (authorization == null || !authorization.regionMatches(true, 0, "Bearer ", 0, 7) || authorization.length() <= 7) {
             throw new UnauthorizedException("API_UNAUTHENTICATED", "Informe o token no cabeçalho Authorization: Bearer <token>");
         }
-        TokenGrant grant = repository.findToken(hash(authorization.substring(7).strip()))
-                .orElseThrow(() -> new UnauthorizedException("API_TOKEN_INVALID", "Token inválido ou expirado"));
+        String bearer = authorization.substring(7).strip();
+        TokenGrant grant = bearer.startsWith("paysi_live_") ? grantFromApiKey(bearer) : repository.findToken(hash(bearer))
+                .orElseThrow(() -> new UnauthorizedException("API_TOKEN_INVALID", "Token ou chave de API inválido"));
         if (!grant.expiresAt().isAfter(clock.instant())) {
             throw new UnauthorizedException("API_TOKEN_INVALID", "Token inválido ou expirado");
         }
@@ -100,5 +101,28 @@ public class ApiAuthService {
         }
         repository.touch(grant.keyId());
         return new ApiPrincipal(grant.accountId(), grant.keyId(), grant.scopes());
+    }
+
+    private TokenGrant grantFromApiKey(String apiKey) {
+        String[] parts = apiKey.split("_", 4);
+        if (parts.length != 4 || parts[2].length() != 32) {
+            throw new UnauthorizedException("API_KEY_INVALID", "Chave de API inválida");
+        }
+        UUID clientId;
+        try {
+            String value = parts[2];
+            clientId = UUID.fromString(value.substring(0, 8) + "-" + value.substring(8, 12) + "-"
+                    + value.substring(12, 16) + "-" + value.substring(16, 20) + "-" + value.substring(20));
+        } catch (RuntimeException error) {
+            throw new UnauthorizedException("API_KEY_INVALID", "Chave de API inválida");
+        }
+        KeyCredentials key = repository.findByClientId(clientId)
+                .orElseThrow(() -> new UnauthorizedException("API_KEY_INVALID", "Chave de API inválida"));
+        byte[] expected = key.secretHash().getBytes(StandardCharsets.UTF_8);
+        byte[] given = hash(apiKey).getBytes(StandardCharsets.UTF_8);
+        if (!MessageDigest.isEqual(expected, given)) {
+            throw new UnauthorizedException("API_KEY_INVALID", "Chave de API inválida");
+        }
+        return new TokenGrant(key.id(), key.accountId(), key.scopes(), Instant.MAX);
     }
 }

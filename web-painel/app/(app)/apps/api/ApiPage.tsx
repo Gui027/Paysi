@@ -14,28 +14,30 @@ function message(error: unknown, fallback: string) {
   return error instanceof ApiRequestError ? error.message : fallback;
 }
 
-/** Mostra o client_secret uma única vez: depois de fechar, ele não pode mais ser consultado. */
+/** Mostra a chave completa uma única vez: depois de fechar, ela não pode mais ser consultada. */
 function SegredoDialog({ created, onClose }: { created: CreatedApiKey; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(created.clientSecret);
+      await navigator.clipboard.writeText(created.apiKey);
       setCopied(true);
     } catch {
       setCopied(false);
     }
   }
 
-  return <Janela wide open title="Copiar sua API Key" onClose={onClose}>
-    <p>Por favor, copie o client_secret e salve em um local seguro e acessível. Por razões de segurança, você não conseguirá visualizá-lo novamente. Se você o perder, será necessário gerar uma nova API Key.</p>
-    <label className="pe-field"><span>client_secret</span><input readOnly value={created.clientSecret} onFocus={event => event.target.select()} /></label>
-    <label className="pe-field"><span>client_id</span><input readOnly value={created.key.clientId} onFocus={event => event.target.select()} /></label>
-    <label className="pe-field"><span>account_id</span><input readOnly value={created.key.accountId} onFocus={event => event.target.select()} /></label>
-    {copied && <p className="vd-msg vd-ok" role="status">client_secret copiado.</p>}
+  return <Janela wide open title="Sua chave de API foi criada" onClose={onClose}>
+    <p>Copie e armazene a chave em um cofre de segredos. Por segurança, ela não será exibida novamente.</p>
+    <label className="pe-field"><span>Chave de API</span><input readOnly value={created.apiKey} onFocus={event => event.target.select()} /></label>
+    <details className="api-legacy-details"><summary>Credenciais avançadas</summary>
+      <label className="pe-field"><span>client_id</span><input readOnly value={created.key.clientId} onFocus={event => event.target.select()} /></label>
+      <label className="pe-field"><span>account_id</span><input readOnly value={created.key.accountId} onFocus={event => event.target.select()} /></label>
+    </details>
+    {copied && <p className="vd-msg vd-ok" role="status">Chave copiada.</p>}
     <div className="ui-actions">
       <button type="button" className="ui-button ui-button-secondary" onClick={onClose}>Fechar</button>
-      <button type="button" className="ui-button ui-button-primary" onClick={() => void copy()}>Copiar client_secret</button>
+      <button type="button" className="ui-button ui-button-primary" onClick={() => void copy()}>Copiar chave</button>
     </div>
   </Janela>;
 }
@@ -83,7 +85,7 @@ export function ApiPage() {
     <header className="rel-title api-title">
       <Link href="/apps" className="rel-back" aria-label="Voltar para Apps">←</Link>
       <svg width="46" height="46" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="1" y="1" width="22" height="22" rx="5" fill="#111827" /><path d="m7 9 3 3-3 3M12 16h5" fill="none" stroke="#fff" strokeWidth="1.800" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      <h1>API</h1>
+      <div><h1>Chaves de API</h1><p className="api-title-copy">Crie e gerencie chaves com permissões restritas para suas integrações.</p></div>
     </header>
 
     {error && <Toast tone="danger">{error} <button className="toast-action" onClick={() => void load(term)}>Tentar novamente</button></Toast>}
@@ -93,17 +95,19 @@ export function ApiPage() {
       <div className="rel-toolbar">
         <label className="mk-search-field rel-search"><span className="sr-only">Buscar API Key por nome</span>
           <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Buscar…" /></label>
-        <button type="button" className="ui-button ui-button-primary" onClick={() => setDrawer({ editing: null })}>Criar API Key</button>
+        <button type="button" className="ui-button ui-button-primary" onClick={() => setDrawer({ editing: null })}>＋ Criar chave de API</button>
       </div>
       {keys === null ? <Skeleton label="Carregando API Keys" /> : keys.length === 0 ?
         <EmptyState title="Nenhuma API Key" description={term ? "Nenhuma API Key com esse nome." : "Crie uma API Key para integrar seu sistema com a Paysi."} /> :
         <div className="dash-table-wrap"><table className="prod-table vd-table">
-          <thead><tr><th scope="col">Nome</th><th scope="col">API Key</th><th scope="col">Criada em</th><th scope="col">Último uso</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
+          <thead><tr><th scope="col">Criada em</th><th scope="col">Nome</th><th scope="col">Chave</th><th scope="col">Permissões</th><th scope="col">Último uso</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
           <tbody>{keys.map(key => <tr key={key.id}>
-            <td><strong>{key.name}</strong></td>
-            <td className="prod-muted">{key.keyHint}</td>
             <td className="prod-muted">{dateTime.format(new Date(key.createdAt))}</td>
+            <td><strong>{key.name}</strong></td>
+            <td className="prod-muted"><code>{key.keyHint}</code></td>
+            <td>{key.scopes.length} {key.scopes.length === 1 ? "permissão" : "permissões"}</td>
             <td className="prod-muted">{key.lastUsedAt ? dateTime.format(new Date(key.lastUsedAt)) : "------"}</td>
+            <td><span className="api-status"><i /> Ativa</span></td>
             <td className="col-actions"><div className="vd-menu">
               <button type="button" className="vd-kebab" aria-label={`Ações da API Key ${key.name}`} aria-haspopup="menu" aria-expanded={menuId === key.id} onClick={() => setMenuId(current => current === key.id ? null : key.id)}>⋮</button>
               {menuId === key.id && <div className="prod-menu-list vd-menu-list" role="menu">

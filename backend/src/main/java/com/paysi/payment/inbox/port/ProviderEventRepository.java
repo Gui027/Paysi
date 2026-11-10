@@ -4,6 +4,8 @@ import com.paysi.payment.inbox.domain.ProviderEventPayload;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface ProviderEventRepository {
     boolean receive(String provider, ProviderEventPayload event, String rawPayload, boolean signatureValid);
@@ -12,6 +14,7 @@ public interface ProviderEventRepository {
     void markIgnored(String provider, String eventId, Instant now);
     void markFailed(String provider, String eventId, String error, int attempt, Instant nextRetryAt);
     List<StoredProviderEvent> lockFailed(Instant now, int limit);
+    Optional<UUID> findAccountId(UUID chargeId);
 
     record StoredProviderEvent(String provider, ProviderEventPayload event, String rawPayload, int attemptCount) {}
 }

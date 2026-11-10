@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { ApiRequestError } from "../../../../lib/api";
-import { allScopes, ApiKey, ApiScope, createApiKey, CreatedApiKey, scopeOptions, toggleScope, updateApiKey } from "../../../../lib/apikeys";
+import { allScopes, ApiKey, ApiScope, createApiKey, CreatedApiKey, scopeGroups, scopeOptions, toggleScope, updateApiKey } from "../../../../lib/apikeys";
 
 /** Criar ou editar uma API Key: nome e endpoints liberados. Na edição mostra também os dados de conexão. */
 export function ApiKeyDrawer({ editing, onClose, onSaved }: { editing: ApiKey | null; onClose: () => void; onSaved: (created: CreatedApiKey | null) => void }) {
@@ -39,20 +39,29 @@ export function ApiKeyDrawer({ editing, onClose, onSaved }: { editing: ApiKey | 
       <button type="button" className="cp-close" aria-label="Fechar" onClick={() => !saving && onClose()}>✕</button>
     </header>
     <div className="mk-drawer-body api-drawer-body">
-      <label className="pe-field"><span>Nome</span><input value={name} maxLength={60} autoComplete="off" onChange={event => { setName(event.target.value); setError(null); }} /></label>
+      <label className="pe-field api-name-field"><span>Nome da chave de API *</span><input value={name} maxLength={60} autoComplete="off" placeholder="Exemplo: Integração do meu e-commerce" onChange={event => { setName(event.target.value); setError(null); }} /></label>
       <p className="api-help"><Link href="/ajuda/api" target="_blank" rel="noopener noreferrer">Aprenda mais sobre a API</Link></p>
 
-      <fieldset className="pe-fieldset api-scopes"><legend>Endpoints</legend>
-        <button type="button" className="pe-linkbtn" onClick={() => setScopes(allOn ? [] : allScopes)}>{allOn ? "(Desmarcar todos)" : "(Marcar todos)"}</button>
-        {scopeOptions.map(option => <label key={option.scope} className={`mk-terms ${option.parent ? "api-sub" : ""}`}>
-          <input type="checkbox" checked={scopes.includes(option.scope)} onChange={event => setScopes(current => toggleScope(current, option.scope, event.target.checked))} /> {option.label}</label>)}
+      <fieldset className="pe-fieldset api-scopes"><legend>Permissões</legend>
+        <div className="api-scope-summary"><span>{scopes.length} selecionadas</span><button type="button" className="pe-linkbtn" onClick={() => setScopes(allOn ? [] : allScopes)}>{allOn ? "Desmarcar todas" : "Marcar todas"}</button></div>
+        {scopeGroups.map(group => {
+          const options = scopeOptions.filter(option => option.group === group);
+          const groupOn = options.every(option => scopes.includes(option.scope));
+          return <section className="api-scope-group" key={group}>
+            <header><strong>🔑 {group}</strong><label className="mk-terms"><input type="checkbox" checked={groupOn} onChange={event => setScopes(current => options.reduce((next, option) => toggleScope(next, option.scope, event.target.checked), current))} /> Todas</label></header>
+            {options.map(option => <label key={option.scope} className="api-scope-option">
+              <input type="checkbox" checked={scopes.includes(option.scope)} onChange={event => setScopes(current => toggleScope(current, option.scope, event.target.checked))} />
+              <span><strong>{option.label}</strong><small>{option.description}</small></span></label>)}
+          </section>;
+        })}
       </fieldset>
 
       {editing && <section aria-label="Seus dados para conectar com a API">
-        <p className="pe-hint">Seus dados para conectar com a API</p>
-        <label className="pe-field"><span>client_id</span><input readOnly value={editing.clientId} /></label>
-        <label className="pe-field"><span>client_secret</span><input readOnly value="**************" aria-describedby="api-secret-hint" /><small id="api-secret-hint" className="pe-hint">O client_secret só é mostrado na criação. Se o perder, crie uma nova API Key.</small></label>
-        <label className="pe-field"><span>account_id</span><input readOnly value={editing.accountId} /></label>
+        <p className="pe-hint">A chave completa só foi mostrada na criação. Se você a perdeu, gere uma nova.</p>
+        <details className="api-legacy-details"><summary>Credenciais avançadas</summary>
+          <label className="pe-field"><span>client_id</span><input readOnly value={editing.clientId} /></label>
+          <label className="pe-field"><span>account_id</span><input readOnly value={editing.accountId} /></label>
+        </details>
       </section>}
       {error && <p className="pe-error" role="alert">{error}</p>}
     </div>

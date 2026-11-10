@@ -37,6 +37,8 @@ export type WebhookDelivery = {
  */
 export const WEBHOOK_EVENT_DESCRIPTIONS = {
   "PAYMENT.APPROVED": "Pagamento aprovado (venda nova ou renovação de assinatura)",
+  "PAYMENT.REFUSED": "Pagamento recusado pelo provedor",
+  "PAYMENT.EXPIRED": "Pix ou boleto expirado sem pagamento",
   "PAYMENT.REFUNDED": "Pagamento reembolsado por completo",
   "PAYMENT.PARTIALLY_REFUNDED": "Pagamento reembolsado em parte",
   "CHARGEBACK.OPENED": "Contestação (chargeback) aberta",

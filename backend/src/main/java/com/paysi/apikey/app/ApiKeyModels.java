@@ -1,6 +1,7 @@
 package com.paysi.apikey.app;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.Instant;
 import java.util.List;
@@ -18,13 +19,20 @@ public final class ApiKeyModels {
     public static final String AFFILIATES = "affiliates";
     public static final String FINANCE = "finance";
     public static final String WEBHOOKS = "webhooks";
-    public static final Set<String> SCOPES = Set.of(REPORTS, PRODUCTS, SALES, SALES_REFUND, AFFILIATES, FINANCE, WEBHOOKS);
+    public static final String PAYMENTS_READ = "payments_read";
+    public static final String PAYMENTS_WRITE = "payments_write";
+    public static final Set<String> SCOPES = Set.of(REPORTS, PRODUCTS, SALES, SALES_REFUND, AFFILIATES, FINANCE,
+            WEBHOOKS, PAYMENTS_READ, PAYMENTS_WRITE);
 
     /** {@code keyHint} é o que a lista mostra ("*****4953"); o segredo completo nunca volta depois da criação. */
     public record ApiKey(UUID id, String name, String keyHint, List<String> scopes, Instant createdAt, Instant lastUsedAt,
                          UUID clientId, UUID accountId) { }
 
-    public record CreatedApiKey(ApiKey key, String clientSecret) { }
+    /** A chave completa aparece uma única vez. Ela pode ser usada diretamente como Bearer token. */
+    public record CreatedApiKey(ApiKey key, String apiKey) {
+        /** Compatibilidade interna durante a migração do antigo nome client_secret. */
+        @JsonIgnore public String clientSecret() { return apiKey; }
+    }
 
     /** Dados de uma chave para conferir o segredo na emissão do token. */
     public record KeyCredentials(UUID id, UUID accountId, String secretHash, List<String> scopes) { }

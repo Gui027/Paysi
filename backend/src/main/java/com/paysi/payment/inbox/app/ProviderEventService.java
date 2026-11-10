@@ -6,6 +6,7 @@ import com.paysi.core.error.ValidationException;
 import com.paysi.ledger.app.SaleLedgerService;
 import com.paysi.payment.inbox.domain.*;
 import com.paysi.payment.inbox.port.*;
+import com.paysi.webhook.app.OutboxService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,23 +25,25 @@ public class ProviderEventService {
     private final ProviderEventNormalizer normalizer;
     private final ProviderEventRepository repository;
     private final SaleLedgerService saleLedger;
+    private final OutboxService outbox;
     private final Clock clock;
 
     @org.springframework.beans.factory.annotation.Autowired
     public ProviderEventService(ObjectMapper json, PaymentEventSignatureVerifier signatures,
                                 ProviderEventNormalizer normalizer, ProviderEventRepository repository,
-                                SaleLedgerService saleLedger) {
-        this(json, signatures, normalizer, repository, saleLedger, Clock.systemUTC());
+                                SaleLedgerService saleLedger, OutboxService outbox) {
+        this(json, signatures, normalizer, repository, saleLedger, outbox, Clock.systemUTC());
     }
 
     ProviderEventService(ObjectMapper json, PaymentEventSignatureVerifier signatures,
                          ProviderEventNormalizer normalizer, ProviderEventRepository repository,
-                         SaleLedgerService saleLedger, Clock clock) {
+                         SaleLedgerService saleLedger, OutboxService outbox, Clock clock) {
         this.json = json;
         this.signatures = signatures;
         this.normalizer = normalizer;
         this.repository = repository;
         this.saleLedger = saleLedger;
+        this.outbox = outbox;
         this.clock = clock;
     }
 
@@ -75,6 +78,7 @@ public class ProviderEventService {
                 if ("PAYMENT_CONFIRMED".equals(stored.event().eventType())) {
                     saleLedger.creditForCharge(stored.event().chargeId(), stored.event().occurredAt());
                 }
+                publishPaymentEvent(stored.event());
                 repository.markProcessed(stored.provider(), stored.event().providerEventId(), clock.instant());
                 return new ProviderEventResult("PROCESSED", false);
             }
@@ -88,6 +92,22 @@ public class ProviderEventService {
             return new ProviderEventResult("FAILED", false);
         }
     }
+
+    private void publishPaymentEvent(ProviderEventPayload event) {
+        String type = switch (event.eventType()) {
+            case "PAYMENT_DECLINED" -> "payment.refused";
+            case "PAYMENT_EXPIRED" -> "payment.expired";
+            default -> null;
+        };
+        if (type == null) return;
+        var accountId = repository.findAccountId(event.chargeId())
+                .orElseThrow(() -> new IllegalStateException("Conta da cobrança não encontrada"));
+        outbox.append(accountId, type, new PaymentEvent(event.chargeId(), event.providerChargeId(),
+                type.substring("payment.".length()).toUpperCase(java.util.Locale.ROOT), event.occurredAt()));
+    }
+
+    public record PaymentEvent(java.util.UUID paymentId, String providerPaymentId, String status,
+                               java.time.Instant occurredAt) { }
 
     private ProviderEventPayload parse(String provider, String rawPayload) {
         try {

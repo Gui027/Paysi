@@ -45,7 +45,7 @@ class ApiKeyServicesTest {
         }
 
         ApiKey view(Row row) {
-            return new ApiKey(row.id, row.name, "*****" + row.last4, row.scopes, Instant.EPOCH, null, row.clientId, row.accountId);
+            return new ApiKey(row.id, row.name, "paysi_live_••••" + row.last4, row.scopes, Instant.EPOCH, null, row.clientId, row.accountId);
         }
 
         public List<ApiKey> list(UUID accountId, String query) {
@@ -104,9 +104,9 @@ class ApiKeyServicesTest {
     @Test
     void createReturnsTheSecretOnceAndStoresOnlyItsHash() {
         CreatedApiKey created = keys.create(OWNER, "  ERP  ", List.of("sales", "sales_refund"));
-        assertThat(created.clientSecret()).hasSize(64);
+        assertThat(created.apiKey()).startsWith("paysi_live_");
         assertThat(created.key().name()).isEqualTo("ERP");
-        assertThat(created.key().keyHint()).isEqualTo("*****" + created.clientSecret().substring(60));
+        assertThat(created.key().keyHint()).isEqualTo("paysi_live_••••" + created.apiKey().substring(created.apiKey().length() - 4));
         assertThat(repository.rows.get(0).hash()).isEqualTo(ApiAuthService.hash(created.clientSecret())).isNotEqualTo(created.clientSecret());
         assertThat(keys.get(OWNER, created.key().id()).scopes()).containsExactly("sales", "sales_refund");
     }
@@ -147,6 +147,7 @@ class ApiKeyServicesTest {
         String bearer = "Bearer " + token.accessToken();
 
         assertThat(auth.authenticate(bearer, null, "sales").accountId()).isEqualTo(OWNER);
+        assertThat(auth.authenticate("Bearer " + created.apiKey(), null, "sales").accountId()).isEqualTo(OWNER);
         assertThat(auth.authenticate(bearer, OWNER.toString(), null).scopes()).containsExactly("sales");
         assertThatThrownBy(() -> auth.authenticate(bearer, UUID.randomUUID().toString(), "sales")).isInstanceOf(ForbiddenException.class);
         assertThatThrownBy(() -> auth.authenticate(bearer, null, "finance")).isInstanceOf(ForbiddenException.class);

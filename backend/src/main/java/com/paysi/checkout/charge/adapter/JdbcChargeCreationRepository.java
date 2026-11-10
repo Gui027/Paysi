@@ -70,4 +70,21 @@ class JdbcChargeCreationRepository implements ChargeCreationRepository {
                                 : rs.getTimestamp("payment_expires_at").toInstant()),
                 chargeId).stream().findFirst();
     }
+
+    @Override
+    public Optional<ChargeView> findChargeView(UUID sellerId, UUID chargeId) {
+        return jdbc.query("""
+                SELECT c.id, o.method, c.status, c.boleto_barcode, c.boleto_pdf_url, c.pix_qr_code,
+                       c.payment_expires_at
+                  FROM charges c
+                  JOIN orders o ON o.id = c.order_id
+                  JOIN offers of ON of.id = o.offer_id
+                  JOIN products p ON p.id = of.product_id
+                 WHERE p.seller_id = ? AND c.id = ?
+                """, (rs, row) -> new ChargeView(rs.getObject("id", UUID.class), rs.getString("method"),
+                        rs.getString("status"), rs.getString("boleto_barcode"), rs.getString("boleto_pdf_url"),
+                        rs.getString("pix_qr_code"), rs.getTimestamp("payment_expires_at") == null ? null
+                                : rs.getTimestamp("payment_expires_at").toInstant()), sellerId, chargeId)
+                .stream().findFirst();
+    }
 }

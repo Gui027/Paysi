@@ -1,0 +1,83 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Paysi Public API",
+    "version": "1.0.0",
+    "description": "API pública da Paysi para criar pagamentos e operar vendas. Valores monetários são inteiros em centavos; datas usam ISO 8601 em UTC."
+  },
+  "servers": [{ "url": "https://api.paysi.com.br/v1/public", "description": "Produção" }],
+  "security": [{ "apiKey": [] }],
+  "tags": [
+    { "name": "Autenticação" }, { "name": "Pagamentos" }, { "name": "Vendas" },
+    { "name": "Catálogo" }, { "name": "Financeiro" }, { "name": "Webhooks" }
+  ],
+  "paths": {
+    "/oauth/token": {
+      "post": {
+        "tags": ["Autenticação"], "security": [], "summary": "Gerar token temporário",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TokenRequest" } } } },
+        "responses": { "200": { "description": "Token válido por uma hora", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccessToken" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      }
+    },
+    "/me": { "get": { "tags": ["Autenticação"], "summary": "Validar chave e listar permissões", "responses": { "200": { "description": "Credencial válida" }, "401": { "$ref": "#/components/responses/Unauthorized" } } } },
+    "/payments": {
+      "post": {
+        "tags": ["Pagamentos"], "summary": "Criar e iniciar pagamento", "description": "Exige a permissão payments_write e o cabeçalho Idempotency-Key.",
+        "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePayment" } } } },
+        "responses": { "201": { "description": "Pagamento criado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePaymentResponse" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "$ref": "#/components/responses/Conflict" }, "429": { "$ref": "#/components/responses/RateLimited" } }
+      }
+    },
+    "/payments/{paymentId}": {
+      "get": {
+        "tags": ["Pagamentos"], "summary": "Consultar pagamento", "description": "Exige payments_read.",
+        "parameters": [{ "name": "paymentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Estado atual", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Payment" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/sales": { "get": { "tags": ["Vendas"], "summary": "Listar vendas", "parameters": [{ "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/Size" }, { "name": "status", "in": "query", "schema": { "type": "array", "items": { "type": "string" } } }, { "name": "method", "in": "query", "schema": { "type": "string" } }, { "name": "from", "in": "query", "schema": { "type": "string", "format": "date" } }, { "name": "to", "in": "query", "schema": { "type": "string", "format": "date" } }], "responses": { "200": { "description": "Página de vendas" } } } },
+    "/sales/{chargeId}": { "get": { "tags": ["Vendas"], "summary": "Detalhar venda", "parameters": [{ "$ref": "#/components/parameters/ChargeId" }], "responses": { "200": { "description": "Detalhes da venda" }, "404": { "$ref": "#/components/responses/NotFound" } } } },
+    "/sales/{chargeId}/refund": { "post": { "tags": ["Vendas"], "summary": "Reembolsar venda", "description": "Exige sales_refund. Omita amountCents para reembolso total.", "parameters": [{ "$ref": "#/components/parameters/ChargeId" }, { "$ref": "#/components/parameters/IdempotencyKey" }], "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Refund" } } } }, "responses": { "201": { "description": "Reembolso criado" }, "409": { "$ref": "#/components/responses/Conflict" } } } },
+    "/products": { "get": { "tags": ["Catálogo"], "summary": "Listar produtos", "parameters": [{ "name": "cursor", "in": "query", "schema": { "type": "string" } }, { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }], "responses": { "200": { "description": "Produtos" } } } },
+    "/products/{productId}": { "get": { "tags": ["Catálogo"], "summary": "Detalhar produto", "parameters": [{ "name": "productId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Produto" }, "404": { "$ref": "#/components/responses/NotFound" } } } },
+    "/affiliates": { "get": { "tags": ["Catálogo"], "summary": "Listar afiliados", "parameters": [{ "name": "cursor", "in": "query", "schema": { "type": "string" } }, { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }], "responses": { "200": { "description": "Afiliados dos produtos da conta" } } } },
+    "/balance": { "get": { "tags": ["Financeiro"], "summary": "Consultar saldo", "responses": { "200": { "description": "Saldos disponível, pendente e bloqueado" } } } },
+    "/payouts": { "get": { "tags": ["Financeiro"], "summary": "Listar saques", "parameters": [{ "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/Size" }], "responses": { "200": { "description": "Página de saques" } } } },
+    "/reports/{reportId}": { "get": { "tags": ["Financeiro"], "summary": "Consultar relatório", "parameters": [{ "name": "reportId", "in": "path", "required": true, "schema": { "type": "string", "enum": ["produto", "afiliado", "abandonadas", "saldo-receber", "recebiveis-cartao", "assinaturas-canceladas"] } }, { "name": "from", "in": "query", "schema": { "type": "string", "format": "date" } }, { "name": "to", "in": "query", "schema": { "type": "string", "format": "date" } }, { "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/Size" }], "responses": { "200": { "description": "Relatório solicitado" } } } },
+    "/webhooks": {
+      "get": { "tags": ["Webhooks"], "summary": "Listar webhooks", "responses": { "200": { "description": "Endpoints cadastrados" } } },
+      "post": { "tags": ["Webhooks"], "summary": "Criar webhook", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } }, "responses": { "201": { "description": "Webhook criado; segredo retornado uma única vez" } } }
+    },
+    "/webhooks/{webhookId}": { "put": { "tags": ["Webhooks"], "summary": "Atualizar webhook", "parameters": [{ "name": "webhookId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } }, "responses": { "200": { "description": "Webhook atualizado" } } } }
+  },
+  "components": {
+    "securitySchemes": { "apiKey": { "type": "http", "scheme": "bearer", "bearerFormat": "paysi_live_...", "description": "Chave criada no painel Paysi ou token temporário." } },
+    "parameters": {
+      "IdempotencyKey": { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string", "maxLength": 128 }, "description": "Identificador estável da operação no seu sistema." },
+      "ChargeId": { "name": "chargeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+      "Page": { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 0, "default": 0 } },
+      "Size": { "name": "size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } }
+    },
+    "schemas": {
+      "TokenRequest": { "type": "object", "required": ["client_id", "client_secret"], "properties": { "client_id": { "type": "string", "format": "uuid" }, "client_secret": { "type": "string", "description": "Chave Paysi completa." } } },
+      "AccessToken": { "type": "object", "properties": { "access_token": { "type": "string" }, "token_type": { "const": "Bearer" }, "expires_in": { "type": "integer", "example": 3600 }, "scope": { "type": "string" } } },
+      "Buyer": { "type": "object", "required": ["name", "email", "personType", "taxId"], "properties": { "name": { "type": "string", "maxLength": 200 }, "email": { "type": "string", "format": "email" }, "personType": { "type": "string", "enum": ["PF", "PJ"] }, "taxId": { "type": "string" }, "phone": { "type": "string" }, "legalName": { "type": "string" }, "municipalReg": { "type": "string" }, "address": { "$ref": "#/components/schemas/Address" } } },
+      "Address": { "type": "object", "properties": { "zipCode": { "type": "string" }, "street": { "type": "string" }, "number": { "type": "string" }, "complement": { "type": "string" }, "district": { "type": "string" }, "city": { "type": "string" }, "state": { "type": "string", "minLength": 2, "maxLength": 2 } } },
+      "Card": { "type": "object", "description": "Usado somente para tokenização; nunca persistido.", "required": ["holderName", "number", "expiryMonth", "expiryYear", "ccv", "postalCode", "addressNumber", "phone"], "properties": { "holderName": { "type": "string" }, "number": { "type": "string", "pattern": "^[0-9]{13,19}$" }, "expiryMonth": { "type": "string" }, "expiryYear": { "type": "string" }, "ccv": { "type": "string" }, "postalCode": { "type": "string" }, "addressNumber": { "type": "string" }, "phone": { "type": "string" } } },
+      "CreatePayment": { "type": "object", "required": ["offerSlug", "buyer", "method", "termsHash", "termsAcceptedAt"], "properties": { "offerSlug": { "type": "string" }, "buyer": { "$ref": "#/components/schemas/Buyer" }, "method": { "type": "string", "enum": ["PIX", "BOLETO", "CARD"] }, "installments": { "type": "integer", "minimum": 1, "maximum": 12, "default": 1 }, "coupon": { "type": "string" }, "reference": { "type": "string", "maxLength": 128 }, "amountCents": { "type": "integer", "minimum": 200 }, "visitorKey": { "type": "string" }, "customerIp": { "type": "string", "maxLength": 64, "description": "IP do comprador final para evidência antifraude; não envie o IP do servidor da integração." }, "termsHash": { "type": "string" }, "termsAcceptedAt": { "type": "string", "format": "date-time" }, "card": { "$ref": "#/components/schemas/Card" } } },
+      "Payment": { "type": "object", "properties": { "chargeId": { "type": "string", "format": "uuid" }, "method": { "type": "string", "enum": ["PIX", "BOLETO", "CARD"] }, "status": { "type": "string", "enum": ["PENDING", "PAID", "FAILED", "EXPIRED", "REFUNDED", "PARTIALLY_REFUNDED", "CHARGEBACK"] }, "boletoBarcode": { "type": ["string", "null"] }, "boletoUrl": { "type": ["string", "null"], "format": "uri" }, "pixQrCode": { "type": ["string", "null"] }, "expiresAt": { "type": ["string", "null"], "format": "date-time" } } },
+      "CreatePaymentResponse": { "type": "object", "properties": { "order": { "type": "object" }, "payment": { "$ref": "#/components/schemas/Payment" }, "nextAction": { "type": "string", "enum": ["display_pix_qr_code", "display_boleto", "complete_3ds", "none"] } } },
+      "Refund": { "type": "object", "properties": { "amountCents": { "type": "integer", "minimum": 1 }, "reason": { "type": "string" } } },
+      "Webhook": { "type": "object", "required": ["name", "url", "events", "enabled"], "properties": { "name": { "type": "string" }, "productId": { "type": ["string", "null"], "format": "uuid" }, "url": { "type": "string", "format": "uri" }, "events": { "type": "array", "items": { "type": "string" } }, "enabled": { "type": "boolean" } } },
+      "Error": { "type": "object", "properties": { "code": { "type": "string" }, "message": { "type": "string" }, "field": { "type": ["string", "null"] }, "correlationId": { "type": ["string", "null"] } } }
+    },
+    "responses": {
+      "BadRequest": { "description": "Requisição inválida", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Unauthorized": { "description": "Chave ausente ou inválida", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Forbidden": { "description": "Permissão insuficiente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "NotFound": { "description": "Recurso não encontrado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Conflict": { "description": "Conflito de estado ou idempotência", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "RateLimited": { "description": "Limite de requisições excedido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    }
+  }
+}
