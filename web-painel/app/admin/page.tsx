@@ -9,7 +9,7 @@ const periods = [7, 30, 90, 365] as const;
 const statusLabel = { ACTIVE: "Ativa", LIMITED: "Limitada", SUSPENDED: "Suspensa", CLOSED: "Encerrada" };
 
 function money(cents: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100); // aritmetica-ok: conversão de centavos inteiros para exibição
 }
 
 function date(value: string) {
