@@ -307,6 +307,22 @@ test.describe("financeiro", () => {
     await expect(page.locator('input[type="file"]')).toHaveCount(0);
   });
 
+  test("documento e selfie com o mesmo onboarding mostram uma única verificação", async ({ page }) => {
+    await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
+    await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
+      { code: "ASAAS_VERIFICATION", label: "Verificação de identidade na Asaas", status: "PENDING", reason: null, estimatedAt: null },
+    ] } }));
+    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => route.fulfill({ json: [
+      { id: "doc_identification", status: "PENDING", type: "IDENTIFICATION", description: "Utilize o link de onboarding.", externalUrl: "https://asaas.example/onboarding" },
+      { id: "doc_selfie", status: "PENDING", type: "SELFIE", description: "Utilize o link de onboarding.", externalUrl: "https://asaas.example/onboarding" },
+    ] }));
+
+    await page.goto("/saldo?aba=identidade");
+
+    await expect(page.getByRole("link", { name: "Fazer verificação segura" })).toHaveCount(1);
+    await expect(page.getByText("Documento e selfie")).toHaveCount(1);
+  });
+
   test("onboarding não liberado mostra um único bloqueio em vez de botões estáticos", async ({ page }) => {
     await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
     await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
