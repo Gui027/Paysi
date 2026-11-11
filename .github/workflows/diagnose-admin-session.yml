@@ -1,0 +1,38 @@
+name: Diagnóstico temporário da sessão admin
+
+on:
+  workflow_dispatch:
+    inputs:
+      token_hash:
+        description: Hash SHA-256 da sessão a localizar
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Preparar acesso SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.KVM2_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.KVM2_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/paysi-kvm2
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/paysi-kvm2 ~/.ssh/known_hosts
+
+      - name: Consultar estado seguro da sessão
+        env:
+          KVM2_HOST: ${{ secrets.KVM2_HOST }}
+          KVM2_USER: ${{ secrets.KVM2_USER }}
+          TOKEN_HASH: ${{ inputs.token_hash }}
+        run: |
+          set -euo pipefail
+          [[ "$TOKEN_HASH" =~ ^[0-9a-f]{64}$ ]] || exit 2
+          ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST" \
+            "docker exec paysi-db-1 psql -U paysi -d paysi -X -v ON_ERROR_STOP=1 -Atc \"select 'total='||count(*)||',active='||count(*) filter (where expires_at>now())||',match='||count(*) filter (where token_hash='$TOKEN_HASH')||',match_active='||count(*) filter (where token_hash='$TOKEN_HASH' and expires_at>now()) from admin_dashboard_sessions;\""
