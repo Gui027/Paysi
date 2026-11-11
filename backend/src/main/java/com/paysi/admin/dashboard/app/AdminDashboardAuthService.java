@@ -8,6 +8,7 @@ import com.paysi.identity.session.port.SessionTokenService;
 import com.paysi.security.ratelimit.port.RateLimiter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -17,6 +18,7 @@ import java.time.Instant;
 import java.util.Locale;
 
 @Service
+@Transactional
 public class AdminDashboardAuthService {
     public static final Duration SESSION_TTL = Duration.ofHours(12);
     private static final Duration LOGIN_WINDOW = Duration.ofMinutes(15);
