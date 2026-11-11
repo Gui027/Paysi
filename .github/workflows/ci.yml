@@ -87,7 +87,9 @@ jobs:
       - name: Orçamento de bundle do checkout (gzip < 180KB)
         run: node scripts/check-bundle-size.mjs
       - name: Instalar navegador do Playwright (Chromium)
-        run: npx playwright install --with-deps chromium
+        # As imagens hospedadas do GitHub já incluem as bibliotecas do Chromium.
+        # Evita depender do apt durante o CI, que pode falhar por DNS do mirror Ubuntu.
+        run: npx playwright install chromium
       - name: E2E + acessibilidade — web-checkout (Pix, cartão, boleto, teclado, axe)
         working-directory: web-checkout
         run: npm run test:e2e
