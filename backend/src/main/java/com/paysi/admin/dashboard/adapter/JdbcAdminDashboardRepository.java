@@ -5,6 +5,7 @@ import com.paysi.admin.dashboard.port.AdminDashboardRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -25,7 +26,7 @@ public class JdbcAdminDashboardRepository implements AdminDashboardRepository {
                 values (?,?,?,?)
                 on conflict (token_hash) do update set username=excluded.username,
                   last_seen_at=excluded.last_seen_at,expires_at=excluded.expires_at
-                """, tokenHash, username, now, expiresAt);
+                """, tokenHash, username, Timestamp.from(now), Timestamp.from(expiresAt));
     }
 
     @Override
@@ -38,7 +39,7 @@ public class JdbcAdminDashboardRepository implements AdminDashboardRepository {
     @Override
     public void renewSession(String tokenHash, Instant now, Instant expiresAt) {
         jdbc.update("update admin_dashboard_sessions set last_seen_at=?,expires_at=? where token_hash=?",
-                now, expiresAt, tokenHash);
+                Timestamp.from(now), Timestamp.from(expiresAt), tokenHash);
     }
 
     @Override public void deleteSession(String tokenHash) {
@@ -46,7 +47,7 @@ public class JdbcAdminDashboardRepository implements AdminDashboardRepository {
     }
 
     @Override public void deleteExpiredSessions(Instant now) {
-        jdbc.update("delete from admin_dashboard_sessions where expires_at<=?", now);
+        jdbc.update("delete from admin_dashboard_sessions where expires_at<=?", Timestamp.from(now));
     }
 
     @Override
@@ -61,7 +62,8 @@ public class JdbcAdminDashboardRepository implements AdminDashboardRepository {
                   (select count(*) from subscriptions s where s.status in ('TRIAL','ACTIVE')),
                   (select count(*) from accounts a where a.created_at>=?)
                 """, (rs, row) -> new AdminDashboardView.Summary(rs.getLong(1), rs.getLong(2),
-                        rs.getLong(3), rs.getLong(4), rs.getLong(5)), periodStart, periodStart, periodStart);
+                        rs.getLong(3), rs.getLong(4), rs.getLong(5)), Timestamp.from(periodStart),
+                Timestamp.from(periodStart), Timestamp.from(periodStart));
     }
 
     @Override
