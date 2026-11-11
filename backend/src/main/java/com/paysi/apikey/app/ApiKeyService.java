@@ -97,6 +97,9 @@ public class ApiKeyService {
         if (granted.contains(ApiKeyModels.SUBSCRIPTIONS_WRITE) && !granted.contains(ApiKeyModels.SUBSCRIPTIONS_READ)) {
             throw new ValidationException("API_KEY_SCOPE_INVALID", "Para gerenciar assinaturas, marque também Ler assinaturas", "scopes");
         }
+        if (granted.contains(ApiKeyModels.PRODUCTS_WRITE) && !granted.contains(ApiKeyModels.PRODUCTS)) {
+            throw new ValidationException("API_KEY_SCOPE_INVALID", "Para gerenciar o catálogo, marque também Ler produtos", "scopes");
+        }
         return granted;
     }
 }

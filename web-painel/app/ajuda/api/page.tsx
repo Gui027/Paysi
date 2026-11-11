@@ -20,7 +20,8 @@ const nav = [
   ["Começar", [["Introdução", "introduction"], ["Autenticação", "authentication"], ["Primeiro pagamento", "quickstart"]]],
   ["Pagamentos", [["Criar pagamento", "create-payment"], ["Consultar pagamento", "get-payment"], ["Métodos e status", "payment-status"]]],
   ["Assinaturas", [["Criar assinatura", "create-subscription"], ["Consultar e listar", "get-subscription"], ["Cancelar", "cancel-subscription"]]],
-  ["Operações", [["Vendas", "sales"], ["Reembolsos", "refunds"], ["Catálogo e financeiro", "other-resources"], ["Webhooks", "webhooks"]]],
+  ["Catálogo", [["Criar produto", "create-product"], ["Criar e publicar oferta", "create-offer"], ["Gerenciar catálogo", "catalog-operations"]]],
+  ["Operações", [["Vendas", "sales"], ["Reembolsos", "refunds"], ["Outros recursos", "other-resources"], ["Webhooks", "webhooks"]]],
   ["Referência", [["Idempotência", "idempotency"], ["Erros", "errors"], ["Limites e segurança", "security"]]],
 ] as const;
 
@@ -53,7 +54,7 @@ export default function Page() {
 
       <section id="quickstart" className="api-doc-section">
         <h2>Primeiro pagamento em menos de 5 minutos</h2>
-        <ol className="api-steps"><li>Publique um produto e uma oferta no painel.</li><li>Crie uma chave com <code>payments_read</code> e <code>payments_write</code>.</li><li>Envie a cobrança Pix abaixo usando o slug da oferta.</li><li>Mostre o <code>pixQrCode</code> ao comprador e confirme o resultado por webhook ou consulta.</li></ol>
+        <ol className="api-steps"><li>Crie e publique um produto e uma oferta pelo painel ou pela API com <code>products_write</code>.</li><li>Crie uma chave com <code>payments_read</code> e <code>payments_write</code>.</li><li>Envie a cobrança Pix abaixo usando o slug da oferta.</li><li>Mostre o <code>pixQrCode</code> ao comprador e confirme o resultado por webhook ou consulta.</li></ol>
         <Code>{`curl -X POST ${BASE}/v1/public/payments \\
   -H "Authorization: Bearer paysi_live_SUA_CHAVE" \\
   -H "Idempotency-Key: pedido-8472" \\
@@ -116,7 +117,7 @@ export default function Page() {
 
       <section id="create-subscription" className="api-doc-section">
         <h2>Assinaturas recorrentes</h2>
-        <p>Crie uma oferta do tipo assinatura no painel e use o slug para iniciar a recorrência. O cartão é tokenizado durante a chamada e não é persistido pela Paysi. A chave precisa das permissões <code>subscriptions_read</code> e <code>subscriptions_write</code>.</p>
+        <p>Crie uma oferta do tipo assinatura pelo painel ou pela API e use o slug para iniciar a recorrência. O cartão é tokenizado durante a chamada e não é persistido pela Paysi. A chave precisa das permissões <code>subscriptions_read</code> e <code>subscriptions_write</code>.</p>
         <Endpoint method="POST" path="/subscriptions" title="Criar assinatura" scope="subscriptions_write">
           <p>Exige <code>Idempotency-Key</code>. A mesma chave e o mesmo corpo retornam a assinatura original com HTTP 200, sem tokenizar ou cobrar o cartão novamente.</p>
           <Code>{`curl -X POST ${BASE}/v1/public/subscriptions \\
@@ -190,10 +191,63 @@ export default function Page() {
 }`}</Code></Endpoint>
       </section>
 
-      <section id="other-resources" className="api-doc-section"><h2>Catálogo, afiliados e financeiro</h2>
+      <section id="create-product" className="api-doc-section"><h2>Catálogo</h2>
+        <p>O escopo <code>products</code> permite consultar o catálogo. Para criar, editar, publicar ou arquivar produtos e ofertas, conceda também <code>products_write</code>.</p>
+        <Endpoint method="POST" path="/products" title="Criar produto em rascunho" scope="products_write">
+          <p>Cria um produto da conta autenticada. O tipo de cobrança e o segmento não podem mudar depois que o produto tiver ofertas.</p>
+          <Code>{`curl -X POST ${BASE}/v1/public/products \
+  -H "Authorization: Bearer paysi_live_SUA_CHAVE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "CRM Profissional",
+    "description": "Assinatura mensal do CRM",
+    "segment": "SAAS",
+    "chargeType": "SUBSCRIPTION",
+    "affiliationEnabled": false
+  }'`}</Code>
+        </Endpoint>
+      </section>
+
+      <section id="create-offer" className="api-doc-section">
+        <Endpoint method="POST" path="/products/{productId}/offers" title="Criar oferta em rascunho" scope="products_write">
+          <p>Cria a oferta e gera seu <code>slug</code>. Para assinatura mensal, use <code>cycle: MONTHLY</code> e inclua <code>CARD</code> em <code>paymentMethods</code>.</p>
+          <Code>{`curl -X POST ${BASE}/v1/public/products/SEU_PRODUCT_ID/offers \
+  -H "Authorization: Bearer paysi_live_SUA_CHAVE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "priceCents": 4990,
+    "cycle": "MONTHLY",
+    "trialDays": 0,
+    "trialRequiresCard": false,
+    "guaranteeDays": 7,
+    "maxInstallments": 1,
+    "boletoDueDays": 3,
+    "boletoAdvanceDays": 5,
+    "paymentMethods": ["CARD"],
+    "payoutDelay": "D15",
+    "name": "Plano Profissional mensal"
+  }'`}</Code>
+        </Endpoint>
+        <Endpoint method="POST" path="/offers/{offerId}/publish" title="Publicar oferta" scope="products_write">
+          <p>Publica a oferta quando a conta atende aos requisitos. Se KYC ou configuração fiscal estiverem pendentes, responde HTTP 202 com <code>requiredAction</code> e <code>actionUrl</code>.</p>
+        </Endpoint>
+      </section>
+
+      <section id="catalog-operations" className="api-doc-section"><h2>Gerenciar catálogo</h2>
         <table><thead><tr><th>Método e rota</th><th>Permissão</th><th>Descrição</th></tr></thead><tbody>
           <tr><td><code>GET /products</code></td><td><code>products</code></td><td>Lista produtos com <code>cursor</code> e <code>limit</code>.</td></tr>
           <tr><td><code>{"GET /products/{productId}"}</code></td><td><code>products</code></td><td>Detalha um produto da conta.</td></tr>
+          <tr><td><code>{"PUT /products/{productId}"}</code></td><td><code>products_write</code></td><td>Edita um produto.</td></tr>
+          <tr><td><code>{"DELETE /products/{productId}"}</code></td><td><code>products_write</code></td><td>Arquiva um produto.</td></tr>
+          <tr><td><code>{"GET /products/{productId}/offers"}</code></td><td><code>products</code></td><td>Lista as ofertas do produto.</td></tr>
+          <tr><td><code>{"GET /offers/{offerId}"}</code></td><td><code>products</code></td><td>Detalha uma oferta.</td></tr>
+          <tr><td><code>{"PUT /offers/{offerId}"}</code></td><td><code>products_write</code></td><td>Edita uma oferta.</td></tr>
+          <tr><td><code>{"DELETE /offers/{offerId}"}</code></td><td><code>products_write</code></td><td>Arquiva uma oferta.</td></tr>
+        </tbody></table>
+      </section>
+
+      <section id="other-resources" className="api-doc-section"><h2>Afiliados, relatórios e financeiro</h2>
+        <table><thead><tr><th>Método e rota</th><th>Permissão</th><th>Descrição</th></tr></thead><tbody>
           <tr><td><code>GET /affiliates</code></td><td><code>affiliates</code></td><td>Lista afiliados dos seus produtos.</td></tr>
           <tr><td><code>GET /balance</code></td><td><code>finance</code></td><td>Consulta saldos disponível, pendente e bloqueado.</td></tr>
           <tr><td><code>GET /payouts</code></td><td><code>finance</code></td><td>Lista saques com paginação.</td></tr>

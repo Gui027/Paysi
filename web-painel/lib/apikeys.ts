@@ -1,6 +1,6 @@
 import { apiRequest } from "./api";
 
-export type ApiScope = "payments_read" | "payments_write" | "subscriptions_read" | "subscriptions_write" | "reports" | "products" | "sales" | "sales_refund" | "affiliates" | "finance" | "webhooks";
+export type ApiScope = "payments_read" | "payments_write" | "subscriptions_read" | "subscriptions_write" | "reports" | "products" | "products_write" | "sales" | "sales_refund" | "affiliates" | "finance" | "webhooks";
 export type ApiKey = { id: string; name: string; keyHint: string; scopes: ApiScope[]; createdAt: string; lastUsedAt: string | null; clientId: string; accountId: string };
 export type CreatedApiKey = { key: ApiKey; apiKey: string };
 
@@ -14,6 +14,7 @@ export const scopeOptions: readonly { scope: ApiScope; label: string; descriptio
   { scope: "sales_refund", label: "Estornar vendas", description: "Emitir reembolsos totais ou parciais.", group: "Transações", parent: "sales" },
   { scope: "finance", label: "Ler financeiro", description: "Consultar saldo e saques.", group: "Financeiro" },
   { scope: "products", label: "Ler produtos", description: "Listar e consultar produtos.", group: "Catálogo" },
+  { scope: "products_write", label: "Gerenciar catálogo", description: "Criar, editar, publicar e arquivar produtos e ofertas.", group: "Catálogo", parent: "products" },
   { scope: "affiliates", label: "Ler afiliados", description: "Listar afiliados dos seus produtos.", group: "Catálogo" },
   { scope: "reports", label: "Ler relatórios", description: "Consultar relatórios operacionais.", group: "Relatórios" },
   { scope: "webhooks", label: "Gerenciar webhooks", description: "Criar, editar e listar endpoints.", group: "Webhooks" },

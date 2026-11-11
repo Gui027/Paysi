@@ -7,8 +7,14 @@ import com.paysi.apikey.app.ApiAuthService;
 import com.paysi.apikey.app.ApiKeyModels;
 import com.paysi.apikey.app.ApiKeyModels.AccessToken;
 import com.paysi.apikey.app.ApiKeyModels.ApiPrincipal;
+import com.paysi.catalog.offer.app.OfferPublicationService;
+import com.paysi.catalog.offer.app.OfferService;
+import com.paysi.catalog.offer.web.dto.OfferPublicationResponse;
+import com.paysi.catalog.offer.web.dto.OfferRequest;
+import com.paysi.catalog.offer.web.dto.OfferResponse;
 import com.paysi.catalog.product.app.ProductService;
 import com.paysi.catalog.product.web.dto.ProductPageResponse;
+import com.paysi.catalog.product.web.dto.ProductRequest;
 import com.paysi.catalog.product.web.dto.ProductResponse;
 import com.paysi.checkout.refund.app.RefundCommand;
 import com.paysi.checkout.refund.app.RefundService;
@@ -23,8 +29,10 @@ import com.paysi.sales.app.SalesService;
 import com.paysi.webhook.app.WebhookEndpointService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,6 +42,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -60,6 +69,8 @@ public class PublicApiController {
 
     private final ApiAuthService auth;
     private final ProductService products;
+    private final OfferService offers;
+    private final OfferPublicationService offerPublications;
     private final SalesService sales;
     private final RefundService refunds;
     private final AffiliationService affiliations;
@@ -67,11 +78,14 @@ public class PublicApiController {
     private final ReportsService reports;
     private final WebhookEndpointService webhooks;
 
-    public PublicApiController(ApiAuthService auth, ProductService products, SalesService sales, RefundService refunds,
+    public PublicApiController(ApiAuthService auth, ProductService products, OfferService offers,
+                               OfferPublicationService offerPublications, SalesService sales, RefundService refunds,
                                AffiliationService affiliations, FinanceService finance, ReportsService reports,
                                WebhookEndpointService webhooks) {
         this.auth = auth;
         this.products = products;
+        this.offers = offers;
+        this.offerPublications = offerPublications;
         this.sales = sales;
         this.refunds = refunds;
         this.affiliations = affiliations;
@@ -111,6 +125,100 @@ public class PublicApiController {
                                    @RequestHeader(name = ACCOUNT, required = false) String account,
                                    @PathVariable UUID productId) {
         return ProductResponse.from(products.get(seller(authorization, account, ApiKeyModels.PRODUCTS), productId));
+    }
+
+    @PostMapping("/v1/public/products")
+    @Operation(summary = "Criar um produto em rascunho")
+    public ResponseEntity<ProductResponse> createProduct(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @Valid @RequestBody ProductRequest request) {
+        var created = products.create(seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE), request.toCommand());
+        return ResponseEntity.created(URI.create("/v1/public/products/" + created.id()))
+                .body(ProductResponse.from(created));
+    }
+
+    @PutMapping("/v1/public/products/{productId}")
+    @Operation(summary = "Editar um produto")
+    public ProductResponse updateProduct(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @PathVariable UUID productId, @Valid @RequestBody ProductRequest request) {
+        return ProductResponse.from(products.update(seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE),
+                productId, request.toCommand()));
+    }
+
+    @DeleteMapping("/v1/public/products/{productId}")
+    @Operation(summary = "Arquivar um produto")
+    public ResponseEntity<Void> archiveProduct(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @PathVariable UUID productId) {
+        products.archive(seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE), productId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/v1/public/products/{productId}/offers")
+    @Operation(summary = "Listar as ofertas de um produto")
+    public List<OfferResponse> offers(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @PathVariable UUID productId) {
+        return offers.list(seller(authorization, account, ApiKeyModels.PRODUCTS), productId).stream()
+                .map(OfferResponse::from).toList();
+    }
+
+    @GetMapping("/v1/public/offers/{offerId}")
+    @Operation(summary = "Detalhar uma oferta")
+    public OfferResponse offer(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @PathVariable UUID offerId) {
+        return OfferResponse.from(offers.get(seller(authorization, account, ApiKeyModels.PRODUCTS), offerId));
+    }
+
+    @PostMapping("/v1/public/products/{productId}/offers")
+    @Operation(summary = "Criar uma oferta em rascunho")
+    public ResponseEntity<OfferResponse> createOffer(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @PathVariable UUID productId, @Valid @RequestBody OfferRequest request) {
+        var created = offers.create(seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE), productId,
+                request.toValues());
+        return ResponseEntity.created(URI.create("/v1/public/offers/" + created.offer().id()))
+                .body(OfferResponse.from(created));
+    }
+
+    @PutMapping("/v1/public/offers/{offerId}")
+    @Operation(summary = "Editar uma oferta")
+    public OfferResponse updateOffer(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @PathVariable UUID offerId, @Valid @RequestBody OfferRequest request) {
+        return OfferResponse.from(offers.update(seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE), offerId,
+                request.toValues()));
+    }
+
+    @DeleteMapping("/v1/public/offers/{offerId}")
+    @Operation(summary = "Arquivar uma oferta")
+    public ResponseEntity<Void> archiveOffer(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @PathVariable UUID offerId) {
+        offers.archive(seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE), offerId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/v1/public/offers/{offerId}/publish")
+    @Operation(summary = "Publicar uma oferta")
+    public ResponseEntity<OfferPublicationResponse> publishOffer(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @PathVariable UUID offerId) {
+        var publication = OfferPublicationResponse.from(offerPublications.publish(
+                seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE), offerId));
+        return publication.published() ? ResponseEntity.ok(publication)
+                : ResponseEntity.accepted().body(publication);
     }
 
     // ---------- Vendas ----------

@@ -118,6 +118,7 @@ class ApiKeyServicesTest {
         assertThatThrownBy(() -> keys.create(OWNER, "x", List.of("admin"))).isInstanceOf(ValidationException.class);
         assertThatThrownBy(() -> keys.create(OWNER, "x", List.of("sales_refund"))).isInstanceOf(ValidationException.class);
         assertThatThrownBy(() -> keys.create(OWNER, "x", List.of("subscriptions_write"))).isInstanceOf(ValidationException.class);
+        assertThatThrownBy(() -> keys.create(OWNER, "x", List.of("products_write"))).isInstanceOf(ValidationException.class);
         for (int index = 0; index < ApiKeyService.MAX_KEYS; index++) keys.create(OWNER, "k" + index, List.of("reports"));
         assertThatThrownBy(() -> keys.create(OWNER, "extra", List.of("reports"))).isInstanceOf(ConflictException.class);
     }

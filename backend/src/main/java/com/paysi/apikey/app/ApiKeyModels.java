@@ -14,6 +14,7 @@ public final class ApiKeyModels {
 
     public static final String REPORTS = "reports";
     public static final String PRODUCTS = "products";
+    public static final String PRODUCTS_WRITE = "products_write";
     public static final String SALES = "sales";
     public static final String SALES_REFUND = "sales_refund";
     public static final String AFFILIATES = "affiliates";
@@ -23,8 +24,8 @@ public final class ApiKeyModels {
     public static final String PAYMENTS_WRITE = "payments_write";
     public static final String SUBSCRIPTIONS_READ = "subscriptions_read";
     public static final String SUBSCRIPTIONS_WRITE = "subscriptions_write";
-    public static final Set<String> SCOPES = Set.of(REPORTS, PRODUCTS, SALES, SALES_REFUND, AFFILIATES, FINANCE,
-            WEBHOOKS, PAYMENTS_READ, PAYMENTS_WRITE, SUBSCRIPTIONS_READ, SUBSCRIPTIONS_WRITE);
+    public static final Set<String> SCOPES = Set.of(REPORTS, PRODUCTS, PRODUCTS_WRITE, SALES, SALES_REFUND,
+            AFFILIATES, FINANCE, WEBHOOKS, PAYMENTS_READ, PAYMENTS_WRITE, SUBSCRIPTIONS_READ, SUBSCRIPTIONS_WRITE);
 
     /** {@code keyHint} é o que a lista mostra ("*****4953"); o segredo completo nunca volta depois da criação. */
     public record ApiKey(UUID id, String name, String keyHint, List<String> scopes, Instant createdAt, Instant lastUsedAt,
