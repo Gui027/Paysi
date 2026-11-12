@@ -21,7 +21,7 @@ FROM nginx:1.27-alpine
 
 COPY web-checkout/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /workspace/web-checkout/dist /usr/share/nginx/html
-RUN sed -i 's#pid /var/run/nginx.pid;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
+RUN sed -i 's#pid .*nginx.pid;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
     && chown -R nginx:nginx /var/cache/nginx /etc/nginx/conf.d /usr/share/nginx/html
 
 EXPOSE 8080
