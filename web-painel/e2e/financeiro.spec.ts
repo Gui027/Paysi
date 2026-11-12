@@ -304,6 +304,7 @@ test.describe("financeiro", () => {
 
     await page.goto("/saldo?aba=identidade");
     await expect(page.getByRole("link", { name: "Fazer verificação segura" })).toHaveAttribute("href", "https://asaas.example/onboarding");
+    await expect(page.getByText("Ao finalizar, feche essa aba e volte para a Paysi", { exact: false })).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(0);
   });
 

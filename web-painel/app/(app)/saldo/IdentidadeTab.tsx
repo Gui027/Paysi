@@ -86,7 +86,7 @@ function DocumentRow({ document, onSent }: { document: PendingDocument; onSent: 
   const label = document.description && !externalOnly(document) ? document.description : "Documento e selfie";
   return <li className="kyc-document"><div className="id-document-icon" aria-hidden="true">▣</div><div className="id-document-body"><strong>{label}</strong>
     {sent ? <p className="id-success">✓ Enviado. Agora é só aguardar a análise.</p> : externalOnly(document) ? document.externalUrl ? <>
-      <p>A identificação é concluída em um ambiente seguro da Asaas.</p><a className="ui-button ui-button-primary id-external" href={document.externalUrl} target="_blank" rel="noopener noreferrer">Fazer verificação segura</a>
+      <p>A identificação é concluída em uma nova aba segura da Asaas. Ao finalizar, feche essa aba e volte para a Paysi; o status será atualizado automaticamente.</p><a className="ui-button ui-button-primary id-external" href={document.externalUrl} target="_blank" rel="noopener noreferrer">Fazer verificação segura</a>
     </> : <p>O link seguro ainda não foi liberado pela Asaas.</p> : <>
       <label className="id-upload"><span>{sending ? "Enviando…" : "Selecionar arquivo"}</span><input type="file" accept="image/png,image/jpeg,application/pdf" aria-label={`Enviar ${label}`} onChange={event => { const file = event.target.files?.[0]; if (file) void handleFile(file); event.target.value = ""; }} disabled={sending} /></label>
       <small>PNG, JPG ou PDF de até 10 MB</small>{error && <p className="pe-error" role="alert">{error}</p>}
