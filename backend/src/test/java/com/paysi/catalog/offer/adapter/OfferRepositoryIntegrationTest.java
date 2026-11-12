@@ -6,7 +6,6 @@ import com.paysi.catalog.offer.domain.OfferPaymentMethod;
 import com.paysi.catalog.offer.domain.OfferPayoutDelay;
 import com.paysi.catalog.offer.domain.OfferValues;
 import com.paysi.catalog.offer.port.OfferRepository;
-import com.paysi.catalog.offer.port.PublicationRequirementRepository;
 import com.paysi.core.error.ConflictException;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
@@ -34,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({JdbcOfferRepository.class, JdbcPublicationRequirementRepository.class})
+@Import(JdbcOfferRepository.class)
 @Testcontainers(disabledWithoutDocker = true)
 class OfferRepositoryIntegrationTest {
     private static final UUID SELLER = UUID.fromString("11111111-1111-1111-1111-111111111111");
@@ -56,7 +55,6 @@ class OfferRepositoryIntegrationTest {
     }
 
     @Autowired OfferRepository repository;
-    @Autowired PublicationRequirementRepository requirements;
     @Autowired JdbcTemplate jdbc;
 
     @BeforeEach
@@ -115,17 +113,6 @@ class OfferRepositoryIntegrationTest {
                 .extracting(Offer::status).isEqualTo(com.paysi.catalog.offer.domain.OfferStatus.PUBLISHED);
         assertThat(jdbc.queryForObject("SELECT status FROM products WHERE id = ?", String.class, PRODUCT))
                 .isEqualTo("ACTIVE");
-    }
-
-    @Test
-    void detectsValidatedFiscalProfile() {
-        assertThat(requirements.hasValidatedFiscalProfile(SELLER)).isFalse();
-        jdbc.update("""
-                INSERT INTO fiscal_profiles
-                  (account_id,municipality_code,service_code,iss_bps,tax_regime,credential_ref,validated_at)
-                VALUES (?,'3550308','0107',200,'SIMPLES','vault:fiscal',?)
-                """, SELLER, java.sql.Timestamp.from(NOW));
-        assertThat(requirements.hasValidatedFiscalProfile(SELLER)).isTrue();
     }
 
     @Test

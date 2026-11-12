@@ -112,26 +112,6 @@ public class JdbcDashboardQueryRepository implements DashboardQueryRepository {
         }, sellerId);
 
         jdbc.query("""
-                SELECT EXISTS (
-                    SELECT 1 FROM products p
-                    JOIN offers f ON f.product_id = p.id
-                   WHERE p.seller_id = ? AND p.segment = 'DIGITAL'
-                     AND p.archived_at IS NULL AND f.archived_at IS NULL
-                ),
-                EXISTS (
-                    SELECT 1 FROM fiscal_profiles fp
-                   WHERE fp.account_id = ? AND fp.validated_at IS NOT NULL
-                )
-                """, (ResultSetExtractor<Void>) rs -> {
-            if (rs.next() && rs.getBoolean(1) && !rs.getBoolean(2)) {
-                alerts.add(new DashboardAlert("fiscal", "warning",
-                        "Perfil fiscal pendente",
-                        "Complete e valide o perfil fiscal para vender produtos digitais.", "/perfil-fiscal"));
-            }
-            return null;
-        }, sellerId, sellerId);
-
-        jdbc.query("""
                 SELECT ar.tier, re.reason
                   FROM accounts a
                   LEFT JOIN account_risk ar ON ar.account_id = a.id

@@ -7,7 +7,6 @@ import com.paysi.catalog.offer.domain.OfferPayoutDelay;
 import com.paysi.catalog.offer.domain.OfferStatus;
 import com.paysi.catalog.offer.domain.OfferValues;
 import com.paysi.catalog.offer.port.OfferRepository;
-import com.paysi.catalog.offer.port.PublicationRequirementRepository;
 import com.paysi.catalog.product.domain.ChargeType;
 import com.paysi.catalog.product.domain.Segment;
 import com.paysi.core.error.NotFoundException;
@@ -29,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class OfferPublicationServiceTest {
@@ -41,26 +39,23 @@ class OfferPublicationServiceTest {
     void startsKycAndReturnsActionWithoutPublishing() {
         var repository = new Offers(SELLER, offer(Segment.SAAS));
         KycService kyc = mock(KycService.class);
-        var requirements = mock(PublicationRequirementRepository.class);
         when(kyc.current(SELLER)).thenReturn(kyc(KycStatus.PENDING, null));
         when(kyc.start(SELLER)).thenReturn(kyc(KycStatus.SUBMITTED, "https://kyc/process"));
 
-        OfferPublication result = service(repository, requirements, kyc)
+        OfferPublication result = service(repository, kyc)
                 .publish(SELLER, repository.offer.id());
 
         assertThat(result.published()).isFalse();
         assertThat(result.requiredAction()).isEqualTo(PublicationAction.COMPLETE_KYC);
         assertThat(result.actionUrl()).isEqualTo("https://kyc/process");
         assertThat(repository.offer.status()).isEqualTo(OfferStatus.DRAFT);
-        verifyNoInteractions(requirements);
     }
 
     @Test
     void publishesSaasAfterApprovedKycAndIsIdempotent() {
         var repository = new Offers(SELLER, offer(Segment.SAAS));
         KycService kyc = approvedKyc();
-        var requirements = mock(PublicationRequirementRepository.class);
-        var service = service(repository, requirements, kyc);
+        var service = service(repository, kyc);
 
         OfferPublication first = service.publish(SELLER, repository.offer.id());
         OfferPublication repeated = service.publish(SELLER, repository.offer.id());
@@ -69,32 +64,13 @@ class OfferPublicationServiceTest {
         assertThat(first.offer().offer().status()).isEqualTo(OfferStatus.PUBLISHED);
         assertThat(repeated.published()).isTrue();
         assertThat(repository.publishCount).isEqualTo(1);
-        verifyNoInteractions(requirements);
     }
 
     @Test
-    void requiresValidatedFiscalProfileForDigitalOffer() {
+    void publishesDigitalOfferWithoutFiscalProfile() {
         var repository = new Offers(SELLER, offer(Segment.DIGITAL));
-        KycService kyc = approvedKyc();
-        var requirements = mock(PublicationRequirementRepository.class);
-        when(requirements.hasValidatedFiscalProfile(SELLER)).thenReturn(false);
 
-        OfferPublication result = service(repository, requirements, kyc)
-                .publish(SELLER, repository.offer.id());
-
-        assertThat(result.published()).isFalse();
-        assertThat(result.requiredAction()).isEqualTo(PublicationAction.CONFIGURE_FISCAL);
-        assertThat(result.actionUrl()).isEqualTo("/v1/fiscal-profile");
-        assertThat(repository.publishCount).isZero();
-    }
-
-    @Test
-    void publishesDigitalOfferWithValidatedFiscalProfile() {
-        var repository = new Offers(SELLER, offer(Segment.DIGITAL));
-        var requirements = mock(PublicationRequirementRepository.class);
-        when(requirements.hasValidatedFiscalProfile(SELLER)).thenReturn(true);
-
-        OfferPublication result = service(repository, requirements, approvedKyc())
+        OfferPublication result = service(repository, approvedKyc())
                 .publish(SELLER, repository.offer.id());
 
         assertThat(result.published()).isTrue();
@@ -106,17 +82,15 @@ class OfferPublicationServiceTest {
         var repository = new Offers(OTHER, offer(Segment.SAAS));
         KycService kyc = mock(KycService.class);
 
-        assertThatThrownBy(() -> service(repository, mock(PublicationRequirementRepository.class), kyc)
+        assertThatThrownBy(() -> service(repository, kyc)
                 .publish(SELLER, repository.offer.id()))
                 .isInstanceOfSatisfying(NotFoundException.class,
                         error -> assertThat(error.code()).isEqualTo("OFFER_NOT_FOUND"));
         verify(kyc, never()).current(SELLER);
     }
 
-    private static OfferPublicationService service(Offers repository,
-                                                   PublicationRequirementRepository requirements,
-                                                   KycService kyc) {
-        return new OfferPublicationService(repository, requirements, kyc,
+    private static OfferPublicationService service(Offers repository, KycService kyc) {
+        return new OfferPublicationService(repository, kyc,
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 

@@ -43,19 +43,4 @@ test.describe("dashboard do vendedor", () => {
     await expect(page.getByText("Verificação em análise")).toHaveCount(0);
     expect(requests).toBeGreaterThanOrEqual(2);
   });
-
-  test("alerta fiscal usa a página existente do painel", async ({ page }) => {
-    await mockSessao(page);
-    await page.route("**/api/v1/accounts/me/dashboard**", (route) => route.fulfill({
-      json: {
-        period: { preset: "today", from: "2026-09-17", to: "2026-09-17" },
-        salesToday: { state: "EMPTY" }, balance: { state: "EMPTY" }, nextReceivables: { state: "EMPTY" },
-        subscriptions: { state: "EMPTY" }, recentSales: { state: "EMPTY" },
-        alerts: { state: "SUCCESS", data: [{ id: "fiscal", tone: "warning", title: "Perfil fiscal pendente", description: "Complete e valide o perfil fiscal para vender produtos digitais.", actionUrl: "/perfil-fiscal" }] },
-      },
-    }));
-
-    await page.goto("/inicio");
-    await expect(page.getByRole("link", { name: "Continuar" })).toHaveAttribute("href", "/perfil-fiscal");
-  });
 });

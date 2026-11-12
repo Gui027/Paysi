@@ -158,16 +158,12 @@ export function OfferForm({ productId, offerId }: { productId: string; offerId?:
       const result = await publishOffer(offer.id);
       setOffer(result.offer);
       if (!result.published && result.actionUrl) {
-        const needsKyc = result.requiredAction === "COMPLETE_KYC";
-        setGeneralError(needsKyc ? "Conclua a verificação de identidade para publicar." : "Configure o perfil fiscal para publicar.");
-        // result.actionUrl aponta para o destino externo do provedor (KYC) ou para o recurso
-        // de API (fiscal) — nenhum dos dois é uma página navegável no painel. Levamos o
-        // vendedor pra tela interna certa e voltamos pra cá (?next=) quando concluir.
+        setGeneralError("Conclua a verificação de identidade para publicar.");
         const nextUrl = `/produtos/${product?.id}/ofertas/${offer.id}`;
-        const internalPath = needsKyc
-          ? `/verificacao?next=${encodeURIComponent(nextUrl)}`
-          : `/perfil-fiscal?next=${encodeURIComponent(nextUrl)}`;
-        setPublicationAction({ label: needsKyc ? "Continuar verificação" : "Configurar perfil fiscal", url: internalPath });
+        setPublicationAction({
+          label: "Continuar verificação",
+          url: `/verificacao?next=${encodeURIComponent(nextUrl)}`,
+        });
       }
       else setSaved(true);
     } catch (error) {

@@ -78,7 +78,7 @@ export type OfferSimulation = {
 
 export type Publication = {
   published: boolean;
-  requiredAction: "COMPLETE_KYC" | "CONFIGURE_FISCAL" | null;
+  requiredAction: "COMPLETE_KYC" | null;
   actionUrl: string | null;
   offer: Offer;
 };

@@ -229,7 +229,7 @@ export default function Page() {
   }'`}</Code>
         </Endpoint>
         <Endpoint method="POST" path="/offers/{offerId}/publish" title="Publicar oferta" scope="products_write">
-          <p>Publica a oferta quando a conta atende aos requisitos. Se KYC ou configuração fiscal estiverem pendentes, responde HTTP 202 com <code>requiredAction</code> e <code>actionUrl</code>.</p>
+          <p>Publica a oferta quando a verificação de identidade da conta está aprovada. Se o KYC estiver pendente, responde HTTP 202 com <code>requiredAction</code> e <code>actionUrl</code>.</p>
         </Endpoint>
       </section>
 

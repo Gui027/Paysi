@@ -226,11 +226,9 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       if (offer?.id === result.offer.id) setOffer(result.offer);
       if (result.published) setMessage({ tone: "success", text: "Checkout publicado." });
       else {
-        // actionUrl aponta para fora do painel; levamos o vendedor à tela interna certa e voltamos (?next=).
-        const needsKyc = result.requiredAction === "COMPLETE_KYC";
         const back = encodeURIComponent(`/produtos/${productId}?aba=checkout`);
-        setMessage({ tone: "danger", text: needsKyc ? "Conclua a verificação de identidade para publicar." : "Configure o perfil fiscal para publicar." });
-        setNextStep({ label: needsKyc ? "Continuar verificação" : "Configurar perfil fiscal", url: `${needsKyc ? "/verificacao" : "/perfil-fiscal"}?next=${back}` });
+        setMessage({ tone: "danger", text: "Conclua a verificação de identidade para publicar." });
+        setNextStep({ label: "Continuar verificação", url: `/verificacao?next=${back}` });
       }
     } catch (error) {
       setMessage({ tone: "danger", text: error instanceof ApiRequestError ? error.message : "Não foi possível publicar o checkout." });
