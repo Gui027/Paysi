@@ -120,7 +120,7 @@ jobs:
           "
           echo "Stack atualizada para a tag $TAG"
 
-      - name: Esperar o backend ficar saudável
+      - name: Esperar a aplicação ficar saudável
         env:
           KVM2_HOST: ${{ secrets.KVM2_HOST }}
           KVM2_USER: ${{ secrets.KVM2_USER }}
@@ -131,15 +131,15 @@ jobs:
           set -euo pipefail
           SSH=(ssh -i ~/.ssh/paysi-kvm2 "$KVM2_USER@$KVM2_HOST")
           for i in $(seq 1 40); do
-            if "${SSH[@]}" "curl -fsS -m 8 http://127.0.0.1:8090/actuator/health" | grep -q UP; then
+            if "${SSH[@]}" "curl -fsS -m 8 http://127.0.0.1:8090/actuator/health | grep -q UP && curl -fsS -m 8 http://127.0.0.1:5180/health >/dev/null && curl -fsS -m 8 http://127.0.0.1:3020/ >/dev/null && curl -fsS -m 8 http://127.0.0.1:3030/ >/dev/null"; then
               "${SSH[@]}" "printf '%s\\n' '$TAG' > /opt/paysi/current-tag && rm -f /opt/paysi/previous-tag"
-              echo "Backend saudável"; exit 0
+              echo "Aplicação saudável"; exit 0
             fi
             sleep 15
           done
           PREVIOUS_TAG="$("${SSH[@]}" cat /opt/paysi/previous-tag 2>/dev/null || true)"
           if [[ "$PREVIOUS_TAG" =~ ^[0-9a-f]{7}$ ]]; then
-            echo "Backend não ficou saudável; restaurando a versão $PREVIOUS_TAG"
+            echo "Aplicação não ficou saudável; restaurando a versão $PREVIOUS_TAG"
             printf '%s\n%s\n' "$ASAAS_API_KEY" "$MFA_ENCRYPTION_KEY_BASE64" | "${SSH[@]}" "
               IFS= read -r ASAAS_API_KEY
               IFS= read -r MFA_ENCRYPTION_KEY_BASE64
@@ -149,4 +149,4 @@ jobs:
               PAYSI_IMAGE_TAG='$PREVIOUS_TAG' docker compose --env-file .env -f compose.yml up -d --pull always --remove-orphans
             "
           fi
-          echo "::error::o backend não ficou saudável; rollback solicitado"; exit 1
+          echo "::error::a aplicação não ficou saudável; rollback solicitado"; exit 1

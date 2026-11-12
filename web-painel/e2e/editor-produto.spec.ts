@@ -67,7 +67,8 @@ test.describe("editor do produto (abas)", () => {
     await page.route(`**/api/v1/offers/${OFERTA.id}/duplicate`, (route) => route.fulfill({ status: 201, json: COPIA }));
     await page.route(`**/api/v1/offers/${COPIA.id}`, async (route) => { enviado = route.request().postDataJSON(); await route.fulfill({ json: { ...COPIA, ...enviado } }); });
     await page.goto(`/produtos/${PRODUTO.id}?aba=checkout`);
-    await page.getByRole("button", { name: "Duplicar Oferta 1" }).click();
+    await page.getByLabel("Mais ações para Oferta 1").click();
+    await page.getByRole("button", { name: "Duplicar oferta" }).click();
     await expect(page.getByText("Oferta duplicada.")).toBeVisible();
     await expect(page.getByLabel("Nome da oferta")).toHaveValue("Plano Pro (cópia)");
     await page.getByLabel("Nome da oferta").fill("Plano Pro");
@@ -76,7 +77,7 @@ test.describe("editor do produto (abas)", () => {
     await expect(page.getByText("Produto salvo.")).toBeVisible();
     expect(enviado).toMatchObject({ name: "Plano Pro", priceCents: 19900 });
     await page.getByRole("tab", { name: "Checkout" }).click();
-    await expect(page.getByRole("row")).toHaveCount(3);
+    await expect(page.locator(".pe-offer")).toHaveCount(2);
     await expect(page.getByRole("button", { name: "Publicar Plano Pro" })).toBeVisible();
   });
 
@@ -104,20 +105,20 @@ test.describe("editor do produto (abas)", () => {
     await page.goto(`/produtos/${PRODUTO.id}?aba=checkout`);
     await page.getByRole("button", { name: "Publicar Oferta 1" }).click();
     await expect(page.getByText("Checkout publicado.")).toBeVisible();
-    await page.getByRole("tab", { name: "Links" }).click();
-    await expect(page.getByLabel("URL do checkout de Oferta 1")).toHaveValue(/checkout\/curso-vendas/);
+    await expect(page.getByRole("link", { name: "Abrir checkout de Oferta 1" })).toHaveAttribute("href", /checkout\/curso-vendas/);
   });
 
   test("oferta em rascunho oferece pré-visualizar o checkout pelo UUID da oferta, não pelo slug", async ({ page }) => {
     await page.goto(`/produtos/${PRODUTO.id}?aba=checkout`);
-    const link = page.getByRole("link", { name: "Pré-visualizar checkout de Oferta 1" });
+    await page.getByLabel("Mais ações para Oferta 1").click();
+    const link = page.getByRole("link", { name: "Pré-visualizar" });
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute("href", new RegExp(`/preview/${OFERTA.id}$`));
     await expect(link).toHaveAttribute("target", "_blank");
   });
 
   test("passa no axe em todas as abas (com o programa de afiliados aberto)", async ({ page }) => {
-    for (const aba of ["", "?aba=configuracoes", "?aba=checkout", "?aba=afiliados", "?aba=links"]) {
+    for (const aba of ["", "?aba=configuracoes", "?aba=checkout", "?aba=afiliados"]) {
       await page.goto(`/produtos/${PRODUTO.id}${aba}`);
       await expect(page.getByRole("tab", { name: "Geral" })).toBeVisible();
       if (aba === "?aba=afiliados") await page.getByRole("switch", { name: "Habilitar programa de afiliados" }).check();

@@ -16,8 +16,8 @@ const defaultProgram: AffiliateProgramInput = { commissionBps: 3000, recurrence:
 const formatBps = (bps: number) => (bps / 100).toString().replace(".", ",");
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type Aba = "geral" | "configuracoes" | "checkout" | "afiliados" | "links";
-const abas: readonly [Aba, string][] = [["geral", "Geral"], ["configuracoes", "Configurações"], ["checkout", "Checkout"], ["afiliados", "Afiliados"], ["links", "Links"]];
+type Aba = "geral" | "configuracoes" | "checkout" | "afiliados";
+const abas: readonly [Aba, string][] = [["geral", "Geral"], ["configuracoes", "Configurações"], ["checkout", "Checkout"], ["afiliados", "Afiliados"]];
 const cycleLabel: Record<BillingCycle, string> = { MONTHLY: "Mensal", QUARTERLY: "Trimestral", SEMIANNUAL: "Semestral", ANNUAL: "Anual" };
 const methodLabel: Record<OfferPaymentMethod, string> = { PIX: "Pix", CARD: "Cartão de crédito", BOLETO: "Boleto" };
 
@@ -263,13 +263,13 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
   const subscription = product.chargeType === "SUBSCRIPTION";
   const link = offer ? `${checkoutBase()}/checkout/${offer.slug}` : null;
   const inviteLink = `${typeof window === "undefined" ? "" : window.location.origin}/afiliar/${product.id}`;
-  const published = offer?.status === "PUBLISHED";
   const lockedContract = offer?.immutableFields ?? [];
+  const editableTab = aba !== "checkout";
 
   return <div className="pe">
     <header className="pe-head">
       <div className="pe-title"><Link href="/produtos" aria-label="Voltar aos produtos" className="pe-back">←</Link><h1>{product.name}</h1></div>
-      <button type="button" className="ui-button ui-button-primary" disabled={saving} onClick={() => void save()}>{saving ? "Salvando…" : "Salvar produto"}</button>
+      {editableTab && <button type="button" className="ui-button ui-button-primary" disabled={saving} onClick={() => void save()}>{saving ? "Salvando…" : "Salvar produto"}</button>}
     </header>
 
     <div className="pe-tabs" role="tablist" aria-label="Seções do produto">
@@ -318,56 +318,40 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
         <Secao titulo="Cupons de desconto" texto="Crie códigos promocionais para este e outros produtos."><Link className="ui-button ui-button-secondary pe-fit" href="/cupons">Gerenciar cupons</Link></Secao>
       </>}
 
-      {aba === "checkout" && <div className="pe-panel">
+      {aba === "checkout" && <div className="pe-checkout-panel">
         <div className="pe-panel-head">
-          <p className="pe-hint">Cada oferta tem um preço, um checkout e um link. Publique para liberar o link de compra.</p>
+          <div><h2>Ofertas</h2><p className="pe-hint">Gerencie os links de compra deste produto.</p></div>
           {offer && <button type="button" className="ui-button ui-button-secondary" disabled={duplicating} onClick={() => void duplicate(offer)}>{duplicating ? "Criando…" : "Nova oferta"}</button>}
         </div>
-        {offers.length > 0 ? <table className="prod-table">
-          <thead><tr><th scope="col">Nome</th><th scope="col">Preço</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
-          <tbody>{offers.map((item, index) => {
-            const itemPublished = item.status === "PUBLISHED";
-            return <tr key={item.id}>
-              <td><span className="prod-name">{offerLabel(item, offers)}</span>{index === 0 && <span className="pe-badge">Padrão</span>}</td>
-              <td className="prod-muted">{offerPriceLabel(item)}</td>
-              <td><span className={`pe-pill ${itemPublished ? "pe-pill-on" : ""}`}>{itemPublished ? "Publicado" : "Rascunho"}</span></td>
-              <td className="prod-actions"><div className="pe-row-actions">
-                <button type="button" className="ui-button ui-button-secondary" aria-label={`Editar ${offerLabel(item, offers)}`} onClick={() => selectOffer(item, "geral")}>Editar</button>
-                <Link className="ui-button ui-button-secondary" href={`/aparencia/${item.id}`} aria-label={`Personalizar ${offerLabel(item, offers)}`}>Personalizar</Link>
-                <button type="button" className="ui-button ui-button-secondary" disabled={duplicating} aria-label={`Duplicar ${offerLabel(item, offers)}`} onClick={() => void duplicate(item)}>Duplicar</button>
-                <a className="ui-button ui-button-secondary" href={`${checkoutBase()}/preview/${item.id}`} target="_blank" rel="noopener noreferrer" aria-label={`Pré-visualizar checkout de ${offerLabel(item, offers)}`}>Pré-visualizar</a>
-                {itemPublished ? <button type="button" className="ui-button ui-button-secondary" aria-label={`Copiar link de ${offerLabel(item, offers)}`} onClick={() => copiar(`${checkoutBase()}/checkout/${item.slug}`)}>{copied ? "Link copiado" : "Copiar link"}</button> : <button type="button" className="ui-button ui-button-primary" disabled={publishing} aria-label={`Publicar ${offerLabel(item, offers)}`} onClick={() => void publish(item)}>{publishing ? "Publicando…" : "Publicar"}</button>}
-              </div></td>
-            </tr>;
-          })}</tbody>
-        </table> : <p className="pe-empty">Salve o produto para criar o checkout.</p>}
-      </div>}
+        {offers.length > 0 ? <div className="pe-offer-list">{offers.map((item, index) => {
+          const itemPublished = item.status === "PUBLISHED";
+          const itemLink = `${checkoutBase()}/checkout/${item.slug}`;
+          return <article className="pe-offer" key={item.id}>
+            <div className="pe-offer-main">
+              <div className="pe-offer-title"><h3>{offerLabel(item, offers)}</h3>{index === 0 && <span className="pe-badge">Padrão</span>}<span className={`pe-pill ${itemPublished ? "pe-pill-on" : ""}`}>{itemPublished ? "Publicado" : "Rascunho"}</span></div>
+              <strong className="pe-offer-price">{offerPriceLabel(item)}</strong>
+            </div>
+            <div className="pe-offer-actions">
+              {itemPublished ? <>
+                <a className="ui-button ui-button-primary" href={itemLink} target="_blank" rel="noopener noreferrer" aria-label={`Abrir checkout de ${offerLabel(item, offers)}`}>Abrir checkout</a>
+                <button type="button" className="ui-button ui-button-secondary" aria-label={`Copiar link de ${offerLabel(item, offers)}`} onClick={() => copiar(itemLink)}>{copied ? "Link copiado" : "Copiar link"}</button>
+              </> : <button type="button" className="ui-button ui-button-primary" disabled={publishing} aria-label={`Publicar ${offerLabel(item, offers)}`} onClick={() => void publish(item)}>{publishing ? "Publicando…" : "Publicar"}</button>}
+              <details className="pe-more"><summary aria-label={`Mais ações para ${offerLabel(item, offers)}`}>•••</summary><div className="pe-more-menu">
+                <button type="button" onClick={() => selectOffer(item, "geral")}>Editar oferta</button>
+                <Link href={`/aparencia/${item.id}`}>Personalizar checkout</Link>
+                {!itemPublished && <a href={`${checkoutBase()}/preview/${item.id}`} target="_blank" rel="noopener noreferrer">Pré-visualizar</a>}
+                <button type="button" disabled={duplicating} onClick={() => void duplicate(item)}>Duplicar oferta</button>
+              </div></details>
+            </div>
+          </article>;
+        })}</div> : <p className="pe-empty">Salve o produto para criar o checkout.</p>}
 
-      {aba === "checkout" && offers.length > 0 && <Secao titulo="Integrar com seu sistema" texto={<>Use o link da oferta no seu SaaS ou landing page e receba os avisos de venda por <Link href="/apps/webhooks">webhook</Link>.</>}>
-        <div className="pe-field"><span>Identificar o cliente no link</span>
-          <div className="pe-link"><input className="pe-url" readOnly aria-label="Exemplo de link com identificação do cliente" value={`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`} onFocus={event => event.currentTarget.select()} /><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`)}>{copied ? "Copiado" : "Copiar"}</button></div>
-          <small className="pe-hint"><strong>ref</strong> é o identificador do cliente no seu sistema: ele volta em todos os webhooks desta venda. <strong>email</strong> e <strong>name</strong> pré-preenchem o formulário. Em ofertas flexíveis, o comprador informa o valor dentro do checkout seguro.</small>
-        </div>
-        <div className="pe-field"><span>Eventos que você recebe</span>
-          <small className="pe-hint">PAYMENT.APPROVED (venda e renovações), SUBSCRIPTION.PAST_DUE, SUBSCRIPTION.CANCELED, PAYMENT.REFUNDED e CHARGEBACK.OPENED. Cada um leva o <strong>reference</strong>, o e-mail do comprador, a oferta e o valor. Configure a URL e a assinatura em <Link href="/apps/webhooks">Apps → Webhooks</Link>.</small>
-        </div>
-      </Secao>}
-
-      {aba === "links" && <div className="pe-panel">
-        <p className="pe-hint">Links para divulgar este produto. Cada oferta publicada tem o seu.</p>
-        {offers.filter(item => item.status === "PUBLISHED").length > 0 ? <table className="prod-table">
-          <thead><tr><th scope="col">Oferta</th><th scope="col">URL</th><th scope="col">Tipo</th><th scope="col">Preço</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
-          <tbody>{offers.filter(item => item.status === "PUBLISHED").map(item => {
-            const itemLink = `${checkoutBase()}/checkout/${item.slug}`;
-            return <tr key={item.id}>
-              <td><span className="prod-name">{offerLabel(item, offers)}</span></td>
-              <td><input className="pe-url" readOnly aria-label={`URL do checkout de ${offerLabel(item, offers)}`} value={itemLink} onFocus={event => event.currentTarget.select()} /></td>
-              <td><span className="pe-pill pe-pill-blue">Checkout</span></td>
-              <td className="prod-muted">{offerPriceLabel(item)}</td>
-              <td className="prod-actions"><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(itemLink)}>{copied ? "Copiado" : "Copiar"}</button></td>
-            </tr>;
-          })}</tbody>
-        </table> : <p className="pe-empty">Os links aparecem aqui depois que um checkout for publicado. <button type="button" className="pe-linkbtn" onClick={() => selectAba("checkout")}>Ir para Checkout</button></p>}
+        {offers.length > 0 && <details className="pe-integration">
+          <summary>Integração com sistema</summary>
+          <div className="pe-integration-body"><p>Adicione a identificação do cliente ao link e confirme os pagamentos por <Link href="/apps/webhooks">webhook</Link>.</p>
+            <div className="pe-link"><input className="pe-url" readOnly aria-label="Exemplo de link com identificação do cliente" value={`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`} onFocus={event => event.currentTarget.select()} /><button type="button" className="ui-button ui-button-secondary" onClick={() => copiar(`${checkoutBase()}/checkout/${(offer ?? offers[0]).slug}?ref=ID_DO_CLIENTE&email=EMAIL&name=NOME`)}>{copied ? "Copiado" : "Copiar"}</button></div>
+          </div>
+        </details>}
       </div>}
 
       {aba === "afiliados" && <>
@@ -393,10 +377,10 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       </>}
     </div>
 
-    <footer className="pe-foot">
+    {editableTab && <footer className="pe-foot">
       {confirmDelete ? <span className="pe-confirm" role="alert">Excluir “{product.name}”? <button type="button" className="ui-button ui-button-danger" onClick={() => void remove()}>Sim, excluir</button> <button type="button" className="ui-button ui-button-secondary" onClick={() => setConfirmDelete(false)}>Cancelar</button></span>
         : <button type="button" className="ui-button ui-button-danger" onClick={() => setConfirmDelete(true)}>Excluir produto</button>}
       <button type="button" className="ui-button ui-button-primary" disabled={saving} onClick={() => void save()}>{saving ? "Salvando…" : "Salvar produto"}</button>
-    </footer>
+    </footer>}
   </div>;
 }
