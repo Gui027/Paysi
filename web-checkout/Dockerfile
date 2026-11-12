@@ -17,7 +17,7 @@ ARG VITE_API_URL=https://api.paysi.com.br
 ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build --workspace web-checkout
 
-FROM nginx:1.27-alpine
+FROM nginx:1.31-alpine
 
 COPY web-checkout/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /workspace/web-checkout/dist /usr/share/nginx/html
