@@ -115,7 +115,7 @@ public class JdbcDashboardQueryRepository implements DashboardQueryRepository {
                 SELECT EXISTS (
                     SELECT 1 FROM products p
                     JOIN offers f ON f.product_id = p.id
-                   WHERE p.seller_id = ? AND p.segment = 'SAAS'
+                   WHERE p.seller_id = ? AND p.segment = 'DIGITAL'
                      AND p.archived_at IS NULL AND f.archived_at IS NULL
                 ),
                 EXISTS (
@@ -126,7 +126,7 @@ public class JdbcDashboardQueryRepository implements DashboardQueryRepository {
             if (rs.next() && rs.getBoolean(1) && !rs.getBoolean(2)) {
                 alerts.add(new DashboardAlert("fiscal", "warning",
                         "Perfil fiscal pendente",
-                        "Complete e valide o perfil fiscal para vender produtos SaaS.", "/fiscal"));
+                        "Complete e valide o perfil fiscal para vender produtos digitais.", "/perfil-fiscal"));
             }
             return null;
         }, sellerId, sellerId);

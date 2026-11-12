@@ -21,4 +21,41 @@ test.describe("dashboard do vendedor", () => {
     await expect(botao).toBeVisible();
     await expect(botao).toHaveAttribute("href", "/saldo?aba=identidade");
   });
+
+  test("atualiza os alertas ao voltar para a aba", async ({ page }) => {
+    await mockSessao(page);
+    let requests = 0;
+    await page.route("**/api/v1/accounts/me/dashboard**", (route) => {
+      requests += 1;
+      return route.fulfill({
+        json: {
+          period: { preset: "today", from: "2026-09-17", to: "2026-09-17" },
+          salesToday: { state: "EMPTY" }, balance: { state: "EMPTY" }, nextReceivables: { state: "EMPTY" },
+          subscriptions: { state: "EMPTY" }, recentSales: { state: "EMPTY" },
+          alerts: { state: "SUCCESS", data: requests === 1 ? [{ id: "kyc", tone: "warning", title: "Verificação em análise", description: "Seus documentos estão em análise.", actionUrl: "/saldo?aba=identidade" }] : [] },
+        },
+      });
+    });
+
+    await page.goto("/inicio");
+    await expect(page.getByText("Verificação em análise")).toBeVisible();
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page.getByText("Verificação em análise")).toHaveCount(0);
+    expect(requests).toBeGreaterThanOrEqual(2);
+  });
+
+  test("alerta fiscal usa a página existente do painel", async ({ page }) => {
+    await mockSessao(page);
+    await page.route("**/api/v1/accounts/me/dashboard**", (route) => route.fulfill({
+      json: {
+        period: { preset: "today", from: "2026-09-17", to: "2026-09-17" },
+        salesToday: { state: "EMPTY" }, balance: { state: "EMPTY" }, nextReceivables: { state: "EMPTY" },
+        subscriptions: { state: "EMPTY" }, recentSales: { state: "EMPTY" },
+        alerts: { state: "SUCCESS", data: [{ id: "fiscal", tone: "warning", title: "Perfil fiscal pendente", description: "Complete e valide o perfil fiscal para vender produtos digitais.", actionUrl: "/perfil-fiscal" }] },
+      },
+    }));
+
+    await page.goto("/inicio");
+    await expect(page.getByRole("link", { name: "Continuar" })).toHaveAttribute("href", "/perfil-fiscal");
+  });
 });

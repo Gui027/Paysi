@@ -33,6 +33,12 @@ export function InicioPage() {
   }, []);
 
   useEffect(() => {
+    const reloadOnReturn = () => setReloadKey(value => value + 1);
+    window.addEventListener("focus", reloadOnReturn);
+    return () => window.removeEventListener("focus", reloadOnReturn);
+  }, []);
+
+  useEffect(() => {
     if (mode === null) return;
     let active = true;
     setLoading(true);
