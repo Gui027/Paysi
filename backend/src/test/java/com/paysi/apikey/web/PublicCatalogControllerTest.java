@@ -12,6 +12,9 @@ import com.paysi.catalog.offer.domain.Offer;
 import com.paysi.catalog.offer.domain.OfferPaymentMethod;
 import com.paysi.catalog.offer.domain.OfferPayoutDelay;
 import com.paysi.catalog.offer.domain.OfferStatus;
+import com.paysi.catalog.coupon.app.CouponService;
+import com.paysi.catalog.coupon.domain.Coupon;
+import com.paysi.catalog.coupon.domain.CouponKind;
 import com.paysi.catalog.product.app.ProductCommand;
 import com.paysi.catalog.product.app.ProductService;
 import com.paysi.catalog.product.domain.ChargeType;
@@ -40,6 +43,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -63,6 +68,7 @@ class PublicCatalogControllerTest {
     @MockitoBean private FinanceService finance;
     @MockitoBean private ReportsService reports;
     @MockitoBean private WebhookEndpointService webhooks;
+    @MockitoBean private CouponService coupons;
 
     @BeforeEach
     void authenticate() {
@@ -123,6 +129,34 @@ class PublicCatalogControllerTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
 
         verifyNoInteractions(products);
+    }
+
+    @Test
+    void managesCouponsWithCatalogScopes() throws Exception {
+        UUID couponId = UUID.randomUUID();
+        UUID offerId = UUID.randomUUID();
+        Coupon coupon = new Coupon(couponId, SELLER, "PROMO10", CouponKind.PERCENT, 1_000,
+                null, null, 50, 1, 0, Set.of(offerId), null, NOW);
+        when(coupons.list(SELLER)).thenReturn(java.util.List.of(coupon));
+        when(coupons.create(eq(SELLER), eq("PROMO10"), any())).thenReturn(coupon);
+
+        mvc.perform(get("/v1/public/coupons").header("Authorization", "Bearer paysi_live_key"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].code").value("PROMO10"));
+        mvc.perform(post("/v1/public/coupons").header("Authorization", "Bearer paysi_live_key")
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"code":"PROMO10","discountType":"PERCENT","discountBps":1000,
+                                 "maxRedemptions":50,"maxPerBuyer":1,"offerIds":["%s"]}
+                                """.formatted(offerId)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "/v1/public/coupons/" + couponId));
+        mvc.perform(delete("/v1/public/coupons/{id}", couponId)
+                        .header("Authorization", "Bearer paysi_live_key"))
+                .andExpect(status().isNoContent());
+
+        verify(auth).authenticate("Bearer paysi_live_key", null, ApiKeyModels.PRODUCTS);
+        verify(auth, org.mockito.Mockito.times(2)).authenticate(
+                "Bearer paysi_live_key", null, ApiKeyModels.PRODUCTS_WRITE);
+        verify(coupons).archive(SELLER, couponId);
     }
 
     private static String productBody() {

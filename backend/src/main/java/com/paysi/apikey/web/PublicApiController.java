@@ -12,6 +12,9 @@ import com.paysi.catalog.offer.app.OfferService;
 import com.paysi.catalog.offer.web.dto.OfferPublicationResponse;
 import com.paysi.catalog.offer.web.dto.OfferRequest;
 import com.paysi.catalog.offer.web.dto.OfferResponse;
+import com.paysi.catalog.coupon.app.CouponService;
+import com.paysi.catalog.coupon.web.dto.CouponRequest;
+import com.paysi.catalog.coupon.web.dto.CouponResponse;
 import com.paysi.catalog.product.app.ProductService;
 import com.paysi.catalog.product.web.dto.ProductPageResponse;
 import com.paysi.catalog.product.web.dto.ProductRequest;
@@ -77,11 +80,12 @@ public class PublicApiController {
     private final FinanceService finance;
     private final ReportsService reports;
     private final WebhookEndpointService webhooks;
+    private final CouponService coupons;
 
     public PublicApiController(ApiAuthService auth, ProductService products, OfferService offers,
                                OfferPublicationService offerPublications, SalesService sales, RefundService refunds,
                                AffiliationService affiliations, FinanceService finance, ReportsService reports,
-                               WebhookEndpointService webhooks) {
+                               WebhookEndpointService webhooks, CouponService coupons) {
         this.auth = auth;
         this.products = products;
         this.offers = offers;
@@ -92,6 +96,7 @@ public class PublicApiController {
         this.finance = finance;
         this.reports = reports;
         this.webhooks = webhooks;
+        this.coupons = coupons;
     }
 
     @PostMapping("/v1/public/oauth/token")
@@ -219,6 +224,39 @@ public class PublicApiController {
                 seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE), offerId));
         return publication.published() ? ResponseEntity.ok(publication)
                 : ResponseEntity.accepted().body(publication);
+    }
+
+    // ---------- Cupons ----------
+
+    @GetMapping("/v1/public/coupons")
+    @Operation(summary = "Listar cupons")
+    public List<CouponResponse> coupons(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account) {
+        return coupons.list(seller(authorization, account, ApiKeyModels.PRODUCTS)).stream()
+                .map(CouponResponse::from).toList();
+    }
+
+    @PostMapping("/v1/public/coupons")
+    @Operation(summary = "Criar cupom")
+    public ResponseEntity<CouponResponse> createCoupon(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @Valid @RequestBody CouponRequest request) {
+        var created = coupons.create(seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE),
+                request.code(), request.toValues());
+        return ResponseEntity.created(URI.create("/v1/public/coupons/" + created.id()))
+                .body(CouponResponse.from(created));
+    }
+
+    @DeleteMapping("/v1/public/coupons/{couponId}")
+    @Operation(summary = "Arquivar cupom")
+    public ResponseEntity<Void> archiveCoupon(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader(name = ACCOUNT, required = false) String account,
+            @PathVariable UUID couponId) {
+        coupons.archive(seller(authorization, account, ApiKeyModels.PRODUCTS_WRITE), couponId);
+        return ResponseEntity.noContent().build();
     }
 
     // ---------- Vendas ----------
