@@ -196,6 +196,37 @@ test.describe("checkout — fluxo feliz por método de pagamento", () => {
     await expect(page.getByLabel(/linha digitável do boleto/i)).toHaveValue(COBRANCA_BOLETO.boletoBarcode);
   });
 
+  test("produto físico exige apenas CEP e número visíveis e envia endereço resolvido no Pix", async ({ page }) => {
+    let pedido = "";
+    await mockOferta(page, { segment: "PHYSICAL", methods: ["PIX", "CARD", "BOLETO"] });
+    await page.route(`**/v1/checkout/${OFERTA_SLUG}/orders`, async route => {
+      pedido = route.request().postData() ?? "";
+      await route.fulfill({ json: { orderId: "order_fisico", status: "CREATED" } });
+    });
+    await mockCobranca(page, COBRANCA_PIX);
+    await page.goto(`/${OFERTA_SLUG}`);
+
+    await preencherComprador(page);
+    await page.getByRole("radio", { name: "Pix" }).check();
+    await page.getByLabel(/^cep$/i).fill("01310100");
+    await expect(page.getByText("Endereço localizado.")).toBeVisible();
+    await page.getByLabel(/^número$/i).fill("1000");
+    await page.getByRole("button", { name: /pagar agora/i }).click();
+
+    await expect(page.getByRole("heading", { name: /aguardando pagamento do pix/i })).toBeVisible();
+    expect(pedido).toContain('"street":"Avenida Paulista"');
+    expect(pedido).toContain('"number":"1000"');
+    await expect(page.getByLabel(/rua|bairro|cidade|estado/i)).toHaveCount(0);
+  });
+
+  test("produto digital não pede endereço em Pix", async ({ page }) => {
+    await mockOferta(page, { segment: "DIGITAL", methods: ["PIX", "CARD"] });
+    await page.goto(`/${OFERTA_SLUG}`);
+    await page.getByRole("radio", { name: "Pix" }).check();
+    await expect(page.getByLabel(/^cep$/i)).toHaveCount(0);
+    await expect(page.getByLabel(/^número$/i)).toHaveCount(0);
+  });
+
   test("Cartão: aprovado mostra confirmação de sucesso", async ({ page }) => {
     await mockOferta(page);
     await mockPedido(page);

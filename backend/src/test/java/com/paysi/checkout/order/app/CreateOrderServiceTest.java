@@ -229,6 +229,18 @@ class CreateOrderServiceTest {
     }
 
     @Test
+    void produtoFisicoExigeEnderecoCompletoResolvidoPeloCep() {
+        when(offers.findPublishedBySlug(SLUG)).thenReturn(Optional.of(offer(Segment.PHYSICAL)));
+
+        assertThatThrownBy(() -> service.create(SLUG, KEY, command(PersonType.PF, CPF, null, null)))
+                .isInstanceOfSatisfying(ValidationException.class,
+                        error -> assertThat(error.field()).isEqualTo("address.zipCode"));
+
+        service.create(SLUG, KEY, command(PersonType.PF, CPF, endereco(), null));
+        assertThat(captured().buyerSnapshot()).contains("Avenida Paulista");
+    }
+
+    @Test
     void compradorPjCompletoPassa() {
         service.create(SLUG, KEY, command(PersonType.PJ, CNPJ, endereco(), null));
 

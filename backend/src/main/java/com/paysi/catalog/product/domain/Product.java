@@ -24,6 +24,10 @@ public record Product(
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(segment, "segment");
         Objects.requireNonNull(chargeType, "chargeType");
+        if (segment == Segment.PHYSICAL && chargeType != ChargeType.ONE_TIME) {
+            throw new ValidationException("PHYSICAL_PRODUCT_ONE_TIME_ONLY",
+                    "Produto físico aceita somente pagamento único", "chargeType");
+        }
         Objects.requireNonNull(status, "status");
         Objects.requireNonNull(createdAt, "createdAt");
     }

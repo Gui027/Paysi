@@ -41,7 +41,7 @@ export function CriarProdutoModal({ open, onClose }: { open: boolean; onClose: (
       priceCents: cents ?? 0, cycle: chargeType === "SUBSCRIPTION" ? cycle : null, trialDays: 0, trialRequiresCard: true,
       pricingMode: "FIXED" as OfferPricingMode,
       guaranteeDays: 7, maxInstallments: 1, boletoDueDays: 3, boletoAdvanceDays: 5,
-      paymentMethods: segment === "SAAS" ? ["PIX", "CARD", "BOLETO"] as ("PIX" | "CARD" | "BOLETO")[] : ["PIX", "CARD"] as ("PIX" | "CARD")[],
+      paymentMethods: segment !== "DIGITAL" ? ["PIX", "CARD", "BOLETO"] as ("PIX" | "CARD" | "BOLETO")[] : ["PIX", "CARD"] as ("PIX" | "CARD")[],
       payoutDelay: "D32" as const,
     };
     const offerErrors = validateOfferInput(offerInput, { segment, chargeType });
@@ -66,12 +66,12 @@ export function CriarProdutoModal({ open, onClose }: { open: boolean; onClose: (
       <button type="button" className="cp-close" aria-label="Fechar" onClick={() => !saving && onClose()}>✕</button></header>
     {step === 1 ? <div className="cp-body">
       <label className="cp-field"><span>Tipo de pagamento</span>
-        <select value={chargeType} onChange={event => { const next = event.target.value as ProductChargeType; setChargeType(next); }}>
+        <select value={chargeType} disabled={segment === "PHYSICAL"} onChange={event => { const next = event.target.value as ProductChargeType; setChargeType(next); }}>
           <option value="ONE_TIME">Pagamento único</option><option value="SUBSCRIPTION">Assinatura recorrente</option>
         </select></label>
       <label className="cp-field"><span>Tipo de produto</span>
-        <select value={segment} onChange={event => setSegment(event.target.value as ProductSegment)}>
-          <option value="DIGITAL">Produto digital</option><option value="SAAS">Software (SaaS)</option>
+        <select value={segment} onChange={event => { const next = event.target.value as ProductSegment; setSegment(next); if (next === "PHYSICAL") setChargeType("ONE_TIME"); }}>
+          <option value="DIGITAL">Produto digital</option><option value="SAAS">Software (SaaS)</option><option value="PHYSICAL">Produto físico</option>
         </select></label>
       <button type="button" className="cp-primary" onClick={() => setStep(2)}>Continuar →</button>
     </div> : <form className="cp-body" onSubmit={event => void submit(event)} noValidate>

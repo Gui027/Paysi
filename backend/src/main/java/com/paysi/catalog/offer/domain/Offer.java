@@ -71,6 +71,9 @@ public record Offer(
         Objects.requireNonNull(productId, "productId");
         Objects.requireNonNull(chargeType, "chargeType");
         Objects.requireNonNull(segment, "segment");
+        if (segment == Segment.PHYSICAL && chargeType != ChargeType.ONE_TIME) {
+            throw invalid("Produto físico aceita somente pagamento único", "chargeType");
+        }
         if (slug == null || slug.isBlank()) throw invalid("O slug é obrigatório", "slug");
         pricingMode = pricingMode == null ? PricingMode.FIXED : pricingMode;
         if (pricingMode == PricingMode.FIXED && priceCents < 200) {
@@ -108,8 +111,8 @@ public record Offer(
             throw invalid("Informe ao menos um meio de pagamento", "paymentMethods");
         }
         paymentMethods = Set.copyOf(paymentMethods);
-        if (segment != Segment.SAAS && paymentMethods.contains(OfferPaymentMethod.BOLETO)) {
-            throw invalid("Boleto está disponível apenas para SaaS", "paymentMethods");
+        if (segment == Segment.DIGITAL && paymentMethods.contains(OfferPaymentMethod.BOLETO)) {
+            throw invalid("Boleto não está disponível para produto digital", "paymentMethods");
         }
         Objects.requireNonNull(payoutDelay, "payoutDelay");
         Objects.requireNonNull(status, "status");

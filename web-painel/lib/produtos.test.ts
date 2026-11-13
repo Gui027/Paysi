@@ -58,6 +58,13 @@ test("valida nome e limites do formulário antes do envio", () => {
   });
 });
 
+test("produto físico aceita somente pagamento único", () => {
+  assert.deepEqual(validateProductInput({ name: "Camiseta", description: null, segment: "PHYSICAL", chargeType: "SUBSCRIPTION", affiliationEnabled: false }), {
+    chargeType: "Produto físico aceita somente pagamento único.",
+  });
+  assert.deepEqual(validateProductInput({ name: "Camiseta", description: null, segment: "PHYSICAL", chargeType: "ONE_TIME", affiliationEnabled: false }), {});
+});
+
 test("cria rascunho sem enviar status ou regra de KYC", async () => {
   let body = "";
   globalThis.fetch = (async (_input, init) => {

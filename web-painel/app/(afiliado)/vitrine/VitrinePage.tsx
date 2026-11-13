@@ -17,7 +17,7 @@ import {
   requestAffiliation,
 } from "../../../lib/afiliados";
 
-const segmentLabel: Record<MarketplaceSegment, string> = { SAAS: "Software (SaaS)", DIGITAL: "Produto digital" };
+const segmentLabel: Record<MarketplaceSegment, string> = { SAAS: "Software (SaaS)", DIGITAL: "Produto digital", PHYSICAL: "Produto físico" };
 const chargeLabel: Record<MarketplaceChargeType, string> = { ONE_TIME: "Venda única", SUBSCRIPTION: "Assinatura" };
 const COVER_COLORS = ["#1D6BD8", "#0F2A4E", "#4B3BB0", "#0B6B3A", "#B4531A", "#8A2F6B"];
 
@@ -162,7 +162,7 @@ export function VitrinePage() {
         <button type="button" className="mk-filter-button" aria-expanded={filtersOpen} aria-controls="mk-filtros" onClick={() => setFiltersOpen(open => !open)}>Filtros{hasFilters ? " •" : ""}</button>
       </div>
       {filtersOpen && <div id="mk-filtros" className="mk-filters">
-        <label className="pe-field"><span>Tipo de produto</span><select value={segment} onChange={event => setSegment(event.target.value as "" | MarketplaceSegment)}><option value="">Todos</option><option value="SAAS">Software (SaaS)</option><option value="DIGITAL">Produto digital</option></select></label>
+        <label className="pe-field"><span>Tipo de produto</span><select value={segment} onChange={event => setSegment(event.target.value as "" | MarketplaceSegment)}><option value="">Todos</option><option value="SAAS">Software (SaaS)</option><option value="DIGITAL">Produto digital</option><option value="PHYSICAL">Produto físico</option></select></label>
         <label className="pe-field"><span>Cobrança</span><select value={chargeType} onChange={event => setChargeType(event.target.value as "" | MarketplaceChargeType)}><option value="">Todas</option><option value="ONE_TIME">Venda única</option><option value="SUBSCRIPTION">Assinatura</option></select></label>
         {(hasFilters || query) && <button type="button" className="ui-button ui-button-secondary" onClick={clearFilters}>Limpar filtros</button>}
       </div>}

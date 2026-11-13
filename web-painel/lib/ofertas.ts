@@ -11,7 +11,7 @@ export type Offer = {
   id: string;
   productId: string;
   chargeType: "ONE_TIME" | "SUBSCRIPTION";
-  segment: "SAAS" | "DIGITAL";
+  segment: "SAAS" | "DIGITAL" | "PHYSICAL";
   slug: string;
   priceCents: number;
   pricingMode?: OfferPricingMode;
@@ -98,7 +98,7 @@ export function formatOfferMoney(cents: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 }
 
-export function validateOfferInput(input: OfferInput, context: { segment: "SAAS" | "DIGITAL"; chargeType: "ONE_TIME" | "SUBSCRIPTION" }): OfferInputErrors {
+export function validateOfferInput(input: OfferInput, context: { segment: "SAAS" | "DIGITAL" | "PHYSICAL"; chargeType: "ONE_TIME" | "SUBSCRIPTION" }): OfferInputErrors {
   const errors: OfferInputErrors = {};
   if (input.returnUrl?.trim() && !isValidReturnUrl(input.returnUrl.trim())) errors.returnUrl = "Use um endereço começando com https:// (até 500 caracteres).";
   if ((input.name?.trim().length ?? 0) > OFFER_NAME_MAX) errors.name = `Use no máximo ${OFFER_NAME_MAX} caracteres.`;
@@ -117,7 +117,7 @@ export function validateOfferInput(input: OfferInput, context: { segment: "SAAS"
   if (!Number.isInteger(input.boletoDueDays) || input.boletoDueDays < 1 || input.boletoDueDays > 15) errors.boletoDueDays = "Use entre 1 e 15 dias.";
   if (!Number.isInteger(input.boletoAdvanceDays) || input.boletoAdvanceDays < 3 || input.boletoAdvanceDays > 10) errors.boletoAdvanceDays = "Use entre 3 e 10 dias.";
   if (!input.paymentMethods.length) errors.paymentMethods = "Escolha ao menos um meio de pagamento.";
-  if (context.segment !== "SAAS" && input.paymentMethods.includes("BOLETO")) errors.paymentMethods = "Boleto está disponível apenas para SaaS.";
+  if (context.segment === "DIGITAL" && input.paymentMethods.includes("BOLETO")) errors.paymentMethods = "Boleto não está disponível para produto digital.";
   return errors;
 }
 

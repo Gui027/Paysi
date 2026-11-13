@@ -49,6 +49,12 @@ public record Buyer(
             throw new ValidationException("BUYER_INVALID", "Informe o tipo de pessoa", "personType");
         }
         TaxId taxId = TaxId.of(rawTaxId, personType);
+        if (segment == Segment.PHYSICAL) {
+            if (address == null) {
+                throw new ValidationException("BUYER_INVALID", "Informe o endereço de entrega", "address.zipCode");
+            }
+            address.requireComplete();
+        }
 
         return new Buyer(id, name, email, personType, taxId.digits(), legalName,
                 municipalReg, address);

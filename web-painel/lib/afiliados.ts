@@ -21,7 +21,7 @@ export type Affiliation = {
   createdAt: string;
 };
 
-export type MarketplaceSegment = "SAAS" | "DIGITAL";
+export type MarketplaceSegment = "SAAS" | "DIGITAL" | "PHYSICAL";
 export type MarketplaceChargeType = "ONE_TIME" | "SUBSCRIPTION";
 
 export type MarketplaceItem = {

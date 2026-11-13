@@ -1,6 +1,7 @@
 package com.paysi.checkout.pub.domain;
 
 import com.paysi.identity.domain.PersonType;
+import com.paysi.catalog.product.domain.Segment;
 
 import java.util.List;
 import java.util.Map;
@@ -16,10 +17,18 @@ import java.util.Map;
  */
 public final class RequiredBuyerFields {
     public static final List<String> BASE = List.of("name", "email", "personType", "taxId", "phone");
+    public static final List<String> PHYSICAL = List.of("name", "email", "personType", "taxId", "phone",
+            "address.zipCode", "address.street", "address.number", "address.district", "address.city",
+            "address.state");
 
     private RequiredBuyerFields() { }
 
     public static Map<PersonType, List<String>> byPersonType() {
         return Map.of(PersonType.PF, BASE, PersonType.PJ, BASE);
+    }
+
+    public static Map<PersonType, List<String>> byPersonType(Segment segment) {
+        List<String> fields = segment == Segment.PHYSICAL ? PHYSICAL : BASE;
+        return Map.of(PersonType.PF, fields, PersonType.PJ, fields);
     }
 }

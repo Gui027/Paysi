@@ -295,8 +295,8 @@ export function ProdutoDetalhe({ productId }: { productId: string }) {
       {aba === "configuracoes" && <>
         <Secao titulo="Pagamento" texto="Escolha como o comprador pode pagar.">
           <fieldset className="pe-fieldset"><legend>Métodos de pagamento</legend>
-            {(["PIX", "CARD", "BOLETO"] as OfferPaymentMethod[]).map(method => <Chave key={method} label={methodLabel[method]} checked={values.paymentMethods.includes(method)} disabled={method === "BOLETO" && product.segment !== "SAAS"} onChange={checked => toggleMethod(method, checked)} />)}
-            {product.segment !== "SAAS" && <small className="pe-hint">Boleto está disponível apenas para produtos de software (SaaS).</small>}
+            {(["PIX", "CARD", "BOLETO"] as OfferPaymentMethod[]).map(method => <Chave key={method} label={methodLabel[method]} checked={values.paymentMethods.includes(method)} disabled={method === "BOLETO" && product.segment === "DIGITAL"} onChange={checked => toggleMethod(method, checked)} />)}
+            {product.segment === "DIGITAL" && <small className="pe-hint">Boleto não está disponível para produtos digitais.</small>}
             {errors.paymentMethods && <small className="pe-error">{errors.paymentMethods}</small>}
           </fieldset>
           <label className="pe-field"><span>Parcelamento</span><select disabled={!cardOn} value={values.maxInstallments} onChange={event => change("maxInstallments", Number(event.target.value))}>{Array.from({ length: 12 }, (_, index) => index + 1).map(n => <option key={n} value={n}>{n === 1 ? "À vista" : `Até ${n}x`}</option>)}</select>{errors.maxInstallments && <small className="pe-error">{errors.maxInstallments}</small>}</label>

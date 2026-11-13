@@ -40,6 +40,9 @@ export function contractFixture(overrides: Partial<Record<string, unknown>> = {}
 }
 
 export async function mockOferta(page: Page, overrides: Partial<Record<string, unknown>> = {}) {
+  await page.route(/https:\/\/viacep\.com\.br\/ws\/\d{8}\/json\//, async route => {
+    await route.fulfill({ json: { logradouro: "Avenida Paulista", bairro: "Bela Vista", localidade: "São Paulo", uf: "SP" } });
+  });
   await page.route(`**/v1/offers/${OFERTA_SLUG}/checkout`, async (route) => {
     await route.fulfill({ json: contractFixture(overrides) });
   });

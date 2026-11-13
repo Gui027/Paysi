@@ -1,7 +1,7 @@
 import { apiRequest, CursorPage } from "./api";
 
 export type ProductStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "SUSPENDED";
-export type ProductSegment = "SAAS" | "DIGITAL";
+export type ProductSegment = "SAAS" | "DIGITAL" | "PHYSICAL";
 export type ProductChargeType = "ONE_TIME" | "SUBSCRIPTION";
 
 export type Product = {
@@ -42,6 +42,7 @@ export const productStatusLabel: Record<ProductStatus, string> = {
 export const productSegmentLabel: Record<ProductSegment, string> = {
   SAAS: "SaaS",
   DIGITAL: "Produto digital",
+  PHYSICAL: "Produto físico",
 };
 
 export const productChargeTypeLabel: Record<ProductChargeType, string> = {
@@ -62,6 +63,7 @@ export function validateProductInput(input: ProductInput): ProductInputErrors {
   if (!input.name.trim()) errors.name = "Informe o nome do produto.";
   else if (input.name.trim().length > 120) errors.name = "Use no máximo 120 caracteres.";
   if ((input.description?.length ?? 0) > 2000) errors.description = "Use no máximo 2.000 caracteres.";
+  if (input.segment === "PHYSICAL" && input.chargeType !== "ONE_TIME") errors.chargeType = "Produto físico aceita somente pagamento único.";
   return errors;
 }
 

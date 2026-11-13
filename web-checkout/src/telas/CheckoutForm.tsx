@@ -1,4 +1,4 @@
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { CheckoutContract, PaymentMethod, PersonType } from "../lib/checkout";
 import { ApiRequestError } from "../lib/api";
 import { ChaveCampo, validarCampo } from "../lib/camposComprador";
@@ -21,6 +21,7 @@ import { BoletoEmitido } from "./BoletoEmitido";
 import { lerParametrosIntegracao, montarUrlRetorno } from "../lib/integracao";
 import { inferirTipoPessoa } from "../lib/documento";
 import { formatarTelefone } from "../lib/mascaras";
+import { consultarCep } from "../lib/cep";
 
 const METHOD_TO_METODO: Record<PaymentMethod, Metodo> = { CARD: "cartao", PIX: "pix", BOLETO: "boleto" };
 const METODO_TO_METHOD: Record<Metodo, PaymentMethod> = { cartao: "CARD", pix: "PIX", boleto: "BOLETO" };
@@ -49,6 +50,8 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
   const [dadosCartao, setDadosCartao] = useState<DadosCartao | null>(null);
   const [cobranca, setCobranca] = useState<CobrancaIniciada | null>(null);
   const [confirmandoTresDs, setConfirmandoTresDs] = useState(false);
+  const [consultandoCep, setConsultandoCep] = useState(false);
+  const [cepResolvido, setCepResolvido] = useState<string | null>(null);
   const termsHashRef = useRef<string | null>(null);
   const simulationVersion = useRef(0);
 
@@ -56,11 +59,45 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
     .filter(method => contract.methods.includes(method))
     .map(method => METHOD_TO_METODO[method]);
   const personType: PersonType = inferirTipoPessoa(values.taxId ?? "");
-  const campos: ChaveCampo[] = ["name", "email", "taxId",
-    ...(metodo === "cartao" ? ["address.zipCode", "address.number"] as ChaveCampo[] : [])];
+  const exigeEndereco = contract.segment === "PHYSICAL" || metodo === "cartao";
+  const camposEndereco: ChaveCampo[] = exigeEndereco ? ["address.zipCode", "address.number"] : [];
+  const camposOcultosEndereco: ChaveCampo[] = contract.segment === "PHYSICAL"
+    ? ["address.street", "address.district", "address.city", "address.state"] : [];
+  const campos: ChaveCampo[] = ["name", "email", "taxId", ...camposEndereco, ...camposOcultosEndereco];
   const paymentMethod = METODO_TO_METHOD[metodo];
   const selectedInstallments = metodo === "cartao" ? installments : 1;
   const customerDefinesAmount = contract.pricingMode === "CUSTOMER_DEFINED";
+
+  useEffect(() => {
+    if (!exigeEndereco) return;
+    const cep = (values["address.zipCode"] ?? "").replace(/\D/g, "");
+    if (cep.length !== 8) {
+      setCepResolvido(null);
+      setConsultandoCep(false);
+      return;
+    }
+    if (cepResolvido === cep) return;
+    const controller = new AbortController();
+    setConsultandoCep(true);
+    consultarCep(cep, controller.signal).then(endereco => {
+      setValues(current => ({
+        ...current,
+        "address.street": endereco.street,
+        "address.district": endereco.district,
+        "address.city": endereco.city,
+        "address.state": endereco.state,
+      }));
+      setErrors(current => ({ ...current, "address.zipCode": undefined }));
+      setCepResolvido(cep);
+    }).catch(error => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setCepResolvido(null);
+      setErrors(current => ({ ...current, "address.zipCode": "CEP não encontrado." }));
+    }).finally(() => {
+      if (!controller.signal.aborted) setConsultandoCep(false);
+    });
+    return () => controller.abort();
+  }, [values["address.zipCode"], exigeEndereco, cepResolvido]);
 
   function selectedAmount(): number | null {
     if (!customerDefinesAmount) return null;
@@ -137,11 +174,13 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
     if (telefone.length < 10 || telefone.length > 11) nextErrors.phone = "Informe o telefone com DDD.";
     const hasCouponError = couponVisible && Boolean(coupon.trim()) && !simulacao;
     const hasCardError = metodo === "cartao" && !dadosCartao;
+    const hasCepError = exigeEndereco && (consultandoCep || !cepResolvido);
     const amountCents = selectedAmount();
     const hasAmountError = customerDefinesAmount && amountCents === null;
-    setErrors(nextErrors);
     setCouponError(hasCouponError ? "Valide o cupom antes de continuar." : null);
-    if (Object.values(nextErrors).some(Boolean) || hasCouponError || hasCardError || hasAmountError) {
+    if (hasCepError) nextErrors["address.zipCode"] = consultandoCep ? "Aguarde a consulta do CEP." : "Informe um CEP válido.";
+    setErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean) || hasCouponError || hasCardError || hasAmountError || hasCepError) {
       setGeneralError(hasCardError ? "Preencha os dados do cartão corretamente." : "Revise os campos destacados.");
       return;
     }
@@ -260,10 +299,13 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
             placeholder="Telefone com DDD" value={values.phone ?? ""} error={errors.phone} maxLength={15}
             onChange={event => { setValues(current => ({ ...current, phone: formatarTelefone(event.target.value) })); setErrors(current => ({ ...current, phone: undefined })); setGeneralError(null); }} />
         </div>
-        {metodo === "cartao" && (
+        {exigeEndereco && (
           <CamposComprador campos={["address.zipCode", "address.number"]}
             values={values} errors={errors} personType={personType} onChange={change} />
         )}
+        {exigeEndereco && <small className="field-hint" role="status">
+          {consultandoCep ? "Buscando endereço…" : cepResolvido ? "Endereço localizado." : "Informe o CEP para localizar o endereço."}
+        </small>}
       </div>
 
       <h2 className="section-heading"><span className="step">{customerDefinesAmount ? 3 : 2}</span>Forma de pagamento</h2>

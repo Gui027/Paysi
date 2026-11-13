@@ -1,6 +1,6 @@
 import { apiRequest } from "./api.js";
 
-export type Segment = "SAAS" | "DIGITAL";
+export type Segment = "SAAS" | "DIGITAL" | "PHYSICAL";
 export type ChargeType = "ONE_TIME" | "SUBSCRIPTION";
 export type BillingCycle = "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "ANNUAL";
 export type PaymentMethod = "PIX" | "CARD" | "BOLETO";
