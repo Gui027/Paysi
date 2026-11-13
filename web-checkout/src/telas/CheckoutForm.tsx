@@ -247,9 +247,9 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
     <form className="checkout-form" onSubmit={event => void enviar(event)} noValidate>
       {generalError && <p className="form-alert" role="alert">{generalError}</p>}
 
-      {customerDefinesAmount && <><div><span className="step">1</span><h2>Escolha o valor</h2></div><div className="field-grid customer-amount"><Campo id="amount" label={`Valor a pagar (mínimo ${formatarCentavos(contract.priceCents)})`} inputMode="decimal" placeholder="0,00" full value={amountText} error={amountError ?? undefined} onChange={event => { setAmountText(event.target.value); setAmountError(null); invalidarSimulacao(); }} /></div></>}
+      {customerDefinesAmount && <><h2 className="section-heading"><span className="step">1</span>Escolha o valor</h2><div className="field-grid customer-amount"><Campo id="amount" label={`Valor a pagar (mínimo ${formatarCentavos(contract.priceCents)})`} inputMode="decimal" placeholder="0,00" full value={amountText} error={amountError ?? undefined} onChange={event => { setAmountText(event.target.value); setAmountError(null); invalidarSimulacao(); }} /></div></>}
 
-      <h2 className="sr-only">Quem está comprando</h2>
+      <h2 className="section-heading"><span className="step">{customerDefinesAmount ? 2 : 1}</span>Seus dados</h2>
       <div className="buyer-fields-layout">
         <CamposComprador campos={campos} values={values} errors={errors} personType={personType} onChange={change} />
         <div className="field-grid buyer-phone">
@@ -259,7 +259,7 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
         </div>
       </div>
 
-      <h2 className="sr-only">Pagamento</h2>
+      <h2 className="section-heading"><span className="step">{customerDefinesAmount ? 3 : 2}</span>Forma de pagamento</h2>
       <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); setDadosCartao(null); }} disponiveis={disponiveis} />
       {metodo === "cartao" && (
         <div className="card-payment-panel">
@@ -303,9 +303,17 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
       </div>
 
       <button className="pay-button" type="submit" disabled={submitting || preview} style={{ background: contract.appearance.primaryColor }}>
+        {!preview && !submitting && (
+          <svg className="pay-button-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="4" y="10.5" width="16" height="10.5" rx="2.5" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+          </svg>
+        )}
         {preview ? "Pagamento desativado na pré-visualização" : submitting ? "Processando…" : contract.appearance.buttonText}
       </button>
-      <p className="security-note">Compra protegida e processada em ambiente seguro.</p>
+      <p className="security-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2.5 4.5 5.5v6c0 4.7 3.2 8.6 7.5 10 4.3-1.4 7.5-5.3 7.5-10v-6L12 2.5Z" /><path d="m9 12 2 2 4-4" /></svg>
+        Compra protegida e processada em ambiente seguro.
+      </p>
       <p className="legal-note">Ao clicar no botão acima, você declara que leu e aceita os{" "}
         <a href={contract.legalTexts.termsUrl} target="_blank" rel="noreferrer">termos de uso</a> e a{" "}
         <a href={contract.legalTexts.privacyUrl} target="_blank" rel="noreferrer">política de privacidade</a>.

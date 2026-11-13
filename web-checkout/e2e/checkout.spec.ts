@@ -23,7 +23,7 @@ test.describe("checkout — estados de carregamento/vazio/erro", () => {
   test("mostra carregando e depois o formulário", async ({ page }) => {
     await mockOferta(page);
     await page.goto(`/${OFERTA_SLUG}`);
-    await expect(page.getByRole("heading", { name: /quem está comprando/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /seus dados/i })).toBeVisible();
     await expect(page.getByRole("img", { name: "Serviços financeiros Asaas" })).toBeVisible();
   });
 
@@ -49,7 +49,7 @@ test.describe("checkout — pré-visualização do vendedor", () => {
   test("pré-visualização mostra o aviso e desativa o botão de pagar, mesmo com a oferta ainda não publicada", async ({ page }) => {
     await mockOfertaPreview(page);
     await page.goto(`/preview/${OFERTA_ID}`);
-    await expect(page.getByRole("heading", { name: /quem está comprando/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /seus dados/i })).toBeVisible();
     await expect(page.getByText(/modo de pré-visualização/i)).toBeVisible();
     const botaoPagar = page.getByRole("button", { name: /pagamento desativado/i });
     await expect(botaoPagar).toBeVisible();
@@ -225,7 +225,7 @@ test.describe("checkout — acessibilidade e teclado", () => {
   test("formulário não tem violações críticas/sérias de acessibilidade (axe)", async ({ page }) => {
     await mockOferta(page);
     await page.goto(`/${OFERTA_SLUG}`);
-    await expect(page.getByRole("heading", { name: /quem está comprando/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /seus dados/i })).toBeVisible();
 
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     const graves = results.violations.filter(v => v.impact === "critical" || v.impact === "serious");
