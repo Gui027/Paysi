@@ -126,7 +126,7 @@ test.describe("checkout — celular do comprador", () => {
     await page.getByRole("radio", { name: "Pix" }).check();
     await aceitarTermos(page);
     await page.getByRole("button", { name: /pagar agora/i }).click();
-    await expect(page.getByText("Informe o celular com DDD.")).toBeVisible();
+    await expect(page.getByText("Informe o telefone com DDD.")).toBeVisible();
     expect(pedidos).toBe(0);
   });
 });

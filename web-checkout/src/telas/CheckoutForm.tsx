@@ -20,6 +20,7 @@ import { PixAguardando } from "./PixAguardando";
 import { BoletoEmitido } from "./BoletoEmitido";
 import { lerParametrosIntegracao, montarUrlRetorno } from "../lib/integracao";
 import { inferirTipoPessoa } from "../lib/documento";
+import { formatarTelefone } from "../lib/mascaras";
 
 const METHOD_TO_METODO: Record<PaymentMethod, Metodo> = { CARD: "cartao", PIX: "pix", BOLETO: "boleto" };
 const METODO_TO_METHOD: Record<Metodo, PaymentMethod> = { cartao: "CARD", pix: "PIX", boleto: "BOLETO" };
@@ -129,10 +130,10 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
       const error = validarCampo(key, values[key] ?? "", personType);
       if (error) nextErrors[key] = error;
     }
-    // Cadastro mínimo do checkout: o celular é obrigatório e também é reutilizado
+    // Cadastro mínimo do checkout: o telefone é obrigatório e também é reutilizado
     // na tokenização do cartão, sem pedir o mesmo dado duas vezes.
     const telefone = (values.phone ?? "").replace(/\D/g, "");
-    if (telefone.length < 10 || telefone.length > 13) nextErrors.phone = "Informe o celular com DDD.";
+    if (telefone.length < 10 || telefone.length > 11) nextErrors.phone = "Informe o telefone com DDD.";
     const hasCouponError = couponVisible && Boolean(coupon.trim()) && !simulacao;
     const hasCardError = metodo === "cartao" && !dadosCartao;
     const amountCents = selectedAmount();
@@ -254,8 +255,8 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
         <CamposComprador campos={campos} values={values} errors={errors} personType={personType} onChange={change} />
         <div className="field-grid buyer-phone">
           <Campo id="phone" label="Telefone" hideLabel type="tel" inputMode="tel" autoComplete="tel"
-            placeholder="Telefone com DDD" value={values.phone ?? ""} error={errors.phone}
-            onChange={event => { setValues(current => ({ ...current, phone: event.target.value })); setErrors(current => ({ ...current, phone: undefined })); }} />
+            placeholder="Telefone com DDD" value={values.phone ?? ""} error={errors.phone} maxLength={15}
+            onChange={event => { setValues(current => ({ ...current, phone: formatarTelefone(event.target.value) })); setErrors(current => ({ ...current, phone: undefined })); setGeneralError(null); }} />
         </div>
       </div>
 

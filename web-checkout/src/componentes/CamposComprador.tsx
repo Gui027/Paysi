@@ -25,7 +25,7 @@ export function CamposComprador({ campos, values, errors, personType, onChange }
           full={FULL_WIDTH.has(key)}
           error={errors[key]}
           value={values[key] ?? ""}
-          maxLength={key === "address.state" ? 2 : undefined}
+          maxLength={key === "taxId" ? 18 : key === "address.state" ? 2 : undefined}
           inputMode={key === "taxId" || key === "address.zipCode" ? "numeric" : undefined}
           autoComplete={key === "name" ? "name" : key === "email" ? "email" : "off"}
           onChange={event => onChange(key, transformar(key, event.target.value, personType))}

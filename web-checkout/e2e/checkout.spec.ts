@@ -3,6 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import {
   OFERTA_SLUG,
   OFERTA_ID,
+  contractFixture,
   mockOferta,
   mockOfertaNotFound,
   mockOfertaErro,
@@ -59,12 +60,28 @@ test.describe("checkout — pré-visualização do vendedor", () => {
 });
 
 test.describe("checkout — validação", () => {
+  test("formata telefone e alterna automaticamente de CPF para CNPJ", async ({ page }) => {
+    await mockOferta(page);
+    await page.goto(`/${OFERTA_SLUG}`);
+
+    const documento = page.getByLabel(/cpf\/cnpj/i);
+    const telefone = page.getByLabel(/^telefone$/i);
+
+    await documento.fill("39053344705");
+    await expect(documento).toHaveValue("390.533.447-05");
+    await documento.fill("11222333000181");
+    await expect(documento).toHaveValue("11.222.333/0001-81");
+
+    await telefone.fill("11999998888");
+    await expect(telefone).toHaveValue("(11) 99999-8888");
+  });
+
   test("bloqueia envio sem preencher os dados do comprador", async ({ page }) => {
     await mockOferta(page);
     await page.goto(`/${OFERTA_SLUG}`);
     await page.getByRole("button", { name: /pagar agora/i }).click();
     await expect(page.getByRole("alert").first()).toBeVisible();
-    await expect(page.getByText(/informe o celular com ddd/i)).toBeVisible();
+    await expect(page.getByText(/informe o telefone com ddd/i)).toBeVisible();
   });
 
   test("CPF inválido é rejeitado", async ({ page }) => {
@@ -102,6 +119,28 @@ test.describe("checkout — validação", () => {
     expect(pedido?.buyer).toMatchObject({ personType: "PJ", taxId: "11222333000181" });
     expect(pedido?.buyer).not.toHaveProperty("legalName");
     expect(pedido?.buyer).not.toHaveProperty("address");
+  });
+});
+
+test.describe("checkout — apresentação", () => {
+  test("não mostra imagem genérica nem subtítulos nas formas de pagamento", async ({ page }) => {
+    await mockOferta(page);
+    await page.goto(`/${OFERTA_SLUG}`);
+
+    await expect(page.locator(".merchant-mark")).toHaveCount(0);
+    await expect(page.getByText("Crédito, aprovação imediata", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Aprovação na hora", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Compensa em até 3 dias úteis", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("radio", { name: "Cartão" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Pix" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Boleto" })).toBeVisible();
+  });
+
+  test("mostra a foto da oferta quando ela foi configurada", async ({ page }) => {
+    await mockOferta(page, { appearance: { ...contractFixture().appearance, logoUrl: "https://cdn.example.com/produto.png" } });
+    await page.goto(`/${OFERTA_SLUG}`);
+
+    await expect(page.locator(".merchant-mark")).toHaveAttribute("src", "https://cdn.example.com/produto.png");
   });
 });
 

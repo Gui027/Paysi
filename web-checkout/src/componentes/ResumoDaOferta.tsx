@@ -9,7 +9,7 @@ export function ResumoDaOferta({ contract }: { contract: CheckoutContract }) {
     <header className="offer-summary">
       {appearance.bannerUrl && <img className="offer-banner" src={appearance.bannerUrl} alt="" />}
       <div className="offer-product">
-        <img className="merchant-mark" src={appearance.logoUrl ?? "/paysi-logo.svg"} alt="" />
+        {appearance.logoUrl && <img className="merchant-mark" src={appearance.logoUrl} alt="" />}
         <div className="offer-copy">
           <h1>{contract.product}</h1>
           <div className="price paysi-valor" style={{ color: appearance.primaryColor }}>{contract.pricingMode === "CUSTOMER_DEFINED" ? "Você decide o valor" : formatarCentavos(contract.priceCents)}</div>

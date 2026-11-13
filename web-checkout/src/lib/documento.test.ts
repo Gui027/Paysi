@@ -13,7 +13,9 @@ test("formata CNPJ progressivamente enquanto o usuário digita", () => {
 
 test("campo único muda automaticamente de CPF para CNPJ", () => {
   assert.equal(formatarCpfCnpj("52998224725"), "529.982.247-25");
+  assert.equal(formatarCpfCnpj("529.982.247-251"), "52.998.224/7251");
   assert.equal(formatarCpfCnpj("11222333000181"), "11.222.333/0001-81");
+  assert.equal(formatarCpfCnpj("11222333000181999"), "11.222.333/0001-81");
   assert.equal(inferirTipoPessoa("529.982.247-25"), "PF");
   assert.equal(inferirTipoPessoa("11.222.333/0001-81"), "PJ");
 });
