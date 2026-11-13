@@ -299,17 +299,19 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
             placeholder="Telefone com DDD" value={values.phone ?? ""} error={errors.phone} maxLength={15}
             onChange={event => { setValues(current => ({ ...current, phone: formatarTelefone(event.target.value) })); setErrors(current => ({ ...current, phone: undefined })); setGeneralError(null); }} />
         </div>
-        {exigeEndereco && (
-          <CamposComprador campos={["address.zipCode", "address.number"]}
-            values={values} errors={errors} personType={personType} onChange={change} />
-        )}
-        {exigeEndereco && <small className="field-hint" role="status">
-          {consultandoCep ? "Buscando endereço…" : cepResolvido ? "Endereço localizado." : "Informe o CEP para localizar o endereço."}
-        </small>}
       </div>
 
       <h2 className="section-heading"><span className="step">{customerDefinesAmount ? 3 : 2}</span>Forma de pagamento</h2>
       <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); setDadosCartao(null); }} disponiveis={disponiveis} />
+      {exigeEndereco && (
+        <div className="payment-address-fields">
+          <CamposComprador campos={["address.zipCode", "address.number"]}
+            values={values} errors={errors} personType={personType} onChange={change} />
+          <small className="field-hint" role="status">
+            {consultandoCep ? "Buscando endereço…" : cepResolvido ? "Endereço localizado." : "Informe o CEP para localizar o endereço."}
+          </small>
+        </div>
+      )}
       {metodo === "cartao" && (
         <div className="card-payment-panel">
           <CampoDeCartao nomeTitular={values.name ?? ""} telefone={values.phone ?? ""}
