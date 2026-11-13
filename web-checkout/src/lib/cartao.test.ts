@@ -51,8 +51,8 @@ const digitado = {
   cvv: "123",
   cep: "01310-100",
   numeroEndereco: "10",
-  telefone: "(11) 99999-8888",
 };
+const telefone = "(11) 99999-8888";
 
 test("valida e formata CEP e telefone", () => {
   assert.equal(formatarCep("01310100"), "01310-100");
@@ -63,16 +63,16 @@ test("valida e formata CEP e telefone", () => {
   assert.equal(telefoneValido("123"), false);
 });
 
-test("cartão só está completo com endereço e telefone do titular (exigidos pelo provedor)", () => {
+test("cartão só está completo com endereço e o telefone do comprador (exigidos pelo provedor)", () => {
   const agora = new Date(2026, 5, 15);
-  assert.equal(cartaoCompleto(digitado, agora), true);
-  assert.equal(cartaoCompleto({ ...digitado, cep: "" }, agora), false);
-  assert.equal(cartaoCompleto({ ...digitado, telefone: "12" }, agora), false);
-  assert.equal(cartaoCompleto({ ...digitado, numeroEndereco: " " }, agora), false);
+  assert.equal(cartaoCompleto(digitado, telefone, agora), true);
+  assert.equal(cartaoCompleto({ ...digitado, cep: "" }, telefone, agora), false);
+  assert.equal(cartaoCompleto(digitado, "12", agora), false);
+  assert.equal(cartaoCompleto({ ...digitado, numeroEndereco: " " }, telefone, agora), false);
 });
 
 test("monta os dados do cartão só com dígitos e validade em mês e ano de 4 dígitos", () => {
-  assert.deepEqual(montarDadosCartao(digitado), {
+  assert.deepEqual(montarDadosCartao(digitado, telefone), {
     holderName: "Ana Souza",
     number: "4111111111111111",
     expiryMonth: "12",
@@ -82,5 +82,5 @@ test("monta os dados do cartão só com dígitos e validade em mês e ano de 4 d
     addressNumber: "10",
     phone: "11999998888",
   });
-  assert.equal(montarDadosCartao({ ...digitado, validade: "03/29" }).expiryMonth, "3");
+  assert.equal(montarDadosCartao({ ...digitado, validade: "03/29" }, telefone).expiryMonth, "3");
 });

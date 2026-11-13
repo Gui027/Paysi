@@ -43,8 +43,9 @@ class CheckoutContractServiceTest {
         assertThat(contract.cycle()).isNull();
         assertThat(contract.nextChargeAt()).isNull();
         assertThat(contract.requiredBuyerFields().get(PersonType.PF)).containsExactly(
-                "name", "email", "personType", "taxId");
-        assertThat(contract.requiredBuyerFields().get(PersonType.PJ)).contains("legalName", "municipalReg");
+                "name", "email", "personType", "taxId", "phone");
+        assertThat(contract.requiredBuyerFields().get(PersonType.PJ)).containsExactlyElementsOf(
+                contract.requiredBuyerFields().get(PersonType.PF));
     }
 
     @Test
@@ -55,18 +56,21 @@ class CheckoutContractServiceTest {
         CheckoutContract contract = service.get("digital-sub");
 
         assertThat(contract.nextChargeAt()).isEqualTo(Instant.parse("2026-10-02T12:00:00Z"));
-        assertThat(contract.requiredBuyerFields().get(PersonType.PF)).doesNotContain("legalName");
+        assertThat(contract.requiredBuyerFields().get(PersonType.PF)).containsExactly(
+                "name", "email", "personType", "taxId", "phone");
     }
 
     @Test
-    void oneTimeSaasOfferRequiresCompanyFieldsEvenForIndividuals() {
+    void oneTimeSaasOfferUsesTheSameMinimalBuyerFields() {
         var service = service(offer("saas-oneshot", ChargeType.ONE_TIME, Segment.SAAS, null),
                 Map.of(), Map.of());
 
         CheckoutContract contract = service.get("saas-oneshot");
 
-        assertThat(contract.requiredBuyerFields().get(PersonType.PF)).contains("legalName", "municipalReg");
-        assertThat(contract.requiredBuyerFields().get(PersonType.PJ)).contains("legalName", "municipalReg");
+        assertThat(contract.requiredBuyerFields().get(PersonType.PF)).containsExactly(
+                "name", "email", "personType", "taxId", "phone");
+        assertThat(contract.requiredBuyerFields().get(PersonType.PJ)).containsExactlyElementsOf(
+                contract.requiredBuyerFields().get(PersonType.PF));
     }
 
     @Test

@@ -213,23 +213,19 @@ class CreateOrderServiceTest {
     }
 
     @Test
-    void compradorPjExigeRazaoSocialEEndereco() {
-        CreateOrderCommand pjIncompleto = command(PersonType.PJ, CNPJ, null, null);
+    void compradorPjPodeComprarSemRazaoSocialNemEndereco() {
+        service.create(SLUG, KEY, command(PersonType.PJ, CNPJ, null, null));
 
-        assertThatThrownBy(() -> service.create(SLUG, KEY, pjIncompleto))
-                .isInstanceOfSatisfying(ValidationException.class, error -> {
-                    assertThat(error.code()).isEqualTo("BUYER_INVALID");
-                    assertThat(error.field()).isEqualTo("legalName");
-                });
+        assertThat(captured().buyerSnapshot()).contains("\"personType\":\"PJ\"");
     }
 
     @Test
-    void ofertaSaasExigeDadosFiscaisAteDeCompradorPf() {
+    void ofertaSaasTambemUsaCadastroMinimoDoComprador() {
         when(offers.findPublishedBySlug(SLUG)).thenReturn(Optional.of(offer(Segment.SAAS)));
 
-        assertThatThrownBy(() -> service.create(SLUG, KEY, command(PersonType.PF, CPF, null, null)))
-                .isInstanceOfSatisfying(ValidationException.class,
-                        error -> assertThat(error.code()).isEqualTo("BUYER_INVALID"));
+        service.create(SLUG, KEY, command(PersonType.PF, CPF, null, null));
+
+        assertThat(captured().buyerSnapshot()).contains("\"personType\":\"PF\"");
     }
 
     @Test

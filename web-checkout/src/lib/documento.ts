@@ -19,6 +19,15 @@ export function formatarDocumento(value: string, personType: PersonType): string
     .replace(/(\/\d{4})(\d)/, "$1-$2");
 }
 
+export function inferirTipoPessoa(value: string): PersonType {
+  return apenasDigitos(value).length > 11 ? "PJ" : "PF";
+}
+
+/** Máscara progressiva para um único campo que aceita CPF ou CNPJ. */
+export function formatarCpfCnpj(value: string): string {
+  return formatarDocumento(value, inferirTipoPessoa(value));
+}
+
 /** Confere o dígito verificador. Mesmo algoritmo de com.paysi.identity.domain.TaxId (backend). */
 export function documentoValido(value: string, personType: PersonType): boolean {
   const digits = apenasDigitos(value);

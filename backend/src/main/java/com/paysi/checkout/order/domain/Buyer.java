@@ -1,7 +1,6 @@
 package com.paysi.checkout.order.domain;
 
 import com.paysi.catalog.product.domain.Segment;
-import com.paysi.checkout.pub.domain.RequiredBuyerFields;
 import com.paysi.core.error.ValidationException;
 import com.paysi.identity.domain.PersonType;
 import com.paysi.identity.domain.TaxId;
@@ -51,14 +50,8 @@ public record Buyer(
         }
         TaxId taxId = TaxId.of(rawTaxId, personType);
 
-        Buyer buyer = new Buyer(id, name, email, personType, taxId.digits(), legalName,
+        return new Buyer(id, name, email, personType, taxId.digits(), legalName,
                 municipalReg, address);
-        if (RequiredBuyerFields.requiresCompanyData(segment, personType)) {
-            require(filled(buyer.legalName()), "legalName", "Informe a razão social");
-            require(buyer.address() != null, "address", "Informe o endereço completo");
-            buyer.address().requireComplete();
-        }
-        return buyer;
     }
 
     @Override

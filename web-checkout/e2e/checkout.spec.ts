@@ -77,6 +77,31 @@ test.describe("checkout — validação", () => {
     await page.getByRole("button", { name: /pagar agora/i }).click();
     await expect(page.getByText(/cpf inválido/i)).toBeVisible();
   });
+
+  test("CNPJ é identificado sem pedir tipo de pessoa nem dados fiscais extras", async ({ page }) => {
+    let pedido: { buyer?: Record<string, unknown> } | null = null;
+    await mockOferta(page);
+    await page.route(`**/v1/checkout/${OFERTA_SLUG}/orders`, async route => {
+      pedido = route.request().postDataJSON();
+      await route.fulfill({ json: { orderId: "order_pj", status: "CREATED" } });
+    });
+    await mockCobranca(page, COBRANCA_PIX);
+    await page.goto(`/${OFERTA_SLUG}`);
+
+    await page.getByLabel(/nome completo/i).fill("Empresa Compradora");
+    await page.getByLabel(/e-mail/i).fill("financeiro@empresa.com.br");
+    await page.getByLabel(/cpf\/cnpj/i).fill("11222333000181");
+    await page.getByLabel(/celular \/ whatsapp/i).fill("11999998888");
+    await expect(page.getByRole("radio", { name: /pessoa física|pessoa jurídica/i })).toHaveCount(0);
+    await expect(page.getByLabel(/razão social|inscrição municipal|cep$/i)).toHaveCount(0);
+    await aceitarTermos(page);
+    await page.getByRole("button", { name: /pagar agora/i }).click();
+
+    await expect(page.getByRole("heading", { name: /aguardando pagamento do pix/i })).toBeVisible();
+    expect(pedido?.buyer).toMatchObject({ personType: "PJ", taxId: "11222333000181" });
+    expect(pedido?.buyer).not.toHaveProperty("legalName");
+    expect(pedido?.buyer).not.toHaveProperty("address");
+  });
 });
 
 test.describe("checkout — fluxo feliz por método de pagamento", () => {
@@ -220,6 +245,8 @@ test.describe("checkout — acessibilidade e teclado", () => {
     await page.keyboard.type("maria@example.com");
     await page.keyboard.press("Tab");
     await page.keyboard.type("39053344705");
+    await page.keyboard.press("Tab");
+    await page.keyboard.type("11999998888");
 
     // Navega até o rádio "Pix" e seleciona via teclado.
     const pixRadio = page.getByRole("radio", { name: "Pix" });

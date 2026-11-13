@@ -23,7 +23,7 @@ const CAMPO_LABEL: Record<ChaveCampo, string> = {
 };
 
 export function rotuloCampo(key: ChaveCampo, personType: PersonType): string {
-  if (key === "taxId") return personType === "PF" ? "CPF" : "CNPJ";
+  if (key === "taxId") return "CPF/CNPJ";
   return CAMPO_LABEL[key];
 }
 

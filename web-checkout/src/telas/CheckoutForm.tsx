@@ -1,7 +1,7 @@
 import { FormEvent, useRef, useState } from "react";
 import { CheckoutContract, PaymentMethod, PersonType } from "../lib/checkout";
 import { ApiRequestError } from "../lib/api";
-import { ChaveCampo, comoChaveCampo, validarCampo } from "../lib/camposComprador";
+import { ChaveCampo, validarCampo } from "../lib/camposComprador";
 import { Campo } from "../componentes/Campo";
 import { CamposComprador } from "../componentes/CamposComprador";
 import { CampoDeCartao } from "../componentes/CampoDeCartao";
@@ -19,12 +19,12 @@ import { Recusado } from "./Recusado";
 import { PixAguardando } from "./PixAguardando";
 import { BoletoEmitido } from "./BoletoEmitido";
 import { lerParametrosIntegracao, montarUrlRetorno } from "../lib/integracao";
+import { inferirTipoPessoa } from "../lib/documento";
 
 const METHOD_TO_METODO: Record<PaymentMethod, Metodo> = { CARD: "cartao", PIX: "pix", BOLETO: "boleto" };
 const METODO_TO_METHOD: Record<Metodo, PaymentMethod> = { cartao: "CARD", pix: "PIX", boleto: "BOLETO" };
 
 export function CheckoutForm({ slug, contract, preview = false }: { slug: string; contract: CheckoutContract; preview?: boolean }) {
-  const [personType, setPersonType] = useState<PersonType>("PF");
   // O link do vendedor pode trazer ?ref=, ?email= e ?name= (integração com o sistema dele).
   const [integracao] = useState(() => lerParametrosIntegracao(window.location.search));
   const [values, setValues] = useState<Record<string, string>>(() => ({
@@ -54,9 +54,8 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
   const simulationVersion = useRef(0);
 
   const disponiveis = contract.methods.map(method => METHOD_TO_METODO[method]);
-  const campos = (contract.requiredBuyerFields[personType] ?? [])
-    .map(comoChaveCampo)
-    .filter((key): key is ChaveCampo => key !== null);
+  const personType: PersonType = inferirTipoPessoa(values.taxId ?? "");
+  const campos: ChaveCampo[] = ["name", "email", "taxId"];
   const paymentMethod = METODO_TO_METHOD[metodo];
   const selectedInstallments = metodo === "cartao" ? installments : 1;
   const customerDefinesAmount = contract.pricingMode === "CUSTOMER_DEFINED";
@@ -122,12 +121,6 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
     setGeneralError(null);
   }
 
-  function changePersonType(next: PersonType) {
-    setPersonType(next);
-    setErrors({});
-    setGeneralError(null);
-  }
-
   async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (preview) return;
@@ -136,9 +129,10 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
       const error = validarCampo(key, values[key] ?? "", personType);
       if (error) nextErrors[key] = error;
     }
-    // Celular é opcional, mas quando vem precisa ter DDD (o vendedor usa para falar com o cliente).
+    // Cadastro mínimo do checkout: o celular é obrigatório e também é reutilizado
+    // na tokenização do cartão, sem pedir o mesmo dado duas vezes.
     const telefone = (values.phone ?? "").replace(/\D/g, "");
-    if (telefone && (telefone.length < 10 || telefone.length > 13)) nextErrors.phone = "Informe o celular com DDD.";
+    if (telefone.length < 10 || telefone.length > 13) nextErrors.phone = "Informe o celular com DDD.";
     const hasTermsError = !termsAccepted;
     const hasCouponError = couponVisible && Boolean(coupon.trim()) && !simulacao;
     const hasCardError = metodo === "cartao" && !dadosCartao;
@@ -258,18 +252,9 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
       {customerDefinesAmount && <><div><span className="step">1</span><h2>Escolha o valor</h2></div><div className="field-grid customer-amount"><Campo id="amount" label={`Valor a pagar (mínimo ${formatarCentavos(contract.priceCents)})`} inputMode="decimal" placeholder="0,00" full value={amountText} error={amountError ?? undefined} onChange={event => { setAmountText(event.target.value); setAmountError(null); invalidarSimulacao(); }} /></div></>}
 
       <div><span className="step">{customerDefinesAmount ? 2 : 1}</span><h2>Quem está comprando</h2></div>
-      <fieldset className="person-type-toggle">
-        <legend>Tipo de comprador</legend>
-        <label className={personType === "PF" ? "selected" : undefined}>
-          <input type="radio" name="personType" checked={personType === "PF"} onChange={() => changePersonType("PF")} /> Pessoa física
-        </label>
-        <label className={personType === "PJ" ? "selected" : undefined}>
-          <input type="radio" name="personType" checked={personType === "PJ"} onChange={() => changePersonType("PJ")} /> Pessoa jurídica
-        </label>
-      </fieldset>
       <CamposComprador campos={campos} values={values} errors={errors} personType={personType} onChange={change} />
       <div className="field-grid">
-        <Campo id="phone" label="Celular / WhatsApp (opcional)" type="tel" inputMode="tel" autoComplete="tel" full
+        <Campo id="phone" label="Celular / WhatsApp" type="tel" inputMode="tel" autoComplete="tel" full
           placeholder="(11) 99999-9999" value={values.phone ?? ""} error={errors.phone}
           onChange={event => { setValues(current => ({ ...current, phone: event.target.value })); setErrors(current => ({ ...current, phone: undefined })); }} />
       </div>
@@ -312,7 +297,7 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
               </select>
             </label>
           )}
-          <CampoDeCartao onDados={setDadosCartao} />
+          <CampoDeCartao telefone={values.phone ?? ""} onDados={setDadosCartao} />
         </>
       )}
 

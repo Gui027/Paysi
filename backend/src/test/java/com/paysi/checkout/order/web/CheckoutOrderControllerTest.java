@@ -37,7 +37,7 @@ class CheckoutOrderControllerTest {
 
     private static final String BODY = """
             {"buyer":{"name":"Ana","email":"ana@example.com","personType":"PF",
-              "taxId":"529.982.247-25"},
+              "taxId":"529.982.247-25","phone":"11999998888"},
              "method":"PIX","installments":1,"termsHash":"hash-dos-termos"}
             """;
 
@@ -102,7 +102,7 @@ class CheckoutOrderControllerTest {
     void campoDePrecoDesconhecidoEhRecusadoNaoIgnorado() throws Exception {
         String comValor = """
                 {"buyer":{"name":"Ana","email":"ana@example.com","personType":"PF",
-                  "taxId":"529.982.247-25"},
+                  "taxId":"529.982.247-25","phone":"11999998888"},
                  "method":"PIX","installments":1,"termsHash":"hash-dos-termos",
                  "price":100}
                 """;
@@ -122,7 +122,7 @@ class CheckoutOrderControllerTest {
                 .thenReturn(new OrderResult(order(), false));
         String comValor = """
                 {"buyer":{"name":"Ana","email":"ana@example.com","personType":"PF",
-                  "taxId":"529.982.247-25"},
+                  "taxId":"529.982.247-25","phone":"11999998888"},
                  "method":"PIX","installments":1,"termsHash":"hash-dos-termos",
                  "amountCents":500}
                 """;

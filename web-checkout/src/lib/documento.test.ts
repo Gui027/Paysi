@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { documentoValido, formatarDocumento } from "./documento.js";
+import { documentoValido, formatarCpfCnpj, formatarDocumento, inferirTipoPessoa } from "./documento.js";
 
 test("formata CPF progressivamente enquanto o usuário digita", () => {
   assert.equal(formatarDocumento("529", "PF"), "529");
@@ -9,6 +9,13 @@ test("formata CPF progressivamente enquanto o usuário digita", () => {
 
 test("formata CNPJ progressivamente enquanto o usuário digita", () => {
   assert.equal(formatarDocumento("11222333000181", "PJ"), "11.222.333/0001-81");
+});
+
+test("campo único muda automaticamente de CPF para CNPJ", () => {
+  assert.equal(formatarCpfCnpj("52998224725"), "529.982.247-25");
+  assert.equal(formatarCpfCnpj("11222333000181"), "11.222.333/0001-81");
+  assert.equal(inferirTipoPessoa("529.982.247-25"), "PF");
+  assert.equal(inferirTipoPessoa("11.222.333/0001-81"), "PJ");
 });
 
 test("valida dígito verificador de CPF", () => {

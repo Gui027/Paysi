@@ -2,16 +2,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { comoChaveCampo, rotuloCampo, validarCampo } from "./camposComprador.js";
 
-test("ignora personType como campo de texto (é o seletor PF/PJ)", () => {
+test("ignora personType como campo de texto (é inferido pelo CPF/CNPJ)", () => {
   assert.equal(comoChaveCampo("personType"), null);
   assert.equal(comoChaveCampo("name"), "name");
   assert.equal(comoChaveCampo("address.zipCode"), "address.zipCode");
   assert.equal(comoChaveCampo("campo-desconhecido"), null);
 });
 
-test("rotula documento como CPF ou CNPJ conforme o tipo de pessoa", () => {
-  assert.equal(rotuloCampo("taxId", "PF"), "CPF");
-  assert.equal(rotuloCampo("taxId", "PJ"), "CNPJ");
+test("usa um único campo para CPF ou CNPJ", () => {
+  assert.equal(rotuloCampo("taxId", "PF"), "CPF/CNPJ");
+  assert.equal(rotuloCampo("taxId", "PJ"), "CPF/CNPJ");
   assert.equal(rotuloCampo("name", "PF"), "Nome completo");
 });
 

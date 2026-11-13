@@ -85,7 +85,7 @@ public class CheckoutContractService {
 
         return new CheckoutContract(product, offer.segment(), offer.chargeType(), offer.priceCents(),
                 offer.cycle(), now, nextChargeAt, offer.paymentMethods(), offer.maxInstallments(),
-                RequiredBuyerFields.byPersonType(offer.segment()), appearanceContract(appearance),
+                RequiredBuyerFields.byPersonType(), appearanceContract(appearance),
                 new CheckoutContract.LegalTexts(termsUrl, privacyUrl), offer.returnUrl(), offer.pricingMode());
     }
 

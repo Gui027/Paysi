@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Campo } from "./Campo";
 import {
   CartaoDigitado,
@@ -11,18 +11,17 @@ import {
   formatarValidade,
   montarDadosCartao,
   numeroCartaoValido,
-  telefoneValido,
   validadeValida,
 } from "../lib/cartao";
 
-const vazio: CartaoDigitado = { nome: "", numero: "", validade: "", cvv: "", cep: "", numeroEndereco: "", telefone: "" };
+const vazio: CartaoDigitado = { nome: "", numero: "", validade: "", cvv: "", cep: "", numeroEndereco: "" };
 
 /**
  * Coleta os dados do cartão e do titular. Ficam só em memória: quando o formulário está
  * completo entregam {@link DadosCartao} ao pai, que os envia ao backend para tokenizar
  * (depois do pedido criado). Nada disso é guardado no navegador nem persistido pelo Paysi.
  */
-export function CampoDeCartao({ onDados }: { onDados: (dados: DadosCartao | null) => void }) {
+export function CampoDeCartao({ telefone, onDados }: { telefone: string; onDados: (dados: DadosCartao | null) => void }) {
   const [c, setC] = useState<CartaoDigitado>(vazio);
   const [tocado, setTocado] = useState(false);
 
@@ -32,12 +31,15 @@ export function CampoDeCartao({ onDados }: { onDados: (dados: DadosCartao | null
         : campo === "validade" ? formatarValidade(valor)
           : campo === "cvv" ? valor.replace(/\D/g, "").slice(0, 4)
             : campo === "cep" ? formatarCep(valor)
-              : campo === "telefone" ? valor.replace(/[^\d()\s-]/g, "").slice(0, 15)
-                : valor };
+              : valor };
     setC(proximo);
     setTocado(true);
-    onDados(cartaoCompleto(proximo) ? montarDadosCartao(proximo) : null);
+    onDados(cartaoCompleto(proximo, telefone) ? montarDadosCartao(proximo, telefone) : null);
   }
+
+  useEffect(() => {
+    onDados(cartaoCompleto(c, telefone) ? montarDadosCartao(c, telefone) : null);
+  }, [telefone]);
 
   const erro = (mostrar: boolean, mensagem: string) => (tocado && mostrar ? mensagem : undefined);
 
@@ -60,9 +62,6 @@ export function CampoDeCartao({ onDados }: { onDados: (dados: DadosCartao | null
         error={erro(Boolean(c.cep) && !cepValido(c.cep), "CEP inválido.")} />
       <Campo id="cartao-endereco-numero" label="Número do endereço" value={c.numeroEndereco}
         onChange={event => atualizar("numeroEndereco", event.target.value.slice(0, 10))} autoComplete="off" />
-      <Campo id="cartao-telefone" label="Telefone com DDD" full inputMode="tel" value={c.telefone}
-        onChange={event => atualizar("telefone", event.target.value)} autoComplete="tel"
-        error={erro(Boolean(c.telefone) && !telefoneValido(c.telefone), "Telefone inválido.")} />
       </div>
       <small style={{ display: "block", marginTop: "var(--esp-3)" }}>Seus dados de cartão viajam por conexão segura, são usados só para autorizar este pagamento e não ficam guardados na Paysi.</small>
     </div>

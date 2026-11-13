@@ -8,7 +8,9 @@ import com.paysi.core.error.ValidationException;
 import com.paysi.identity.domain.PersonType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.util.Map;
@@ -53,6 +55,7 @@ public record CreateOrderRequest(
             @Size(max = 200) String legalName,
             @Size(max = 32) String municipalReg,
             @Valid BuyerAddress address,
+            @NotBlank @Pattern(regexp = "(?:\\D*\\d){10,13}\\D*", message = "Informe o celular com DDD")
             @Size(max = 32) String phone,
             @JsonAnySetter Map<String, Object> unknown
     ) {

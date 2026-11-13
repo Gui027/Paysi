@@ -24,6 +24,7 @@ test.describe("checkout — integração com o sistema do vendedor", () => {
     await expect(page.getByLabel(/nome completo/i)).toHaveValue("Ana Souza");
     await expect(page.getByLabel(/e-mail/i)).toHaveValue("ana@exemplo.com");
     await page.getByLabel(/cpf/i).fill("39053344705");
+    await page.getByLabel(/celular \/ whatsapp/i).fill("11999998888");
     await page.getByRole("radio", { name: "Cartão" }).check();
     await page.getByLabel(/nome impresso no cartão/i).fill("ANA SOUZA");
     await page.getByLabel(/número do cartão/i).fill("4111111111111111");
@@ -50,6 +51,7 @@ test.describe("checkout — integração com o sistema do vendedor", () => {
     await page.getByLabel(/nome completo/i).fill("Maria Compradora");
     await page.getByLabel(/e-mail/i).fill("maria@example.com");
     await page.getByLabel(/cpf/i).fill("39053344705");
+    await page.getByLabel(/celular \/ whatsapp/i).fill("11999998888");
     await page.getByRole("radio", { name: "Cartão" }).check();
     await page.getByLabel(/nome impresso no cartão/i).fill("MARIA COMPRADORA");
     await page.getByLabel(/número do cartão/i).fill("4111111111111111");
@@ -72,6 +74,7 @@ test.describe("checkout — integração com o sistema do vendedor", () => {
     await page.getByLabel(/nome completo/i).fill("Maria Compradora");
     await page.getByLabel(/e-mail/i).fill("maria@example.com");
     await page.getByLabel(/cpf/i).fill("39053344705");
+    await page.getByLabel(/celular \/ whatsapp/i).fill("11999998888");
     await page.getByRole("radio", { name: "Cartão" }).check();
     await page.getByLabel(/nome impresso no cartão/i).fill("MARIA COMPRADORA");
     await page.getByLabel(/número do cartão/i).fill("4111111111111111");
@@ -88,7 +91,7 @@ test.describe("checkout — integração com o sistema do vendedor", () => {
   });
 });
 
-test.describe("checkout — celular opcional do comprador", () => {
+test.describe("checkout — celular do comprador", () => {
   test("envia o celular só com dígitos quando informado", async ({ page }) => {
     await mockOferta(page);
     let corpo: { buyer?: Record<string, unknown> } | null = null;

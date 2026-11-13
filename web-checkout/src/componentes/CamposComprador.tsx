@@ -1,6 +1,6 @@
 import { PersonType } from "../lib/checkout";
 import { ChaveCampo, rotuloCampo } from "../lib/camposComprador";
-import { formatarDocumento } from "../lib/documento";
+import { formatarCpfCnpj } from "../lib/documento";
 import { formatarCep } from "../lib/mascaras";
 import { Campo } from "./Campo";
 
@@ -34,7 +34,7 @@ export function CamposComprador({ campos, values, errors, personType, onChange }
 }
 
 function transformar(key: ChaveCampo, value: string, personType: PersonType): string {
-  if (key === "taxId") return formatarDocumento(value, personType);
+  if (key === "taxId") return formatarCpfCnpj(value);
   if (key === "address.zipCode") return formatarCep(value);
   if (key === "address.state") return value.toUpperCase();
   return value;

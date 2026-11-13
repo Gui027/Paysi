@@ -75,17 +75,16 @@ export type CartaoDigitado = {
   cvv: string;
   cep: string;
   numeroEndereco: string;
-  telefone: string;
 };
 
-export function cartaoCompleto(c: CartaoDigitado, agora: Date = new Date()): boolean {
+export function cartaoCompleto(c: CartaoDigitado, telefone: string, agora: Date = new Date()): boolean {
   return numeroCartaoValido(c.numero) && validadeValida(c.validade, agora) && cvvValido(c.cvv)
     && c.nome.trim().length > 1 && cepValido(c.cep) && c.numeroEndereco.trim().length > 0
-    && telefoneValido(c.telefone);
+    && telefoneValido(telefone);
 }
 
 /** "MM/AA" vira mês e ano de quatro dígitos, como a API espera; só dígitos nos demais campos. */
-export function montarDadosCartao(c: CartaoDigitado): DadosCartao {
+export function montarDadosCartao(c: CartaoDigitado, telefone: string): DadosCartao {
   const validade = apenasDigitos(c.validade);
   return {
     holderName: c.nome.trim(),
@@ -95,6 +94,6 @@ export function montarDadosCartao(c: CartaoDigitado): DadosCartao {
     ccv: apenasDigitos(c.cvv),
     postalCode: apenasDigitos(c.cep),
     addressNumber: c.numeroEndereco.trim(),
-    phone: apenasDigitos(c.telefone),
+    phone: apenasDigitos(telefone),
   };
 }

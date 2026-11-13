@@ -21,8 +21,8 @@ export function contractFixture(overrides: Partial<Record<string, unknown>> = {}
     methods: ["PIX", "CARD", "BOLETO"],
     installments: 3,
     requiredBuyerFields: {
-      PF: ["name", "email", "taxId"],
-      PJ: ["name", "email", "taxId", "legalName"],
+      PF: ["name", "email", "personType", "taxId", "phone"],
+      PJ: ["name", "email", "personType", "taxId", "phone"],
     },
     appearance: {
       logoUrl: null,
@@ -156,13 +156,13 @@ export async function preencherComprador(page: Page) {
   await page.getByLabel(/nome completo/i).fill("Maria Compradora");
   await page.getByLabel(/e-mail/i).fill("maria@example.com");
   await page.getByLabel(/cpf/i).fill("39053344705");
+  await page.getByLabel(/celular \/ whatsapp/i).fill("11999998888");
 }
 
-/** CEP, número e telefone do titular: a Asaas exige para tokenizar o cartão. */
+/** CEP e número do titular: a Asaas exige para tokenizar o cartão. */
 export async function preencherTitularDoCartao(page: Page) {
   await page.getByLabel(/cep do titular/i).fill("01310100");
   await page.getByLabel(/número do endereço/i).fill("10");
-  await page.getByLabel(/telefone com ddd/i).fill("11999998888");
 }
 
 export async function aceitarTermos(page: Page) {
