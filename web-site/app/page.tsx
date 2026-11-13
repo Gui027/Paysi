@@ -10,9 +10,21 @@ import { StatsRow } from "@/components/StatsRow";
 import { Timeline } from "@/components/Timeline";
 import { ConversionTabs } from "@/components/ConversionTabs";
 
+const websiteStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Paysi",
+  alternateName: "paysi.com.br",
+  url: "https://paysi.com.br/",
+};
+
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteStructuredData) }}
+      />
       <Header />
       <main id="recursos">
         <Hero />
