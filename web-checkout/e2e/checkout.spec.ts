@@ -208,6 +208,7 @@ test.describe("checkout — fluxo feliz por método de pagamento", () => {
 
     await preencherComprador(page);
     await page.getByRole("radio", { name: "Pix" }).check();
+    await expect(page.getByRole("heading", { name: /3\s*Entrega/i })).toBeVisible();
     await page.getByLabel(/^cep$/i).fill("01310100");
     await expect(page.getByText("Endereço localizado.")).toBeVisible();
     await page.getByLabel(/^número$/i).fill("1000");

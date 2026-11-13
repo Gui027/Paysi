@@ -213,6 +213,7 @@ a { color: var(--texto-link); }
   background: white;
 }
 .card-payment-panel .field-grid input { background: white; }
+.delivery-section { margin: 24px 0 20px; }
 .provider-frame { padding: 0; border: 0; background: transparent; }
 .provider-frame .field-grid { margin: 0; }
 .installments-field { display: grid; gap: 6px; margin: 12px 0 0; color: var(--texto-apoio); font-size: 12.5px; font-weight: 500; }

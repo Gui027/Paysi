@@ -303,7 +303,7 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
 
       <h2 className="section-heading"><span className="step">{customerDefinesAmount ? 3 : 2}</span>Forma de pagamento</h2>
       <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); setDadosCartao(null); }} disponiveis={disponiveis} />
-      {exigeEndereco && (
+      {metodo === "cartao" && contract.segment !== "PHYSICAL" && (
         <div className="payment-address-fields">
           <CamposComprador campos={["address.zipCode", "address.number"]}
             values={values} errors={errors} personType={personType} onChange={change} />
@@ -327,6 +327,19 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
             </label>
           )}
         </div>
+      )}
+
+      {contract.segment === "PHYSICAL" && (
+        <section className="delivery-section" aria-labelledby="delivery-title">
+          <h2 id="delivery-title" className="section-heading">
+            <span className="step">{customerDefinesAmount ? 4 : 3}</span>Entrega
+          </h2>
+          <CamposComprador campos={["address.zipCode", "address.number"]}
+            values={values} errors={errors} personType={personType} onChange={change} />
+          <small className="field-hint" role="status">
+            {consultandoCep ? "Buscando endereço…" : cepResolvido ? "Endereço localizado." : "Informe o CEP para localizar o endereço."}
+          </small>
+        </section>
       )}
 
       <div className="coupon-area">
