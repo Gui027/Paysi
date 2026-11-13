@@ -42,7 +42,7 @@ public class CardPaymentService {
         }
         var result = provider.charge(new ProviderPaymentRequest(charge.orderId(), charge.amountCents(),
                 ProviderPaymentMethod.CARD, charge.installments(), command.cardToken(),
-                charge.buyer(), charge.split()));
+                charge.buyer(), charge.split(), null, command.evidence().ip()));
         return persist(chargeId, result, command.evidence(), false);
     }
 

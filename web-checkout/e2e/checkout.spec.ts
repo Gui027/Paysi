@@ -283,7 +283,7 @@ test.describe("checkout — acessibilidade e teclado", () => {
     await page.keyboard.type("maria@example.com");
     await page.keyboard.press("Tab");
     await page.keyboard.type("39053344705");
-    await page.keyboard.press("Tab");
+    await page.getByLabel(/^telefone$/i).focus();
     await page.keyboard.type("11999998888");
 
     // Navega até o rádio "Pix" e seleciona via teclado.

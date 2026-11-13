@@ -4,11 +4,17 @@ import java.util.UUID;
 
 public record ProviderPaymentRequest(UUID orderId, long amountCents, ProviderPaymentMethod method,
                                      int installments, String paymentToken, ProviderBuyer buyer,
-                                     ProviderSplit split, Integer boletoDueDays) {
+                                     ProviderSplit split, Integer boletoDueDays, String remoteIp) {
     public ProviderPaymentRequest(UUID orderId, long amountCents, ProviderPaymentMethod method,
                                   int installments, String paymentToken, ProviderBuyer buyer,
                                   ProviderSplit split) {
-        this(orderId, amountCents, method, installments, paymentToken, buyer, split, null);
+        this(orderId, amountCents, method, installments, paymentToken, buyer, split, null, null);
+    }
+
+    public ProviderPaymentRequest(UUID orderId, long amountCents, ProviderPaymentMethod method,
+                                  int installments, String paymentToken, ProviderBuyer buyer,
+                                  ProviderSplit split, Integer boletoDueDays) {
+        this(orderId, amountCents, method, installments, paymentToken, buyer, split, boletoDueDays, null);
     }
 
     public ProviderPaymentRequest {
@@ -42,6 +48,6 @@ public record ProviderPaymentRequest(UUID orderId, long amountCents, ProviderPay
         return "ProviderPaymentRequest[orderId=" + orderId + ", amountCents=" + amountCents
                 + ", method=" + method + ", installments=" + installments
                 + ", paymentToken=[REDACTED], buyer=[REDACTED], split=" + split
-                + ", boletoDueDays=" + boletoDueDays + "]";
+                + ", boletoDueDays=" + boletoDueDays + ", remoteIp=[REDACTED]]";
     }
 }

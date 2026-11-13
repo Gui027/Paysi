@@ -56,7 +56,8 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
     .filter(method => contract.methods.includes(method))
     .map(method => METHOD_TO_METODO[method]);
   const personType: PersonType = inferirTipoPessoa(values.taxId ?? "");
-  const campos: ChaveCampo[] = ["name", "email", "taxId"];
+  const campos: ChaveCampo[] = ["name", "email", "taxId",
+    ...(metodo === "cartao" ? ["address.zipCode", "address.number"] as ChaveCampo[] : [])];
   const paymentMethod = METODO_TO_METHOD[metodo];
   const selectedInstallments = metodo === "cartao" ? installments : 1;
   const customerDefinesAmount = contract.pricingMode === "CUSTOMER_DEFINED";
@@ -252,19 +253,26 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
 
       <h2 className="section-heading"><span className="step">{customerDefinesAmount ? 2 : 1}</span>Seus dados</h2>
       <div className="buyer-fields-layout">
-        <CamposComprador campos={campos} values={values} errors={errors} personType={personType} onChange={change} />
+        <CamposComprador campos={campos.filter(key => !key.startsWith("address."))}
+          values={values} errors={errors} personType={personType} onChange={change} />
         <div className="field-grid buyer-phone">
           <Campo id="phone" label="Telefone" hideLabel type="tel" inputMode="tel" autoComplete="tel"
             placeholder="Telefone com DDD" value={values.phone ?? ""} error={errors.phone} maxLength={15}
             onChange={event => { setValues(current => ({ ...current, phone: formatarTelefone(event.target.value) })); setErrors(current => ({ ...current, phone: undefined })); setGeneralError(null); }} />
         </div>
+        {metodo === "cartao" && (
+          <CamposComprador campos={["address.zipCode", "address.number"]}
+            values={values} errors={errors} personType={personType} onChange={change} />
+        )}
       </div>
 
       <h2 className="section-heading"><span className="step">{customerDefinesAmount ? 3 : 2}</span>Forma de pagamento</h2>
       <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); setDadosCartao(null); }} disponiveis={disponiveis} />
       {metodo === "cartao" && (
         <div className="card-payment-panel">
-          <CampoDeCartao nomeTitular={values.name ?? ""} telefone={values.phone ?? ""} onDados={setDadosCartao} />
+          <CampoDeCartao nomeTitular={values.name ?? ""} telefone={values.phone ?? ""}
+            cepTitular={values["address.zipCode"] ?? ""} numeroEndereco={values["address.number"] ?? ""}
+            onDados={setDadosCartao} />
           {contract.installments > 1 && (
             <label className="installments-field">Parcelas
               <select value={installments} onChange={event => { setInstallments(Number(event.target.value)); invalidarSimulacao(); }}>

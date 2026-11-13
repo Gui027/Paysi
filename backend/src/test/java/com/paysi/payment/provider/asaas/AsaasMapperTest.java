@@ -70,7 +70,7 @@ class AsaasMapperTest {
     @Test
     void installmentCardUsesTotalValueAndInstallmentCount() {
         var request = new ProviderPaymentRequest(UUID.randomUUID(), 30_000, ProviderPaymentMethod.CARD,
-                3, "tok_abc", BUYER, new ProviderSplit(24_000, 1_500, 4_500));
+                3, "tok_abc", BUYER, new ProviderSplit(24_000, 1_500, 4_500), null, "203.0.113.42");
         var created = AsaasMapper.toCreateRequest(request, "cus_123");
 
         assertThat(created.billingType()).isEqualTo("CREDIT_CARD");
@@ -78,6 +78,15 @@ class AsaasMapperTest {
         assertThat(created.totalValue()).isEqualByComparingTo("300.00");
         assertThat(created.installmentCount()).isEqualTo(3);
         assertThat(created.creditCardToken()).isEqualTo("tok_abc");
+        assertThat(created.remoteIp()).isEqualTo("203.0.113.42");
+    }
+
+    @Test
+    void nonCardPaymentDoesNotSendRemoteIp() {
+        var request = new ProviderPaymentRequest(UUID.randomUUID(), 10_000, ProviderPaymentMethod.PIX,
+                1, null, BUYER, new ProviderSplit(8_000, 500, 1_500), null, "203.0.113.42");
+
+        assertThat(AsaasMapper.toCreateRequest(request, "cus_123").remoteIp()).isNull();
     }
 
     @Test

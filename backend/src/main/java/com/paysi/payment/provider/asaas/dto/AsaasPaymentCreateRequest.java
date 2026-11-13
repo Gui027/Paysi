@@ -16,7 +16,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AsaasPaymentCreateRequest(String customer, String billingType, BigDecimal value,
         BigDecimal totalValue, Integer installmentCount, LocalDate dueDate, String description,
-        String externalReference, String creditCardToken, List<SplitItem> split) {
+        String externalReference, String creditCardToken, List<SplitItem> split, String remoteIp) {
 
     public record SplitItem(String walletId, BigDecimal fixedValue) {
     }

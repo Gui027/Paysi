@@ -159,10 +159,10 @@ export async function preencherComprador(page: Page) {
   await page.getByLabel(/^telefone$/i).fill("11999998888");
 }
 
-/** CEP e número do titular: a Asaas exige para tokenizar o cartão. */
+/** Endereço de cobrança: aparece nos dados do comprador, mas a Asaas o exige na tokenização. */
 export async function preencherTitularDoCartao(page: Page) {
-  await page.getByLabel(/cep do titular/i).fill("01310100");
-  await page.getByLabel(/número do endereço/i).fill("10");
+  await page.getByLabel(/^cep$/i).fill("01310100");
+  await page.getByLabel(/^número$/i).fill("10");
 }
 
 export async function aceitarTermos(page: Page) {

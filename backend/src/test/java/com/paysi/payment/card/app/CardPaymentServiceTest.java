@@ -30,6 +30,7 @@ class CardPaymentServiceTest {
 
         assertThat(response.status()).isEqualTo("approved");
         assertThat(response.threeDs().eci()).isEqualTo("05");
+        verify(fixture.provider).charge(argThat(request -> "127.0.0.1".equals(request.remoteIp())));
         verify(fixture.repository).saveEvidence(CHARGE, command().evidence(),
                 new ProviderThreeDs("AUTHENTICATED", null, "05"));
     }

@@ -46,7 +46,8 @@ final class AsaasMapper {
                 installment ? amount : null,
                 installment ? request.installments() : null,
                 dueDate, "Pedido " + request.orderId(), request.orderId().toString(),
-                creditCardToken, toSplit(request.split()));
+                creditCardToken, toSplit(request.split()),
+                request.method() == ProviderPaymentMethod.CARD ? request.remoteIp() : null);
     }
 
     /** Só entra na lista quem tem subconta (walletId) e valor positivo; sem isso a Asaas não faz split. */

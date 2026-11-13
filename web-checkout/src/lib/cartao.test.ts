@@ -48,11 +48,11 @@ const digitado = {
   numero: "4111 1111 1111 1111",
   validade: "12/30",
   cvv: "123",
-  cep: "01310-100",
-  numeroEndereco: "10",
 };
 const telefone = "(11) 99999-8888";
 const nomeTitular = "  Ana Souza ";
+const cepTitular = "01310-100";
+const numeroEndereco = "10";
 
 test("valida e formata CEP e telefone", () => {
   assert.equal(formatarCep("01310100"), "01310-100");
@@ -65,14 +65,14 @@ test("valida e formata CEP e telefone", () => {
 
 test("cartão só está completo com endereço e o telefone do comprador (exigidos pelo provedor)", () => {
   const agora = new Date(2026, 5, 15);
-  assert.equal(cartaoCompleto(digitado, nomeTitular, telefone, agora), true);
-  assert.equal(cartaoCompleto({ ...digitado, cep: "" }, nomeTitular, telefone, agora), false);
-  assert.equal(cartaoCompleto(digitado, nomeTitular, "12", agora), false);
-  assert.equal(cartaoCompleto({ ...digitado, numeroEndereco: " " }, nomeTitular, telefone, agora), false);
+  assert.equal(cartaoCompleto(digitado, nomeTitular, telefone, cepTitular, numeroEndereco, agora), true);
+  assert.equal(cartaoCompleto(digitado, nomeTitular, telefone, "", numeroEndereco, agora), false);
+  assert.equal(cartaoCompleto(digitado, nomeTitular, "12", cepTitular, numeroEndereco, agora), false);
+  assert.equal(cartaoCompleto(digitado, nomeTitular, telefone, cepTitular, " ", agora), false);
 });
 
 test("monta os dados do cartão só com dígitos e validade em mês e ano de 4 dígitos", () => {
-  assert.deepEqual(montarDadosCartao(digitado, nomeTitular, telefone), {
+  assert.deepEqual(montarDadosCartao(digitado, nomeTitular, telefone, cepTitular, numeroEndereco), {
     holderName: "Ana Souza",
     number: "4111111111111111",
     expiryMonth: "12",
@@ -82,5 +82,6 @@ test("monta os dados do cartão só com dígitos e validade em mês e ano de 4 d
     addressNumber: "10",
     phone: "11999998888",
   });
-  assert.equal(montarDadosCartao({ ...digitado, validade: "03/29" }, nomeTitular, telefone).expiryMonth, "3");
+  assert.equal(montarDadosCartao({ ...digitado, validade: "03/29" }, nomeTitular, telefone,
+    cepTitular, numeroEndereco).expiryMonth, "3");
 });
