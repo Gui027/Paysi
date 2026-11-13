@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { ResumoDaOferta } from "./componentes/ResumoDaOferta";
 import { CheckoutForm } from "./telas/CheckoutForm";
 import { ApiRequestError } from "./lib/api";
@@ -43,7 +43,7 @@ export function App() {
   return (
     <main className="checkout-shell">
       <ResumoDaOferta contract={contract} />
-      <section className="form-column">
+      <section className="form-column" style={{ "--checkout-color": contract.appearance.primaryColor } as CSSProperties}>
         {preview && <p className="preview-banner" role="status">Modo de pré-visualização — esta página não processa pagamentos reais.</p>}
         <CheckoutForm slug={target.value} contract={contract} preview={preview} />
         <footer>

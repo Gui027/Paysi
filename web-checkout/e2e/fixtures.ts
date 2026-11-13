@@ -156,7 +156,7 @@ export async function preencherComprador(page: Page) {
   await page.getByLabel(/nome completo/i).fill("Maria Compradora");
   await page.getByLabel(/e-mail/i).fill("maria@example.com");
   await page.getByLabel(/cpf/i).fill("39053344705");
-  await page.getByLabel(/celular \/ whatsapp/i).fill("11999998888");
+  await page.getByLabel(/^telefone$/i).fill("11999998888");
 }
 
 /** CEP e número do titular: a Asaas exige para tokenizar o cartão. */
@@ -166,5 +166,5 @@ export async function preencherTitularDoCartao(page: Page) {
 }
 
 export async function aceitarTermos(page: Page) {
-  await page.getByRole("checkbox", { name: /li e aceito os/i }).check();
+  await page.getByText(/ao clicar no botão acima/i).waitFor();
 }

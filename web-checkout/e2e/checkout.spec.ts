@@ -59,12 +59,12 @@ test.describe("checkout — pré-visualização do vendedor", () => {
 });
 
 test.describe("checkout — validação", () => {
-  test("bloqueia envio sem preencher comprador nem aceitar termos", async ({ page }) => {
+  test("bloqueia envio sem preencher os dados do comprador", async ({ page }) => {
     await mockOferta(page);
     await page.goto(`/${OFERTA_SLUG}`);
     await page.getByRole("button", { name: /pagar agora/i }).click();
     await expect(page.getByRole("alert").first()).toBeVisible();
-    await expect(page.getByText(/é preciso aceitar os termos/i)).toBeVisible();
+    await expect(page.getByText(/informe o celular com ddd/i)).toBeVisible();
   });
 
   test("CPF inválido é rejeitado", async ({ page }) => {
@@ -91,7 +91,8 @@ test.describe("checkout — validação", () => {
     await page.getByLabel(/nome completo/i).fill("Empresa Compradora");
     await page.getByLabel(/e-mail/i).fill("financeiro@empresa.com.br");
     await page.getByLabel(/cpf\/cnpj/i).fill("11222333000181");
-    await page.getByLabel(/celular \/ whatsapp/i).fill("11999998888");
+    await page.getByLabel(/^telefone$/i).fill("11999998888");
+    await page.getByRole("radio", { name: "Pix" }).check();
     await expect(page.getByRole("radio", { name: /pessoa física|pessoa jurídica/i })).toHaveCount(0);
     await expect(page.getByLabel(/razão social|inscrição municipal|cep$/i)).toHaveCount(0);
     await aceitarTermos(page);
@@ -118,6 +119,7 @@ test.describe("checkout — fluxo feliz por método de pagamento", () => {
     await expect(page.getByText(/você decide o valor/i)).toBeVisible();
     await page.getByLabel(/valor a pagar/i).fill("49,90");
     await preencherComprador(page);
+    await page.getByRole("radio", { name: "Pix" }).check();
     await aceitarTermos(page);
     await page.getByRole("button", { name: /pagar agora/i }).click();
 
@@ -164,10 +166,9 @@ test.describe("checkout — fluxo feliz por método de pagamento", () => {
 
     await preencherComprador(page);
     await page.getByRole("radio", { name: "Cartão" }).check();
-    await page.getByLabel(/nome impresso no cartão/i).fill("MARIA COMPRADORA");
     await page.getByLabel(/número do cartão/i).fill("4111111111111111");
     await page.getByLabel(/validade/i).fill("1230");
-    await page.getByLabel(/cvv/i).fill("123");
+    await page.getByLabel(/segurança/i).fill("123");
     await preencherTitularDoCartao(page);
     await aceitarTermos(page);
     await page.getByRole("button", { name: /pagar agora/i }).click();
@@ -185,10 +186,9 @@ test.describe("checkout — fluxo feliz por método de pagamento", () => {
 
     await preencherComprador(page);
     await page.getByRole("radio", { name: "Cartão" }).check();
-    await page.getByLabel(/nome impresso no cartão/i).fill("MARIA COMPRADORA");
     await page.getByLabel(/número do cartão/i).fill("4111111111111111");
     await page.getByLabel(/validade/i).fill("1230");
-    await page.getByLabel(/cvv/i).fill("123");
+    await page.getByLabel(/segurança/i).fill("123");
     await preencherTitularDoCartao(page);
     await aceitarTermos(page);
     await page.getByRole("button", { name: /pagar agora/i }).click();
@@ -210,10 +210,9 @@ test.describe("checkout — fluxo feliz por método de pagamento", () => {
 
     await preencherComprador(page);
     await page.getByRole("radio", { name: "Cartão" }).check();
-    await page.getByLabel(/nome impresso no cartão/i).fill("MARIA COMPRADORA");
     await page.getByLabel(/número do cartão/i).fill("4111111111111111");
     await page.getByLabel(/validade/i).fill("1230");
-    await page.getByLabel(/cvv/i).fill("123");
+    await page.getByLabel(/segurança/i).fill("123");
     await preencherTitularDoCartao(page);
     await aceitarTermos(page);
     await page.getByRole("button", { name: /pagar agora/i }).click();
@@ -253,9 +252,6 @@ test.describe("checkout — acessibilidade e teclado", () => {
     await pixRadio.focus();
     await page.keyboard.press("Space");
     await expect(pixRadio).toBeChecked();
-
-    await page.getByRole("checkbox", { name: /li e aceito os/i }).focus();
-    await page.keyboard.press("Space");
 
     await page.getByRole("button", { name: /pagar agora/i }).focus();
     await page.keyboard.press("Enter");

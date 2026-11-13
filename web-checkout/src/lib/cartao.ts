@@ -69,7 +69,6 @@ export type DadosCartao = {
 };
 
 export type CartaoDigitado = {
-  nome: string;
   numero: string;
   validade: string;
   cvv: string;
@@ -77,17 +76,17 @@ export type CartaoDigitado = {
   numeroEndereco: string;
 };
 
-export function cartaoCompleto(c: CartaoDigitado, telefone: string, agora: Date = new Date()): boolean {
+export function cartaoCompleto(c: CartaoDigitado, nomeTitular: string, telefone: string, agora: Date = new Date()): boolean {
   return numeroCartaoValido(c.numero) && validadeValida(c.validade, agora) && cvvValido(c.cvv)
-    && c.nome.trim().length > 1 && cepValido(c.cep) && c.numeroEndereco.trim().length > 0
+    && nomeTitular.trim().length > 1 && cepValido(c.cep) && c.numeroEndereco.trim().length > 0
     && telefoneValido(telefone);
 }
 
 /** "MM/AA" vira mês e ano de quatro dígitos, como a API espera; só dígitos nos demais campos. */
-export function montarDadosCartao(c: CartaoDigitado, telefone: string): DadosCartao {
+export function montarDadosCartao(c: CartaoDigitado, nomeTitular: string, telefone: string): DadosCartao {
   const validade = apenasDigitos(c.validade);
   return {
-    holderName: c.nome.trim(),
+    holderName: nomeTitular.trim(),
     number: apenasDigitos(c.numero),
     expiryMonth: String(Number(validade.slice(0, 2))),
     expiryYear: `20${validade.slice(2, 4)}`,

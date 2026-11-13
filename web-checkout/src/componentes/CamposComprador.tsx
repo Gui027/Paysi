@@ -20,6 +20,8 @@ export function CamposComprador({ campos, values, errors, personType, onChange }
           key={key}
           id={key}
           label={rotuloCampo(key, personType)}
+          hideLabel
+          placeholder={rotuloCampo(key, personType)}
           full={FULL_WIDTH.has(key)}
           error={errors[key]}
           value={values[key] ?? ""}

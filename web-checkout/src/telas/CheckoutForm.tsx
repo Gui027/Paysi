@@ -40,9 +40,7 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
   const [couponError, setCouponError] = useState<string | null>(null);
   const [simulando, setSimulando] = useState(false);
   const [simulacao, setSimulacao] = useState<SimulacaoCheckout | null>(null);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [termsError, setTermsError] = useState<string | null>(null);
-  const [metodo, setMetodo] = useState<Metodo>(METHOD_TO_METODO[contract.methods[0] ?? "PIX"]);
+  const [metodo, setMetodo] = useState<Metodo>(METHOD_TO_METODO[contract.methods.includes("CARD") ? "CARD" : (contract.methods[0] ?? "PIX")]);
   const [installments, setInstallments] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -53,7 +51,9 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
   const termsHashRef = useRef<string | null>(null);
   const simulationVersion = useRef(0);
 
-  const disponiveis = contract.methods.map(method => METHOD_TO_METODO[method]);
+  const disponiveis = (["CARD", "PIX", "BOLETO"] as PaymentMethod[])
+    .filter(method => contract.methods.includes(method))
+    .map(method => METHOD_TO_METODO[method]);
   const personType: PersonType = inferirTipoPessoa(values.taxId ?? "");
   const campos: ChaveCampo[] = ["name", "email", "taxId"];
   const paymentMethod = METODO_TO_METHOD[metodo];
@@ -133,15 +133,13 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
     // na tokenização do cartão, sem pedir o mesmo dado duas vezes.
     const telefone = (values.phone ?? "").replace(/\D/g, "");
     if (telefone.length < 10 || telefone.length > 13) nextErrors.phone = "Informe o celular com DDD.";
-    const hasTermsError = !termsAccepted;
     const hasCouponError = couponVisible && Boolean(coupon.trim()) && !simulacao;
     const hasCardError = metodo === "cartao" && !dadosCartao;
     const amountCents = selectedAmount();
     const hasAmountError = customerDefinesAmount && amountCents === null;
     setErrors(nextErrors);
-    setTermsError(hasTermsError ? "É preciso aceitar os termos para continuar." : null);
     setCouponError(hasCouponError ? "Valide o cupom antes de continuar." : null);
-    if (Object.values(nextErrors).some(Boolean) || hasTermsError || hasCouponError || hasCardError || hasAmountError) {
+    if (Object.values(nextErrors).some(Boolean) || hasCouponError || hasCardError || hasAmountError) {
       setGeneralError(hasCardError ? "Preencha os dados do cartão corretamente." : "Revise os campos destacados.");
       return;
     }
@@ -251,43 +249,21 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
 
       {customerDefinesAmount && <><div><span className="step">1</span><h2>Escolha o valor</h2></div><div className="field-grid customer-amount"><Campo id="amount" label={`Valor a pagar (mínimo ${formatarCentavos(contract.priceCents)})`} inputMode="decimal" placeholder="0,00" full value={amountText} error={amountError ?? undefined} onChange={event => { setAmountText(event.target.value); setAmountError(null); invalidarSimulacao(); }} /></div></>}
 
-      <div><span className="step">{customerDefinesAmount ? 2 : 1}</span><h2>Quem está comprando</h2></div>
-      <CamposComprador campos={campos} values={values} errors={errors} personType={personType} onChange={change} />
-      <div className="field-grid">
-        <Campo id="phone" label="Celular / WhatsApp" type="tel" inputMode="tel" autoComplete="tel" full
-          placeholder="(11) 99999-9999" value={values.phone ?? ""} error={errors.phone}
-          onChange={event => { setValues(current => ({ ...current, phone: event.target.value })); setErrors(current => ({ ...current, phone: undefined })); }} />
+      <h2 className="sr-only">Quem está comprando</h2>
+      <div className="buyer-fields-layout">
+        <CamposComprador campos={campos} values={values} errors={errors} personType={personType} onChange={change} />
+        <div className="field-grid buyer-phone">
+          <Campo id="phone" label="Telefone" hideLabel type="tel" inputMode="tel" autoComplete="tel"
+            placeholder="Telefone com DDD" value={values.phone ?? ""} error={errors.phone}
+            onChange={event => { setValues(current => ({ ...current, phone: event.target.value })); setErrors(current => ({ ...current, phone: undefined })); }} />
+        </div>
       </div>
 
-      <div className="section-title"><span className="step">{customerDefinesAmount ? 3 : 2}</span><h2>Cupom de desconto</h2></div>
-      {!couponVisible ? (
-        <button type="button" className="link-button" onClick={() => setCouponVisible(true)}>Tenho um cupom</button>
-      ) : (
-        <label htmlFor="coupon">Código do cupom
-          <span className="coupon-row">
-            <input id="coupon" value={coupon} autoComplete="off" aria-invalid={Boolean(couponError)}
-              aria-describedby={couponError ? "coupon-error" : "coupon-hint"}
-              onChange={event => { setCoupon(event.target.value.toUpperCase()); invalidarSimulacao(); }} />
-            <button type="button" className="secondary-button" disabled={simulando} onClick={() => void aplicarCupom()}>
-              {simulando ? "Validando…" : "Aplicar"}
-            </button>
-          </span>
-          {couponError
-            ? <small id="coupon-error" className="field-error" role="alert">{couponError}</small>
-            : <small id="coupon-hint" className="field-hint">O desconto é calculado exclusivamente pela Paysi.</small>}
-          {simulacao && (
-            <span className="coupon-result" role="status">
-              <span>Desconto <strong>− {formatarCentavos(simulacao.discountCents)}</strong></span>
-              <span>Total após cupom <strong>{formatarCentavos(simulacao.paidCents)}</strong></span>
-            </span>
-          )}
-        </label>
-      )}
-
-      <div className="section-title"><span className="step">{customerDefinesAmount ? 4 : 3}</span><h2>Pagamento</h2></div>
+      <h2 className="sr-only">Pagamento</h2>
       <SeletorDeMetodo value={metodo} onChange={next => { setMetodo(next); invalidarSimulacao(); setDadosCartao(null); }} disponiveis={disponiveis} />
       {metodo === "cartao" && (
-        <>
+        <div className="card-payment-panel">
+          <CampoDeCartao nomeTitular={values.name ?? ""} telefone={values.phone ?? ""} onDados={setDadosCartao} />
           {contract.installments > 1 && (
             <label className="installments-field">Parcelas
               <select value={installments} onChange={event => { setInstallments(Number(event.target.value)); invalidarSimulacao(); }}>
@@ -297,22 +273,43 @@ export function CheckoutForm({ slug, contract, preview = false }: { slug: string
               </select>
             </label>
           )}
-          <CampoDeCartao telefone={values.phone ?? ""} onDados={setDadosCartao} />
-        </>
+        </div>
       )}
 
-      <div className="section-title"><span className="step">{customerDefinesAmount ? 5 : 4}</span><h2>Termos</h2></div>
-      <label className="terms-check">
-        <input type="checkbox" checked={termsAccepted} onChange={event => { setTermsAccepted(event.target.checked); setTermsError(null); }} />
-        Li e aceito os <a href={contract.legalTexts.termsUrl} target="_blank" rel="noreferrer">termos de uso</a> e a{" "}
-        <a href={contract.legalTexts.privacyUrl} target="_blank" rel="noreferrer">política de privacidade</a>.
-      </label>
-      {termsError && <small className="field-error">{termsError}</small>}
+      <div className="coupon-area">
+        {!couponVisible ? (
+          <button type="button" className="link-button" onClick={() => setCouponVisible(true)}>Adicionar cupom de desconto</button>
+        ) : (
+          <label htmlFor="coupon"><span className="sr-only">Código do cupom</span>
+            <span className="coupon-row">
+              <input id="coupon" placeholder="Código do cupom" value={coupon} autoComplete="off" aria-invalid={Boolean(couponError)}
+                aria-describedby={couponError ? "coupon-error" : "coupon-hint"}
+                onChange={event => { setCoupon(event.target.value.toUpperCase()); invalidarSimulacao(); }} />
+              <button type="button" className="secondary-button" disabled={simulando} onClick={() => void aplicarCupom()}>
+                {simulando ? "Validando…" : "Aplicar"}
+              </button>
+            </span>
+            {couponError
+              ? <small id="coupon-error" className="field-error" role="alert">{couponError}</small>
+              : <small id="coupon-hint" className="field-hint">O desconto é calculado exclusivamente pela Paysi.</small>}
+            {simulacao && (
+              <span className="coupon-result" role="status">
+                <span>Desconto <strong>− {formatarCentavos(simulacao.discountCents)}</strong></span>
+                <span>Total após cupom <strong>{formatarCentavos(simulacao.paidCents)}</strong></span>
+              </span>
+            )}
+          </label>
+        )}
+      </div>
 
       <button className="pay-button" type="submit" disabled={submitting || preview} style={{ background: contract.appearance.primaryColor }}>
         {preview ? "Pagamento desativado na pré-visualização" : submitting ? "Processando…" : contract.appearance.buttonText}
       </button>
       <p className="security-note">Compra protegida e processada em ambiente seguro.</p>
+      <p className="legal-note">Ao clicar no botão acima, você declara que leu e aceita os{" "}
+        <a href={contract.legalTexts.termsUrl} target="_blank" rel="noreferrer">termos de uso</a> e a{" "}
+        <a href={contract.legalTexts.privacyUrl} target="_blank" rel="noreferrer">política de privacidade</a>.
+      </p>
     </form>
   );
 }

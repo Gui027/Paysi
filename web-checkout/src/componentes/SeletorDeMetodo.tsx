@@ -13,6 +13,7 @@ export function SeletorDeMetodo({ value, onChange, disponiveis = TODOS_OS_METODO
       {disponiveis.map((method) => (
         <label key={method} className={value === method ? "selected" : undefined}>
           <input type="radio" name="metodo" value={method} checked={value === method} onChange={() => onChange(method)} />
+          <span className={`payment-icon payment-icon-${method}`} aria-hidden="true" />
           {method === "cartao" ? "Cartão" : method === "pix" ? "Pix" : "Boleto"}
         </label>
       ))}
