@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -61,7 +63,14 @@ public class ChargeCreationService {
                 .orElseThrow(() -> new NotFoundException("ORDER_NOT_FOUND", "Pedido não encontrado"));
         OfferPaymentMethod method = OfferPaymentMethod.valueOf(ctx.method());
 
-        UUID chargeId = repository.findChargeForOrder(orderId).orElseGet(() -> create(orderId, ctx, method));
+        UUID subscriptionId = ctx.recurring()
+                ? repository.findSubscriptionForOrder(orderId).orElseGet(() ->
+                        repository.insertOrReadSubscription(UUID.randomUUID(), orderId, ctx.offerId(),
+                                command.cardToken(), clock.instant()))
+                : null;
+
+        UUID chargeId = repository.findChargeForOrder(orderId)
+                .orElseGet(() -> create(orderId, subscriptionId, ctx, method));
 
         return switch (method) {
             case CARD -> {
@@ -69,14 +78,34 @@ public class ChargeCreationService {
                         command.termsHash(), command.termsAcceptedAt());
                 var result = cardPayments.start(chargeId,
                         new CardPaymentCommand(command.cardToken(), ctx.installments(), evidence));
-                if ("approved".equals(result.status())) {
-                    saleLedger.creditForCharge(chargeId, clock.instant());
-                }
+                completeCard(chargeId, result);
                 yield ChargeStartResult.card(chargeId, result);
             }
-            case BOLETO -> ChargeStartResult.boleto(chargeId, boletoPayments.issue(chargeId, ctx.boletoDueDays()));
+            case BOLETO -> {
+                var result = boletoPayments.issue(chargeId, ctx.boletoDueDays());
+                if (subscriptionId != null) {
+                    repository.updateSubscriptionPayment(subscriptionId, "ACTIVE", nextCharge(ctx.cycle()),
+                            chargeId, null);
+                }
+                yield ChargeStartResult.boleto(chargeId, result);
+            }
             case PIX -> ChargeStartResult.pix(chargeId, pixPayments.start(chargeId));
         };
+    }
+
+    @Transactional
+    public void completeCard(UUID chargeId, com.paysi.payment.card.domain.CardPaymentResult result) {
+        Instant now = clock.instant();
+        if ("approved".equals(result.status())) {
+            repository.findRecurringCharge(chargeId).ifPresent(recurring ->
+                    repository.updateSubscriptionPayment(recurring.subscriptionId(), "ACTIVE",
+                            nextCharge(recurring.cycle()), chargeId, null));
+            saleLedger.creditForCharge(chargeId, now);
+        } else if ("declined".equals(result.status())) {
+            repository.findRecurringCharge(chargeId).ifPresent(recurring ->
+                    repository.updateSubscriptionPayment(recurring.subscriptionId(), "PAST_DUE", null,
+                            chargeId, now.plus(Duration.ofDays(1))));
+        }
     }
 
     @Transactional(readOnly = true)
@@ -91,14 +120,24 @@ public class ChargeCreationService {
                 .orElseThrow(() -> new NotFoundException("PAYMENT_NOT_FOUND", "Pagamento não encontrado"));
     }
 
-    private UUID create(UUID orderId, OrderContext ctx, OfferPaymentMethod method) {
+    private UUID create(UUID orderId, UUID subscriptionId, OrderContext ctx, OfferPaymentMethod method) {
         Plan plan = Plan.valueOf(plans.currentPlan(ctx.sellerId()));
         Split split = PriceMath.split(ctx.paidCents(), method, ctx.installments(), plan, ctx.commissionBps());
         UUID chargeId = UUID.randomUUID();
         int feeBps = PriceMath.providerMethod(method, ctx.installments()).feeBps(plan);
-        repository.insertCharge(chargeId, orderId, ctx.paidCents(), plan.name(), feeBps,
+        repository.insertCharge(chargeId, orderId, subscriptionId, ctx.paidCents(), plan.name(), feeBps,
                 SplitEngine.PLATFORM_FIXED_FEE_CENTS,
                 split.sellerFeeCents(), split.affiliateCents(), split.sellerCents(), "PENDING", clock.instant());
         return chargeId;
+    }
+
+    private Instant nextCharge(String cycle) {
+        var now = clock.instant().atZone(java.time.ZoneOffset.UTC);
+        return switch (cycle) {
+            case "QUARTERLY" -> now.plusMonths(3).toInstant();
+            case "SEMIANNUAL" -> now.plusMonths(6).toInstant();
+            case "ANNUAL" -> now.plusYears(1).toInstant();
+            default -> now.plusMonths(1).toInstant();
+        };
     }
 }

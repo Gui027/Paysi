@@ -65,6 +65,7 @@ public class ChargeController {
         var evidence = new SaleEvidenceCommand(httpRequest.getRemoteAddr(), httpRequest.getHeader("User-Agent"),
                 request.deviceKey(), request.termsHash(), request.termsAcceptedAt());
         var result = cardPayments.confirmThreeDs(chargeId, request.challengeToken(), evidence);
+        charges.completeCard(chargeId, result);
         return ChargeStartResponse.fromCard(chargeId, result);
     }
 

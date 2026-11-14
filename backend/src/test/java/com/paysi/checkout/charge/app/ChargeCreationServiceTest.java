@@ -26,8 +26,10 @@ import static org.mockito.Mockito.*;
 
 class ChargeCreationServiceTest {
     private static final UUID ORDER = UUID.randomUUID();
+    private static final UUID OFFER = UUID.randomUUID();
     private static final UUID SELLER = UUID.randomUUID();
     private static final UUID CHARGE = UUID.randomUUID();
+    private static final UUID SUBSCRIPTION = UUID.randomUUID();
     private static final UUID AFFILIATE = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-09-01T00:00:00Z");
 
@@ -41,7 +43,7 @@ class ChargeCreationServiceTest {
 
         assertThat(result.method()).isEqualTo("CARD");
         assertThat(result.card().status()).isEqualTo("approved");
-        verify(fixture.repository).insertCharge(any(), eq(ORDER), eq(10_000L), any(), anyInt(), eq(200L),
+        verify(fixture.repository).insertCharge(any(), eq(ORDER), isNull(), eq(10_000L), any(), anyInt(), eq(200L),
                 anyLong(), anyLong(), anyLong(), eq("PENDING"), eq(NOW));
         verify(fixture.saleLedger).creditForCharge(any(), eq(NOW));
     }
@@ -55,7 +57,7 @@ class ChargeCreationServiceTest {
         var result = fixture.service.start(ORDER, command("tok_1"));
 
         assertThat(result.chargeId()).isEqualTo(CHARGE);
-        verify(fixture.repository, never()).insertCharge(any(), any(), anyLong(), any(), anyInt(), anyLong(),
+        verify(fixture.repository, never()).insertCharge(any(), any(), any(), anyLong(), any(), anyInt(), anyLong(),
                 anyLong(), anyLong(), anyLong(), any(), any());
     }
 
@@ -128,6 +130,40 @@ class ChargeCreationServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
+    @Test
+    void approvedSubscriptionIsLinkedAndSchedulesItsNextMonthlyCharge() {
+        var fixture = fixture(subscriptionContext("CARD"));
+        when(fixture.repository.findSubscriptionForOrder(ORDER)).thenReturn(Optional.empty());
+        when(fixture.repository.insertOrReadSubscription(any(), eq(ORDER), eq(OFFER), eq("tok_1"), eq(NOW)))
+                .thenReturn(SUBSCRIPTION);
+        when(fixture.repository.findChargeForOrder(ORDER)).thenReturn(Optional.empty());
+        when(fixture.repository.findRecurringCharge(any())).thenReturn(Optional.of(
+                new ChargeCreationRepository.RecurringCharge(SUBSCRIPTION, "MONTHLY")));
+        when(fixture.cardPayments.start(any(), any())).thenReturn(cardResult("approved", false));
+
+        fixture.service.start(ORDER, command("tok_1"));
+
+        verify(fixture.repository).insertCharge(any(), eq(ORDER), eq(SUBSCRIPTION), eq(10_000L), any(),
+                anyInt(), eq(200L), anyLong(), anyLong(), anyLong(), eq("PENDING"), eq(NOW));
+        verify(fixture.repository).updateSubscriptionPayment(eq(SUBSCRIPTION), eq("ACTIVE"),
+                eq(Instant.parse("2026-10-01T00:00:00Z")), any(), isNull());
+    }
+
+    @Test
+    void declinedSubscriptionBecomesPastDueAndSchedulesRetry() {
+        var fixture = fixture(subscriptionContext("CARD"));
+        when(fixture.repository.findSubscriptionForOrder(ORDER)).thenReturn(Optional.of(SUBSCRIPTION));
+        when(fixture.repository.findChargeForOrder(ORDER)).thenReturn(Optional.of(CHARGE));
+        when(fixture.repository.findRecurringCharge(CHARGE)).thenReturn(Optional.of(
+                new ChargeCreationRepository.RecurringCharge(SUBSCRIPTION, "MONTHLY")));
+        when(fixture.cardPayments.start(eq(CHARGE), any())).thenReturn(cardResult("declined", false));
+
+        fixture.service.start(ORDER, command("tok_1"));
+
+        verify(fixture.repository).updateSubscriptionPayment(SUBSCRIPTION, "PAST_DUE", null,
+                CHARGE, NOW.plusSeconds(86_400));
+    }
+
     private static Fixture fixture(OrderContext context) {
         var repository = mock(ChargeCreationRepository.class);
         var plans = mock(com.paysi.identity.port.PlatformPlanReader.class);
@@ -143,8 +179,14 @@ class ChargeCreationServiceTest {
     }
 
     private static OrderContext context(String method, UUID affiliateId, int commissionBps) {
-        return new OrderContext(SELLER, affiliateId, commissionBps, 10_000, method, 1, "Comprador",
+        return new OrderContext(OFFER, SELLER, affiliateId, commissionBps, "ONE_TIME", null,
+                10_000, method, 1, "Comprador",
                 "buyer@example.com", "PF", "52998224725", 3, 7);
+    }
+
+    private static OrderContext subscriptionContext(String method) {
+        return new OrderContext(OFFER, SELLER, null, 0, "SUBSCRIPTION", "MONTHLY",
+                10_000, method, 1, "Comprador", "buyer@example.com", "PF", "52998224725", 3, 7);
     }
 
     private static StartChargeCommand command(String cardToken) {
