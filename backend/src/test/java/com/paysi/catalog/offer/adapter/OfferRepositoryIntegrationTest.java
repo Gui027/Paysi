@@ -186,7 +186,7 @@ class OfferRepositoryIntegrationTest {
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO offer_payment_methods (offer_id,method) VALUES (?,'BOLETO')
                 """, offerId)).isInstanceOf(DataAccessException.class)
-                .hasMessageContaining("Boleto disponivel apenas no segmento SAAS");
+                .hasMessageContaining("Boleto nao disponivel para produto digital");
     }
 
     private UUID digitalOffer() {
