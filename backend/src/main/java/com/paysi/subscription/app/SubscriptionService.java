@@ -147,7 +147,8 @@ public class SubscriptionService {
         UUID chargeId = UUID.randomUUID();
         Instant now = clock.instant();
         subscriptions.insertCharge(chargeId, orderId, subscriptionId, 1, offer.priceCents(), plan.name(),
-                PaymentMethod.BOLETO.feeBps(plan), 200, split.sellerFeeCents(), split.affiliateCents(),
+                PaymentMethod.BOLETO.feeBps(plan), SplitEngine.PLATFORM_FIXED_FEE_CENTS,
+                split.sellerFeeCents(), split.affiliateCents(),
                 split.sellerCents(), "PENDING", now);
 
         var result = provider.charge(new ProviderPaymentRequest(orderId, offer.priceCents(),
@@ -170,7 +171,8 @@ public class SubscriptionService {
         UUID chargeId = UUID.randomUUID();
         Instant now = clock.instant();
         subscriptions.insertCharge(chargeId, orderId, subscriptionId, cycleNumber, offer.priceCents(),
-                plan.name(), PaymentMethod.CARD_1.feeBps(plan), 200, split.sellerFeeCents(),
+                plan.name(), PaymentMethod.CARD_1.feeBps(plan), SplitEngine.PLATFORM_FIXED_FEE_CENTS,
+                split.sellerFeeCents(),
                 split.affiliateCents(), split.sellerCents(), "PENDING", now);
 
         var result = provider.charge(new ProviderPaymentRequest(orderId, offer.priceCents(),

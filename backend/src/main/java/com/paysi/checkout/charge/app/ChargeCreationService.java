@@ -14,6 +14,7 @@ import com.paysi.payment.card.domain.SaleEvidenceCommand;
 import com.paysi.payment.pix.app.PixPaymentService;
 import com.paysi.payment.split.Plan;
 import com.paysi.payment.split.Split;
+import com.paysi.payment.split.SplitEngine;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -95,7 +96,8 @@ public class ChargeCreationService {
         Split split = PriceMath.split(ctx.paidCents(), method, ctx.installments(), plan, ctx.commissionBps());
         UUID chargeId = UUID.randomUUID();
         int feeBps = PriceMath.providerMethod(method, ctx.installments()).feeBps(plan);
-        repository.insertCharge(chargeId, orderId, ctx.paidCents(), plan.name(), feeBps, 200,
+        repository.insertCharge(chargeId, orderId, ctx.paidCents(), plan.name(), feeBps,
+                SplitEngine.PLATFORM_FIXED_FEE_CENTS,
                 split.sellerFeeCents(), split.affiliateCents(), split.sellerCents(), "PENDING", clock.instant());
         return chargeId;
     }

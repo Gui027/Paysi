@@ -6,7 +6,7 @@ import java.util.Objects;
 
 /** Fonte única da divisão. Vendedor recebe o residual exato. */
 public final class SplitEngine {
-    public static final long PLATFORM_FIXED_FEE_CENTS = 0;
+    public static final long PLATFORM_FIXED_FEE_CENTS = 200;
     private static final int MAX_COMMISSION_BPS = 5_000;
 
     private SplitEngine() {}
@@ -26,6 +26,9 @@ public final class SplitEngine {
         long platformNet = Math.subtractExact(sellerFee, providerCost);
 
         Split result = new Split(seller, affiliate, platformNet, providerCost, sellerFee);
+        if (platformNet < 0) {
+            throw new IllegalArgumentException("custo do provedor excede a taxa da plataforma");
+        }
         if (seller < 0 || affiliate < 0 || providerCost < 0 || result.allocatedCents() != paidCents) {
             throw new IllegalArgumentException("divisão inválida para os parâmetros informados");
         }

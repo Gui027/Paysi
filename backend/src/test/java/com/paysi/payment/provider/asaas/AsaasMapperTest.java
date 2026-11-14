@@ -115,11 +115,13 @@ class AsaasMapperTest {
 
     @Test
     void pendingCardChargeWithChallengeUrlIsExposedAsChallengeRequired() {
-        var response = new AsaasPaymentResponse("pay_1", "PENDING", new BigDecimal("100.00"), null,
+        var response = new AsaasPaymentResponse("pay_1", "PENDING", new BigDecimal("100.00"),
+                new BigDecimal("96.52"),
                 null, null, null, LocalDate.now(), "https://asaas.com/3ds/challenge");
         var result = AsaasMapper.toChargeResult(response, ProviderPaymentMethod.CARD, 1, null);
 
         assertThat(result.status()).isEqualTo(ProviderChargeStatus.PENDING);
+        assertThat(result.providerFeeCents()).isEqualTo(348);
         assertThat(result.threeDs().status()).isEqualTo("CHALLENGE_REQUIRED");
         assertThat(result.threeDs().redirectUrl()).isEqualTo("https://asaas.com/3ds/challenge");
     }

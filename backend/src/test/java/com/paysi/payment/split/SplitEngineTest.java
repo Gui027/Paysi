@@ -10,8 +10,16 @@ class SplitEngineTest {
     void reproducesDocumentedCardExample() {
         Split result = SplitEngine.split(10_000, PaymentMethod.CARD_1, Plan.TRANSACIONAL, 1_000);
 
-        assertThat(result).isEqualTo(new Split(8_401, 1_000, 251, 348, 599));
+        assertThat(result).isEqualTo(new Split(8_201, 1_000, 451, 348, 799));
         assertThat(result.allocatedCents()).isEqualTo(10_000);
+    }
+
+    @Test
+    void fixedPlatformFeeLeavesRoomForProviderCostOnLowTicketCard() {
+        Split result = SplitEngine.split(1_000, PaymentMethod.CARD_1, Plan.TRANSACIONAL, 0);
+
+        assertThat(result).isEqualTo(new Split(741, 0, 181, 78, 259));
+        assertThat(result.sellerCents() + result.affiliateCents()).isLessThanOrEqualTo(922);
     }
 
     @Test

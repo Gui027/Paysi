@@ -75,7 +75,8 @@ final class AsaasMapper {
         var receivables = installments == 1 && response.value() != null
                 ? List.of(new ProviderReceivable(1, response.id(), toInstant(response.dueDate()), toCents(response.value())))
                 : List.<ProviderReceivable>of();
-        return new ProviderPaymentResult(response.id(), status, data, 0L, receivables, threeDs, null, false);
+        return new ProviderPaymentResult(response.id(), status, data, providerFeeCents(response),
+                receivables, threeDs, null, false);
     }
 
     static ProviderPaymentResult errorResult(java.util.UUID orderId, AsaasApiException error) {
@@ -102,6 +103,13 @@ final class AsaasMapper {
 
     static long toCents(BigDecimal reais) {
         return reais.movePointRight(2).longValueExact();
+    }
+
+    private static long providerFeeCents(AsaasPaymentResponse response) {
+        if (response.value() == null || response.netValue() == null) return 0L;
+        long fee = Math.subtractExact(toCents(response.value()), toCents(response.netValue()));
+        if (fee < 0) throw new IllegalArgumentException("netValue da Asaas excede o valor da cobrança");
+        return fee;
     }
 
     private static Instant toInstant(LocalDate date) {

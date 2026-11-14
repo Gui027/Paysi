@@ -86,7 +86,8 @@ public class SubscriptionCycleProcessor {
         Split split = SplitEngine.split(cycle.priceCents(), PaymentMethod.CARD_1, plan, cycle.commissionBps());
         UUID chargeId = UUID.randomUUID();
         subscriptions.insertCharge(chargeId, cycle.orderId(), cycle.subscriptionId(), cycle.nextCycleNumber(),
-                cycle.priceCents(), plan.name(), PaymentMethod.CARD_1.feeBps(plan), 200, split.sellerFeeCents(),
+                cycle.priceCents(), plan.name(), PaymentMethod.CARD_1.feeBps(plan),
+                SplitEngine.PLATFORM_FIXED_FEE_CENTS, split.sellerFeeCents(),
                 split.affiliateCents(), split.sellerCents(), "PENDING", now);
 
         var buyer = new ProviderBuyer(cycle.buyerName(), cycle.buyerEmail(), cycle.personType(), cycle.taxId());
@@ -112,7 +113,8 @@ public class SubscriptionCycleProcessor {
         Split split = SplitEngine.split(cycle.priceCents(), PaymentMethod.BOLETO, plan, cycle.commissionBps());
         UUID chargeId = UUID.randomUUID();
         subscriptions.insertCharge(chargeId, cycle.orderId(), cycle.subscriptionId(), cycle.nextCycleNumber(),
-                cycle.priceCents(), plan.name(), PaymentMethod.BOLETO.feeBps(plan), 200, split.sellerFeeCents(),
+                cycle.priceCents(), plan.name(), PaymentMethod.BOLETO.feeBps(plan),
+                SplitEngine.PLATFORM_FIXED_FEE_CENTS, split.sellerFeeCents(),
                 split.affiliateCents(), split.sellerCents(), "PENDING", now);
 
         var buyer = new ProviderBuyer(cycle.buyerName(), cycle.buyerEmail(), cycle.personType(), cycle.taxId());

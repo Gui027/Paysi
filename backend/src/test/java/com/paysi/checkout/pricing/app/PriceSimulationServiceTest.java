@@ -64,13 +64,13 @@ class PriceSimulationServiceTest {
 
     @Test
     void reproduzOExemploDoContratoComAfiliado() {
-        // Documento 2, §4.3: 17700 fecha em 14870 + 1770 + 682 + 578.
+        // Documento 2, §4.3: 17700 fecha em 14670 + 1770 + 1260.
         PriceQuote quote = service.priceFor(offer(17_700), OfferPaymentMethod.CARD, 1, null, 1_000);
 
         assertThat(quote.paidCents()).isEqualTo(17_700);
-        assertThat(quote.sellerCents()).isEqualTo(14_870);
+        assertThat(quote.sellerCents()).isEqualTo(14_670);
         assertThat(quote.commissionCents()).isEqualTo(1_770);
-        assertThat(quote.feesCents()).isEqualTo(1_060);
+        assertThat(quote.feesCents()).isEqualTo(1_260);
         assertThat(quote.sellerCents() + quote.commissionCents() + quote.feesCents())
                 .isEqualTo(quote.paidCents());
     }
