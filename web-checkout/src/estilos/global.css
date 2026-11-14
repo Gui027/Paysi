@@ -300,6 +300,74 @@ a { color: var(--texto-link); }
 .success-panel { width: min(672px, calc(100% - 32px)); margin: 48px auto; padding: 48px; text-align: center; background: white; border: 1px solid var(--borda); border-radius: 7px; box-shadow: var(--sombra-lg); }
 .success-panel h2 { font: var(--texto-h1); }
 .success-panel p { color: var(--texto-apoio); }
+.success-confirmation {
+  width: min(520px, 100%);
+  margin: 6px auto 0;
+  padding: 36px 20px 24px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.success-check {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: #10b981;
+  box-shadow: 0 0 0 9px #e9f9f3, 0 12px 28px -14px rgb(16 185 129 / 65%);
+}
+.success-check svg { width: 44px; height: 44px; }
+.success-check path { stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.success-confirmation .success-kicker {
+  margin: 0 0 8px;
+  color: #07835d;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.success-confirmation h2 {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(28px, 5vw, 34px);
+  line-height: 1.2;
+  letter-spacing: -.025em;
+}
+.success-confirmation .success-lead {
+  max-width: 390px;
+  margin: 12px auto 26px;
+  color: #5c6472;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.success-email {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 16px;
+  text-align: left;
+  border: 1px solid #e6e9ef;
+  border-radius: 12px;
+  background: #f7f9fc;
+}
+.success-email > svg {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  color: var(--checkout-color);
+}
+.success-email > svg rect, .success-email > svg path { stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.success-email div { display: grid; gap: 3px; }
+.success-email strong { color: #23282f; font-size: 14px; }
+.success-email span { color: #5c6472; font-size: 13px; line-height: 1.45; }
+.success-return { margin-top: 22px; }
+.success-return p, .success-confirmation .success-close { margin: 0; color: #6b7280; font-size: 12px; }
+.success-return .pay-button { margin-top: 12px; text-decoration: none; }
+.success-confirmation .success-close { margin-top: 22px; }
 
 @media (max-width: 600px) {
   body { background: #eef1f4; }
@@ -319,6 +387,9 @@ a { color: var(--texto-link); }
   .card-payment-panel { padding: 12px; }
   .pay-button { min-height: 56px; }
   .form-column footer { padding-right: 8px; padding-left: 8px; }
+  .success-confirmation { padding: 30px 8px 20px; }
+  .success-check { width: 78px; height: 78px; margin-bottom: 20px; }
+  .success-confirmation .success-lead { margin-bottom: 22px; }
 }
 
 @media (max-width: 390px) {
