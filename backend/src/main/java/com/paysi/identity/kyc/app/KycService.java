@@ -117,6 +117,35 @@ public class KycService {
     }
 
     /**
+     * Reinicia uma abertura que ficou registrada sem que uma subconta tenha sido criada. A operação só
+     * limpa o processo quando não existe credencial nem referência de wallet; assim uma conta existente
+     * nunca é duplicada por esta rota e deve seguir pelo fluxo de reconexão.
+     */
+    @Transactional
+    public KycView restart(UUID accountId) {
+        store.lockAccount(accountId);
+        var account = accounts.findById(accountId).orElseThrow(() -> unavailable());
+        if (account.kycStatus() == KycStatus.APPROVED) return current(accountId);
+        if (store.decryptedAccessToken(accountId).isPresent()) return current(accountId);
+
+        boolean hasSubaccountReference = store.providerAccountId(accountId).isPresent()
+                || store.findProcess(accountId)
+                .map(KycProcess::providerProcessId)
+                .filter(KycService::isProviderAccountReference)
+                .isPresent();
+        if (hasSubaccountReference) {
+            throw new ConflictException("KYC_CREDENTIAL_UNAVAILABLE",
+                    "A conta de recebimento já existe e precisa ser reconectada.", null);
+        }
+
+        store.clearProcess(accountId);
+        KycProcess created = provider.createProcess(accountId);
+        store.saveStarted(accountId, created);
+        var refreshed = accounts.findById(accountId).orElseThrow(() -> unavailable());
+        return new KycView(accountId, refreshed.kycStatus(), created.providerUrl(), created.requirements());
+    }
+
+    /**
      * Consulta pontualmente a situação cadastral da subconta. É o fallback explícito recomendado pela
      * Asaas quando a interface precisa refletir o resultado antes do webhook. A cobrança da verificação
      * usa a mesma chave natural do webhook e, portanto, continua idempotente se ambos chegarem juntos.

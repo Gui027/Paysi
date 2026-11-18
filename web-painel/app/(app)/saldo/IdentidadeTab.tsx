@@ -6,7 +6,7 @@ import { Janela } from "../../../components/Janela";
 import { Skeleton, Toast } from "../../../components/ui";
 import { ApiRequestError } from "../../../lib/api";
 import { parseMoneyToCents } from "../../../lib/ofertas";
-import { getKyc, getPendingDocuments, KycView, maskCep, PendingDocument, reconnectKyc, refreshKycStatus, saveComplianceProfile, startKyc, submitDocument } from "../../../lib/kyc";
+import { getKyc, getPendingDocuments, KycView, maskCep, PendingDocument, reconnectKyc, refreshKycStatus, restartKyc, saveComplianceProfile, startKyc, submitDocument } from "../../../lib/kyc";
 
 export type IdentitySetup = { kyc: KycView; documents: PendingDocument[] | null; documentsError: string | null; documentsErrorCode: string | null };
 
@@ -204,6 +204,25 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
       setRefreshFeedback(reconnectError instanceof ApiRequestError ? reconnectError.message : "Não foi possível restabelecer a conexão agora.");
     } finally { setRefreshing(false); }
   }
+  async function restart() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshFeedback(null);
+    try {
+      const view = await restartKyc();
+      applyKyc(view);
+      const nextDocuments = needsAsaasDocuments(view) ? await getPendingDocuments() : null;
+      setDocuments(nextDocuments);
+      setError(false);
+      setErrorCode(null);
+      setRefreshFeedback("Conta de recebimento criada. Continue a verificação abaixo.");
+    } catch (restartError) {
+      const nextCode = restartError instanceof ApiRequestError ? (restartError.problem.code ?? null) : null;
+      setError(true);
+      setErrorCode(nextCode);
+      setRefreshFeedback(restartError instanceof ApiRequestError ? restartError.message : "Não foi possível reiniciar a abertura agora.");
+    } finally { setRefreshing(false); }
+  }
   async function refreshStatus() {
     if (refreshing) return;
     setRefreshing(true);
@@ -237,6 +256,7 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
   const waitingForOnboarding = onboardingUnavailable(documents);
   const displayedDocuments = visibleDocuments(documents);
   const connectionUnavailable = errorCode === "KYC_CREDENTIAL_UNAVAILABLE" || errorCode === "KYC_RECONNECT_UNAVAILABLE";
+  const subaccountUnavailable = errorCode === "KYC_SUBACCOUNT_UNAVAILABLE";
   const currentStep = needsProfile ? 1 : approved || awaitingAnalysis ? 3 : 2;
 
   return <section className="pe-section id-section">
@@ -245,12 +265,12 @@ export function IdentidadeTab({ onStatus, initialSetup }: { onStatus?: (status: 
 
     {!approved && <Janela open={modalOpen} title="Verificação de identidade" wide onClose={() => setModalOpen(false)}>
       <ol className="id-steps" aria-label={`Etapa ${currentStep} de 3`}>{["Seus dados", "Documentos", "Análise"].map((label, index) => <li key={label} className={currentStep > index + 1 ? "is-done" : currentStep === index + 1 ? "is-current" : ""}><span>{currentStep > index + 1 ? "✓" : index + 1}</span><small>{label}</small></li>)}</ol>
-      <p className="id-asaas-badge">Conta de recebimento aberta com <img src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=a9d026e7-160f-4d17-8e71-14e274efb29b" alt="Serviços financeiros Asaas" /></p>
+      <p className="id-asaas-badge">Conta de recebimento com <img src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=a9d026e7-160f-4d17-8e71-14e274efb29b" alt="Serviços financeiros Asaas" /></p>
       <div className="id-step-panel">
-        {error && !connectionUnavailable && <Toast tone="danger">{refreshFeedback ?? "Não foi possível consultar a Asaas. Tente novamente."}</Toast>}
+        {error && !connectionUnavailable && !subaccountUnavailable && <Toast tone="danger">{refreshFeedback ?? "Não foi possível consultar a Asaas. Tente novamente."}</Toast>}
         {needsProfile ? <><div className="id-step-heading"><span>1</span><div><h3>Complete seus dados</h3><p>Primeiro, confirme algumas informações.</p></div></div><CompleteProfileForm onSaved={begin} /></> : needsDocuments ? <>
           <div className="id-step-heading"><span>2</span><div><h3>Confirme sua identidade</h3><p>Use o método indicado pela Asaas para concluir com segurança.</p></div></div>
-          {connectionUnavailable ? <div className="id-analysis"><span aria-hidden="true">!</span><h3>Reconecte sua conta de recebimento</h3><p>A subconta já existe e não será duplicada. Vamos gerar uma nova conexão segura para liberar os documentos.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-primary" disabled={refreshing} onClick={() => void reconnect()}>{refreshing ? "Reconectando…" : "Reconectar agora"}</button></div> : documents === null ? <div className="id-analysis"><span aria-hidden="true">◷</span><h3>Preparando seus documentos</h3><p>A Asaas está finalizando a abertura da conta. A primeira consulta pode levar alguns segundos.</p><button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Atualizando…" : "Atualizar agora"}</button></div> : waitingForOnboarding ? <div className="id-analysis"><span aria-hidden="true">!</span><h3>Link de verificação indisponível</h3><p>A Asaas ainda não liberou o link de identificação para esta conta. Nossa equipe precisa revisar a configuração antes de você continuar.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Verificando…" : "Verificar liberação"}</button></div> : displayedDocuments.length > 0 ? <><ul className="kyc-checklist">{displayedDocuments.map(document => <DocumentRow key={document.id} document={document} onSent={refreshDocuments} />)}</ul>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}</> : <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Documentos conferidos</h3><p>Não há documentos pendentes. Sua conta está aguardando o retorno da análise.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshStatus()}>{refreshing ? "Verificando…" : "Verificar status"}</button></div>}
+          {subaccountUnavailable ? <div className="id-analysis"><span aria-hidden="true">!</span><h3>Conclua a abertura da conta</h3><p>A tentativa anterior não chegou a criar sua conta de recebimento. Reinicie esta etapa para liberar o envio dos documentos.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-primary" disabled={refreshing} onClick={() => void restart()}>{refreshing ? "Reiniciando…" : "Reiniciar verificação"}</button></div> : connectionUnavailable ? <div className="id-analysis"><span aria-hidden="true">!</span><h3>Reconecte sua conta de recebimento</h3><p>A subconta já existe e não será duplicada. Vamos gerar uma nova conexão segura para liberar os documentos.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-primary" disabled={refreshing} onClick={() => void reconnect()}>{refreshing ? "Reconectando…" : "Reconectar agora"}</button></div> : documents === null ? <div className="id-analysis"><span aria-hidden="true">◷</span><h3>Preparando seus documentos</h3><p>A Asaas está finalizando a abertura da conta. A primeira consulta pode levar alguns segundos.</p><button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Atualizando…" : "Atualizar agora"}</button></div> : waitingForOnboarding ? <div className="id-analysis"><span aria-hidden="true">!</span><h3>Link de verificação indisponível</h3><p>A Asaas ainda não liberou o link de identificação para esta conta. Nossa equipe precisa revisar a configuração antes de você continuar.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshDocuments()}>{refreshing ? "Verificando…" : "Verificar liberação"}</button></div> : displayedDocuments.length > 0 ? <><ul className="kyc-checklist">{displayedDocuments.map(document => <DocumentRow key={document.id} document={document} onSent={refreshDocuments} />)}</ul>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}</> : <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Documentos conferidos</h3><p>Não há documentos pendentes. Sua conta está aguardando o retorno da análise.</p>{refreshFeedback && <p className="id-refresh-feedback" role="status">{refreshFeedback}</p>}<button type="button" className="ui-button ui-button-secondary" disabled={refreshing} onClick={() => void refreshStatus()}>{refreshing ? "Verificando…" : "Verificar status"}</button></div>}
         </> : kyc.kycStatus === "SUBMITTED" ? <div className="id-analysis"><span aria-hidden="true">✓</span><h3>Enviado para análise</h3><p>Você não precisa manter esta tela aberta. Avisaremos assim que a verificação for concluída.</p><button type="button" className="ui-button ui-button-secondary" onClick={() => void loadSetup()}>Verificar status</button></div> : <>
           <div className="id-step-heading"><span>1</span><div><h3>Vamos começar?</h3><p>Confira a etapa abaixo e avance quando estiver pronto.</p></div></div>{kyc.requirements.length > 0 && <ul className="id-simple-list">{kyc.requirements.map(item => <li key={item.code}><span aria-hidden="true">○</span>{item.label}</li>)}</ul>}<button type="button" className="ui-button ui-button-primary id-next" disabled={working} onClick={() => void begin()}>{working ? "Preparando…" : "Iniciar verificação"}</button>
         </>}

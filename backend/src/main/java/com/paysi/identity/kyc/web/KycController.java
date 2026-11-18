@@ -61,6 +61,11 @@ public class KycController {
         return kyc.reconnect(sessions.authenticate(token).session().accountId());
     }
 
+    @PostMapping("/kyc/restart")
+    public KycView restart(@CookieValue(name = COOKIE_NAME, required = false) String token) {
+        return kyc.restart(sessions.authenticate(token).session().accountId());
+    }
+
     @PostMapping(value = "/kyc/documents/{documentGroupId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> submitDocument(@CookieValue(name = COOKIE_NAME, required = false) String token,
                                                @PathVariable String documentGroupId, @RequestPart MultipartFile file) throws IOException {

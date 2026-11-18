@@ -83,6 +83,11 @@ export function reconnectKyc() {
   return apiRequest<PendingDocument[]>("/v1/accounts/me/kyc/reconnect", { method: "POST" });
 }
 
+/** Recomeça uma abertura incompleta somente quando nenhuma subconta chegou a ser criada. */
+export function restartKyc() {
+  return apiRequest<KycView>("/v1/accounts/me/kyc/restart", { method: "POST" });
+}
+
 export function submitDocument(documentGroupId: string, file: File) {
   const body = new FormData();
   body.append("file", file);

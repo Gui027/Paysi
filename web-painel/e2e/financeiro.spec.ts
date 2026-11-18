@@ -293,6 +293,35 @@ test.describe("financeiro", () => {
     await expect(page.getByText("Conexão restabelecida. Continue a verificação abaixo.")).toBeVisible();
   });
 
+  test("abertura antiga sem subconta oferece reinício e libera os documentos", async ({ page }) => {
+    await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
+    const kyc = { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [
+      { code: "ASAAS_VERIFICATION", label: "Verificação de identidade na Asaas", status: "PENDING", reason: null, estimatedAt: null },
+    ] };
+    await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: kyc }));
+    let documentosConsultados = 0;
+    await page.route("**/api/v1/accounts/me/kyc/documents", (route) => {
+      documentosConsultados += 1;
+      if (documentosConsultados === 1) return route.fulfill({
+        status: 409,
+        json: { code: "KYC_SUBACCOUNT_UNAVAILABLE", message: "A conta de recebimento ainda não foi criada. Reinicie a verificação." },
+      });
+      return route.fulfill({ json: [
+        { id: "doc_1", status: "PENDING", type: "IDENTIFICATION", description: "Documento de identidade", externalUrl: null },
+      ] });
+    });
+    await page.route("**/api/v1/accounts/me/kyc/restart", (route) => route.fulfill({ json: kyc }));
+
+    await page.goto("/saldo?aba=identidade");
+    await expect(page.getByRole("heading", { name: "Conclua a abertura da conta" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Preparando seus documentos" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Reiniciar verificação" }).click();
+
+    await expect(page.getByText("Documento de identidade")).toBeVisible();
+    await expect(page.locator('input[type="file"]')).toHaveCount(1);
+    await expect(page.getByText("Conta de recebimento criada. Continue a verificação abaixo.")).toBeVisible();
+  });
+
   test("documento com onboarding usa o link seguro e não oferece upload inválido", async ({ page }) => {
     await preparar(page, { ...OVERVIEW, kycStatus: "SUBMITTED" });
     await page.route("**/api/v1/accounts/me", (route) => route.fulfill({ json: { accountId: "a", kycStatus: "SUBMITTED", providerUrl: null, requirements: [

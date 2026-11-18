@@ -165,6 +165,35 @@ class KycServiceTest {
     }
 
     @Test
+    void restartsAStaleProcessOnlyWhenNoSubaccountReferenceExists() {
+        var stale = new KycProcess("pending-" + ACCOUNT_ID, null, NOW.plusSeconds(60), List.of(
+                new KycRequirement("ASAAS_VERIFICATION", "Verificação", "PENDING", null, null)));
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(stale));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(fixture.store.providerAccountId(ACCOUNT_ID)).thenReturn(Optional.empty());
+
+        var restarted = fixture.service.restart(ACCOUNT_ID);
+
+        assertThat(restarted.providerUrl()).isEqualTo("https://provider/process/one");
+        verify(fixture.store).clearProcess(ACCOUNT_ID);
+        verify(fixture.provider).createProcess(ACCOUNT_ID);
+        verify(fixture.store).saveStarted(eq(ACCOUNT_ID), any());
+    }
+
+    @Test
+    void refusesToRestartWhenASubaccountReferenceCanBeReconnected() {
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(fixture.store.providerAccountId(ACCOUNT_ID)).thenReturn(Optional.of("wallet-existing"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.restart(ACCOUNT_ID))
+                .isInstanceOfSatisfying(com.paysi.core.error.ConflictException.class,
+                        error -> assertThat(error.code()).isEqualTo("KYC_CREDENTIAL_UNAVAILABLE"));
+        verify(fixture.store, never()).clearProcess(ACCOUNT_ID);
+        verifyNoInteractions(fixture.provider);
+    }
+
+    @Test
     void refreshesAnApprovedAsaasSubaccountWithoutChargingAnyFee() {
         var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
         when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.of("sub-key"));
