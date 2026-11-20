@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -81,6 +82,19 @@ class AsaasClient {
                     "A Asaas não retornou uma única subconta para o walletId informado", false, null);
         }
         return found.getFirst();
+    }
+
+    /** Localiza uma conta legada mesmo quando nenhuma referência da Asaas restou no banco da Paysi. */
+    Optional<AsaasAccountResponse> findSubaccountByTaxId(String taxIdDigits) {
+        var response = execute(() -> http.exchange("/accounts?cpfCnpj={cpfCnpj}&limit=2", HttpMethod.GET,
+                HttpEntity.EMPTY, new ParameterizedTypeReference<AsaasListResponse<AsaasAccountResponse>>() {},
+                taxIdDigits).getBody());
+        List<AsaasAccountResponse> found = response == null ? List.of() : response.dataOrEmpty();
+        if (found.size() > 1) {
+            throw new AsaasApiException("AMBIGUOUS_SUBACCOUNT",
+                    "A Asaas retornou mais de uma subconta para o CPF/CNPJ informado", false, null);
+        }
+        return found.stream().findFirst();
     }
 
     /** Cria uma chave substituta; o endpoint exige liberação temporária e whitelist na conta-pai. */

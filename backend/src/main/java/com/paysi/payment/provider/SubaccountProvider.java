@@ -2,6 +2,7 @@ package com.paysi.payment.provider;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /** Cria a subconta do provedor (hoje só a Asaas) para um vendedor/afiliado poder receber split de verdade. */
 public interface SubaccountProvider {
@@ -12,6 +13,12 @@ public interface SubaccountProvider {
      * para reparar contas legadas cuja chave retornada na criação não foi armazenada.
      */
     String recoverAccessToken(String walletId);
+
+    /**
+     * Localiza uma subconta legada pelo CPF/CNPJ quando a Paysi perdeu também o walletId e gera uma
+     * nova credencial. Vazio significa que a subconta realmente não existe e pode ser criada de novo.
+     */
+    Optional<SubaccountResult> recoverSubaccount(String taxIdDigits);
 
     /** Documentos de verificação pendentes da subconta. Chamado com a chave de API própria dela, não a da Paysi. */
     List<PendingDocument> pendingDocuments(String subaccountApiKey);

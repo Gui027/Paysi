@@ -39,4 +39,25 @@ class AsaasClientSubaccountRecoveryTest {
         assertThat(token.apiKey()).isEqualTo("new-sub-key");
         server.verify();
     }
+
+    @Test
+    void locatesALegacySubaccountByTaxIdWhenTheWalletWasLost() {
+        RestTemplate http = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(http).build();
+        AsaasClient client = new AsaasClient(http, new ObjectMapper());
+
+        server.expect(requestTo("/accounts?cpfCnpj=52998224725&limit=2"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        {"data":[{"id":"acc_legacy","walletId":"wallet_legacy"}],"hasMore":false,"totalCount":1}
+                        """, MediaType.APPLICATION_JSON));
+
+        var account = client.findSubaccountByTaxId("52998224725");
+
+        assertThat(account).get().satisfies(found -> {
+            assertThat(found.id()).isEqualTo("acc_legacy");
+            assertThat(found.walletId()).isEqualTo("wallet_legacy");
+        });
+        server.verify();
+    }
 }

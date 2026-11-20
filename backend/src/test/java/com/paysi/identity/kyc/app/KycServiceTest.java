@@ -153,6 +153,37 @@ class KycServiceTest {
     }
 
     @Test
+    void reconnectsByTaxIdWhenBothLocalSubaccountReferencesWereLost() {
+        var stale = new KycProcess("pending-" + ACCOUNT_ID, null, NOW.plusSeconds(60), List.of(
+                new KycRequirement("ASAAS_VERIFICATION", "Verificação", "PENDING", null, null)));
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(stale));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(fixture.store.providerAccountId(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(fixture.subaccounts.recoverSubaccount("52998224725")).thenReturn(Optional.of(
+                new SubaccountProvider.SubaccountResult("acc-existing", "wallet-recovered", "new-sub-key")));
+        when(fixture.subaccounts.pendingDocuments("new-sub-key")).thenReturn(List.of());
+
+        assertThat(fixture.service.reconnect(ACCOUNT_ID)).isEmpty();
+
+        verify(fixture.store).attachProviderAccount(ACCOUNT_ID, "wallet-recovered", "new-sub-key");
+        verify(fixture.subaccounts, never()).createSubaccount(any(), any(), any(), any(), any(), anyLong());
+    }
+
+    @Test
+    void allowsRestartWhenNeitherPaysiNorAsaasHasASubaccount() {
+        var stale = new KycProcess("pending-" + ACCOUNT_ID, null, NOW.plusSeconds(60), List.of(
+                new KycRequirement("ASAAS_VERIFICATION", "Verificação", "PENDING", null, null)));
+        var fixture = fixture(KycStatus.SUBMITTED, Optional.of(stale));
+        when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(fixture.store.providerAccountId(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(fixture.subaccounts.recoverSubaccount("52998224725")).thenReturn(Optional.empty());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fixture.service.reconnect(ACCOUNT_ID))
+                .isInstanceOfSatisfying(com.paysi.core.error.ConflictException.class,
+                        error -> assertThat(error.code()).isEqualTo("KYC_SUBACCOUNT_UNAVAILABLE"));
+    }
+
+    @Test
     void reconnectIsIdempotentWhenTheCredentialAlreadyExists() {
         var fixture = fixture(KycStatus.SUBMITTED, Optional.of(process(NOW.plusSeconds(60))));
         when(fixture.store.decryptedAccessToken(ACCOUNT_ID)).thenReturn(Optional.of("current-key"));

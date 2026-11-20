@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -71,6 +72,25 @@ class AsaasSubaccountProviderTest {
         assertThat(provider.recoverAccessToken("wallet_abc")).isEqualTo("new-sub-key");
 
         verify(client).findSubaccountByWalletId("wallet_abc");
+        verify(client).createSubaccountAccessToken("acc_123");
+        verify(client, never()).createSubaccount(any());
+    }
+
+    @Test
+    void recoversTheWalletAndCredentialFromTheTaxIdWithoutCreatingAnotherSubaccount() {
+        AsaasClient client = mock(AsaasClient.class);
+        when(client.findSubaccountByTaxId("52998224725"))
+                .thenReturn(Optional.of(new AsaasAccountResponse("acc_123", "wallet_abc", null)));
+        when(client.createSubaccountAccessToken("acc_123"))
+                .thenReturn(new AsaasAccessTokenResponse("token-id", "new-sub-key"));
+        var provider = new AsaasSubaccountProvider(client, mock(AsaasSubaccountDocumentsClient.class));
+
+        assertThat(provider.recoverSubaccount("52998224725")).get().satisfies(recovered -> {
+            assertThat(recovered.walletId()).isEqualTo("wallet_abc");
+            assertThat(recovered.apiKey()).isEqualTo("new-sub-key");
+        });
+
+        verify(client).findSubaccountByTaxId("52998224725");
         verify(client).createSubaccountAccessToken("acc_123");
         verify(client, never()).createSubaccount(any());
     }

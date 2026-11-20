@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Adaptador real da Asaas para {@link SubaccountProvider}: cria a subconta white-label (POST /v3/accounts)
@@ -43,6 +44,21 @@ public class AsaasSubaccountProvider implements SubaccountProvider {
                 throw new SubaccountCreationException("A Asaas não devolveu a nova chave da subconta", null);
             }
             return created.apiKey();
+        } catch (AsaasApiException error) {
+            throw new SubaccountCreationException(error.getMessage(), error);
+        }
+    }
+
+    @Override
+    public Optional<SubaccountResult> recoverSubaccount(String taxIdDigits) {
+        try {
+            return client.findSubaccountByTaxId(taxIdDigits).map(account -> {
+                var created = client.createSubaccountAccessToken(account.id());
+                if (created == null || created.apiKey() == null || created.apiKey().isBlank()) {
+                    throw new SubaccountCreationException("A Asaas não devolveu a nova chave da subconta", null);
+                }
+                return new SubaccountResult(account.id(), account.walletId(), created.apiKey());
+            });
         } catch (AsaasApiException error) {
             throw new SubaccountCreationException(error.getMessage(), error);
         }

@@ -87,23 +87,31 @@ public class KycService {
     @Transactional(noRollbackFor = ConflictException.class)
     public List<PendingDocumentView> reconnect(UUID accountId) {
         store.lockAccount(accountId);
-        accounts.findById(accountId).orElseThrow(() -> unavailable());
+        var account = accounts.findById(accountId).orElseThrow(() -> unavailable());
         Optional<String> currentToken = store.decryptedAccessToken(accountId);
         if (currentToken.isPresent()) return pendingDocuments(currentToken.get());
 
         Optional<String> storedWalletId = store.providerAccountId(accountId);
-        String walletId = storedWalletId
+        Optional<String> recoverableWalletId = storedWalletId
                 // Contas criadas por versões antigas podem ter gravado o walletId somente no
                 // processo KYC. Ele continua sendo a referência exata da mesma subconta e evita
                 // criar uma duplicata no provedor durante o reparo da credencial.
                 .or(() -> store.findProcess(accountId)
                         .map(KycProcess::providerProcessId)
-                        .filter(KycService::isProviderAccountReference))
-                .orElseThrow(() -> new ConflictException("KYC_SUBACCOUNT_UNAVAILABLE",
-                        "A conta de recebimento ainda não foi criada. Reinicie a verificação.", null));
+                        .filter(KycService::isProviderAccountReference));
+        String walletId;
         final String recoveredToken;
         try {
-            recoveredToken = subaccounts.recoverAccessToken(walletId);
+            if (recoverableWalletId.isPresent()) {
+                walletId = recoverableWalletId.get();
+                recoveredToken = subaccounts.recoverAccessToken(walletId);
+            } else {
+                var recovered = subaccounts.recoverSubaccount(account.taxId().digits())
+                        .orElseThrow(() -> new ConflictException("KYC_SUBACCOUNT_UNAVAILABLE",
+                                "A conta de recebimento ainda não foi criada. Reinicie a verificação.", null));
+                walletId = recovered.walletId();
+                recoveredToken = recovered.apiKey();
+            }
         } catch (SubaccountCreationException error) {
             throw new ConflictException("KYC_RECONNECT_UNAVAILABLE",
                     "Não foi possível restabelecer a conexão agora. O suporte da Paysi precisa liberar a reconexão na Asaas.", null);

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /** Substitui {@link SubaccountProvider} em dev/teste ({@code paysi.provider=fake}): não fala com nada de fora. */
@@ -20,6 +21,11 @@ public class FakeSubaccountProvider implements SubaccountProvider {
     @Override
     public String recoverAccessToken(String walletId) {
         return "fake_key_recovered_" + walletId;
+    }
+
+    @Override
+    public Optional<SubaccountResult> recoverSubaccount(String taxIdDigits) {
+        return Optional.empty();
     }
 
     @Override
